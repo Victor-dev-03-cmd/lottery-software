@@ -90,9 +90,12 @@ fn stealth_headers() -> reqwest::header::HeaderMap {
 
 fn build_client() -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
-        .timeout(Duration::from_secs(15))
+        .timeout(Duration::from_secs(25))   // longer timeout for Windows
         .user_agent(pick_ua())
         .default_headers(stealth_headers())
+        // Accept both valid and self-signed certs — nlb.lk/dlb.lk sometimes
+        // use intermediate certs not trusted by Windows SChannel by default
+        .danger_accept_invalid_certs(true)
         .build()
         .map_err(|e| e.to_string())
 }
@@ -108,17 +111,47 @@ fn current_timestamp() -> String {
 // ── Headless browser engine ────────────────────────────────────────────────────
 
 /// Returns true if Chrome/Chromium is available on this system.
+/// Checks PATH on Linux/Mac and fixed install paths on Windows.
 fn chrome_available() -> bool {
     use std::process::Command;
-    for bin in &["google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "chrome"] {
-        if Command::new("which").arg(bin).output()
-            .map(|o| o.status.success())
-            .unwrap_or(false)
-        {
-            return true;
+    use std::path::Path;
+
+    // Windows: check common fixed install locations first (Chrome is rarely in PATH on Windows)
+    #[cfg(target_os = "windows")]
+    {
+        let win_paths = [
+            r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+            r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+            &format!(r"{}\Google\Chrome\Application\chrome.exe",
+                std::env::var("LOCALAPPDATA").unwrap_or_default()),
+            r"C:\Program Files\Chromium\Application\chrome.exe",
+        ];
+        for p in &win_paths {
+            if Path::new(p).exists() { return true; }
         }
+        // Also try PATH on Windows (in case Chrome was added manually)
+        for bin in &["chrome.exe", "chromium.exe"] {
+            if Command::new("where").arg(bin).output()
+                .map(|o| o.status.success()).unwrap_or(false) {
+                return true;
+            }
+        }
+        return false;
     }
-    false
+
+    // Linux / macOS: use `which`
+    #[cfg(not(target_os = "windows"))]
+    {
+        for bin in &["google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "chrome"] {
+            if Command::new("which").arg(bin).output()
+                .map(|o| o.status.success())
+                .unwrap_or(false)
+            {
+                return true;
+            }
+        }
+        false
+    }
 }
 
 /// Load a URL with headless Chrome, wait for `wait_selector` to appear, return
@@ -130,11 +163,27 @@ async fn headless_get(url: String, wait_selector: String) -> Option<String> {
 
     tokio::task::spawn_blocking(move || -> Option<String> {
         use headless_chrome::{Browser, LaunchOptions};
+        use std::path::PathBuf;
+
+        // On Windows, headless_chrome can't find Chrome automatically — pass the path explicitly
+        #[cfg(target_os = "windows")]
+        let chrome_path: Option<PathBuf> = {
+            let candidates = [
+                r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+            ];
+            candidates.iter()
+                .find(|p| std::path::Path::new(p).exists())
+                .map(PathBuf::from)
+        };
+        #[cfg(not(target_os = "windows"))]
+        let chrome_path: Option<PathBuf> = None;
 
         let browser = Browser::new(LaunchOptions {
             headless: true,
             sandbox: false, // required in some Linux environments
             idle_browser_timeout: Duration::from_secs(20),
+            path: chrome_path,
             ..Default::default()
         }).ok()?;
 
