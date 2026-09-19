@@ -15,10 +15,11 @@ import {
 } from "../services/database";
 import { seedDemoData, clearDemoData } from "../services/seedData";
 import ImportDataTab from "./ImportDataTab";
+import SoftwareUpdateTab from "./SoftwareUpdateTab";
 import type { CompanySettings, LotteryGame } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 
-type Tab = "general" | "games" | "financial" | "printing" | "security" | "ai" | "demo" | "import";
+type Tab = "general" | "games" | "financial" | "printing" | "security" | "ai" | "updates" | "import" | "demo";
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "general",   label: "General",           icon: <Building2 size={15} /> },
@@ -27,7 +28,8 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "printing",  label: "Printing",          icon: <Printer size={15} /> },
   { key: "security",  label: "Backup & Security", icon: <Shield size={15} /> },
   { key: "ai",        label: "AI Configuration",  icon: <span style={{ fontSize: 13 }}>🧠</span> },
-  { key: "import",    label: "Import Data",    icon: <span style={{ fontSize: 13 }}>📥</span> },
+  { key: "updates",   label: "Software Updates",  icon: <span style={{ fontSize: 13 }}>🔄</span> },
+  { key: "import",    label: "Import Data",       icon: <span style={{ fontSize: 13 }}>📥</span> },
   { key: "demo",      label: "Demo Data",         icon: <FlaskConical size={15} /> },
 ];
 
@@ -95,6 +97,7 @@ export default function Settings() {
             {activeTab === "printing"  && <PrintingTab onSaved={showSaved} />}
             {activeTab === "security"  && <SecurityTab onSaved={showSaved} />}
             {activeTab === "ai"        && <AIConfigTab />}
+            {activeTab === "updates"   && <SoftwareUpdateTab />}
             {activeTab === "import"    && <ImportDataTab />}
             {activeTab === "demo"      && <DemoDataTab />}
           </div>
