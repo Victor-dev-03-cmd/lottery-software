@@ -1,90 +1,106 @@
 import { useEffect, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
-import type { DownloadEvent } from "@tauri-apps/plugin-updater";
 
-type CheckState = "idle" | "checking" | "up-to-date" | "available" | "downloading" | "ready" | "error";
+type CheckState = "idle" | "checking" | "up-to-date" | "available" | "error";
 
-interface ReleaseInfo {
-  version: string;
+interface ReleaseAsset {
+  name: string;
+  browser_download_url: string;
+  size: number;
+}
+interface GithubRelease {
+  tag_name: string;
+  name: string;
   body: string | null;
-  date?: string;
+  published_at: string;
+  html_url: string;
+  assets: ReleaseAsset[];
+}
+
+const GITHUB_API = "https://api.github.com/repos/Victor-dev-03-cmd/lottery-software/releases/latest";
+const RELEASES_PAGE = "https://github.com/Victor-dev-03-cmd/lottery-software/releases/latest";
+
+function semverGt(a: string, b: string): boolean {
+  const parse = (v: string) => v.replace(/^v/, "").split(".").map(Number);
+  const [aMaj, aMin, aPatch] = parse(a);
+  const [bMaj, bMin, bPatch] = parse(b);
+  if (aMaj !== bMaj) return aMaj > bMaj;
+  if (aMin !== bMin) return aMin > bMin;
+  return aPatch > bPatch;
+}
+
+function fmtSize(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+// Markdown-lite renderer
+function ReleaseNotes({ body }: { body: string }) {
+  const lines = body.split("\n");
+  return (
+    <div>
+      {lines.map((line, i) => {
+        const t = line.trim();
+        if (!t) return <div key={i} style={{ height: 6 }} />;
+        if (t.startsWith("## ")) return <p key={i} style={{ fontWeight: 700, fontSize: 12, color: "#111827", margin: "10px 0 4px" }}>{t.slice(3)}</p>;
+        if (t.startsWith("# "))  return <p key={i} style={{ fontWeight: 800, fontSize: 13, color: "#111827", margin: "10px 0 4px" }}>{t.slice(2)}</p>;
+        if (t.startsWith("- ") || t.startsWith("• ")) return (
+          <div key={i} style={{ display: "flex", gap: 6, fontSize: 12, color: "#374151", marginBottom: 3 }}>
+            <span style={{ color: "#CF291D", flexShrink: 0 }}>•</span>
+            <span>{t.slice(2)}</span>
+          </div>
+        );
+        return <p key={i} style={{ fontSize: 12, color: "#374151", margin: "2px 0" }}>{t}</p>;
+      })}
+    </div>
+  );
 }
 
 export default function SoftwareUpdateTab() {
-  const [checkState, setCheckState] = useState<CheckState>("idle");
-  const [currentVersion, setCurrentVersion] = useState("—");
-  const [release, setRelease]     = useState<ReleaseInfo | null>(null);
-  const [progress, setProgress]   = useState(0);
-  const [errMsg, setErrMsg]       = useState("");
-  const [dismissed, setDismissed] = useState(false);
+  const [state, setState]       = useState<CheckState>("idle");
+  const [current, setCurrent]   = useState("—");
+  const [release, setRelease]   = useState<GithubRelease | null>(null);
+  const [errMsg, setErrMsg]     = useState("");
+  const [dismissed, setDismiss] = useState(false);
 
-  useEffect(() => {
-    getVersion().then(v => setCurrentVersion(v)).catch(() => {});
-  }, []);
+  useEffect(() => { getVersion().then(v => setCurrent(v)).catch(() => {}); }, []);
 
   async function checkForUpdate() {
-    setCheckState("checking");
+    setState("checking");
     setRelease(null);
     setErrMsg("");
-    setDismissed(false);
+    setDismiss(false);
     try {
-      const { check } = await import("@tauri-apps/plugin-updater");
-      const update = await check();
-      if (update?.available) {
-        setRelease({ version: update.version, body: update.body ?? null, date: update.date ?? undefined });
-        setCheckState("available");
+      const res = await fetch(GITHUB_API, {
+        headers: { "Accept": "application/vnd.github.v3+json" },
+      });
+      if (!res.ok) throw new Error(`GitHub API returned ${res.status}. Make sure the repository is public and has at least one release.`);
+      const data: GithubRelease = await res.json();
+      if (semverGt(data.tag_name, current)) {
+        setRelease(data);
+        setState("available");
       } else {
-        setCheckState("up-to-date");
+        setState("up-to-date");
       }
     } catch (e) {
-      setErrMsg(`Could not check for updates: ${String(e)}`);
-      setCheckState("error");
+      setErrMsg(String(e).replace("TypeError: ", "").replace("Error: ", ""));
+      setState("error");
     }
   }
 
-  async function installUpdate() {
-    try {
-      const { check } = await import("@tauri-apps/plugin-updater");
-      const { relaunch } = await import("@tauri-apps/plugin-process");
-      setCheckState("downloading");
-      setProgress(0);
-      const update = await check();
-      if (!update?.available) return;
-      let downloaded = 0, total = 0;
-      await update.downloadAndInstall((e: DownloadEvent) => {
-        if (e.event === "Started")  { total = e.data.contentLength ?? 0; }
-        if (e.event === "Progress") { downloaded += e.data.chunkLength; setProgress(total > 0 ? Math.round(downloaded / total * 100) : 50); }
-        if (e.event === "Finished") { setCheckState("ready"); }
-      });
-      // Short pause to show success state, then relaunch
-      setTimeout(() => relaunch(), 1500);
-    } catch (e) {
-      setErrMsg(`Installation failed: ${String(e)}`);
-      setCheckState("error");
-    }
+  function openReleasePage() {
+    window.open(RELEASES_PAGE, "_blank");
   }
 
-  // Format release notes (markdown-lite: bold headers, bullet lines)
-  function formatNotes(body: string) {
-    return body.split("\n").map((line, i) => {
-      const trimmed = line.trim();
-      if (!trimmed) return null;
-      if (trimmed.startsWith("## "))  return <p key={i} style={{ fontWeight: 700, fontSize: 12, color: "#111827", margin: "10px 0 4px" }}>{trimmed.slice(3)}</p>;
-      if (trimmed.startsWith("# "))   return <p key={i} style={{ fontWeight: 800, fontSize: 13, color: "#111827", margin: "10px 0 4px" }}>{trimmed.slice(2)}</p>;
-      if (trimmed.startsWith("- ") || trimmed.startsWith("• ")) return (
-        <div key={i} style={{ display: "flex", gap: 6, fontSize: 12, color: "#374151", marginBottom: 3 }}>
-          <span style={{ color: "#CF291D", flexShrink: 0 }}>•</span>
-          <span>{trimmed.slice(2)}</span>
-        </div>
-      );
-      return <p key={i} style={{ fontSize: 12, color: "#374151", marginBottom: 3 }}>{trimmed}</p>;
-    }).filter(Boolean);
-  }
+  // Pick best download assets for current platform
+  const winAsset  = release?.assets.find(a => a.name.endsWith(".exe") || a.name.endsWith(".msi"));
+  const debAsset  = release?.assets.find(a => a.name.endsWith(".deb"));
+  const appImage  = release?.assets.find(a => a.name.endsWith(".AppImage"));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-      {/* ── Current Version Card ── */}
+      {/* ── Current version card ── */}
       <div style={{ background: "#fff", border: "1px solid #E8E8E8", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ padding: "12px 20px", borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
           <p style={{ fontWeight: 700, fontSize: 13, color: "#1D1D1D", margin: 0 }}>🔄 Software Updates</p>
@@ -92,174 +108,166 @@ export default function SoftwareUpdateTab() {
             Ajith Rohana Enterprise — Lottery Manager
           </p>
         </div>
+
         <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              {/* App icon placeholder */}
-              <div style={{ width: 48, height: 48, borderRadius: 12, background: "linear-gradient(135deg,#CF291D,#B50717)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <span style={{ fontSize: 22 }}>🎫</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: "linear-gradient(135deg,#CF291D,#B50717)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 22 }}>
+              🎫
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>Lottery Manager</div>
+              <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>
+                Installed version: <strong style={{ color: "#374151" }}>v{current}</strong>
               </div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>Lottery Manager</div>
-                <div style={{ fontSize: 12, color: "#6B7280" }}>
-                  Current version: <strong style={{ color: "#374151" }}>v{currentVersion}</strong>
-                </div>
-                <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 2 }}>
-                  Powered by Ajith Rohana Enterprise · Asroz
-                </div>
+              <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 2 }}>
+                Powered by Ajith Rohana Enterprise · Asroz
               </div>
             </div>
           </div>
 
-          {/* Check / spinner */}
-          {(() => {
-            const s = checkState as string;
-            if (s === "checking") return (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#6B7280" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: "spin 0.8s linear infinite" }}>
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                </svg>
-                Checking for updates…
-              </div>
-            );
-            if (["idle","up-to-date","error"].includes(s)) return (
-              <button onClick={checkForUpdate}
-                style={{ display: "flex", alignItems: "center", gap: 7, padding: "8px 18px", border: "none", borderRadius: 8, background: "#CF291D", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                🔍 Check for Updates
-              </button>
-            );
-            return null;
-          })()}
+          {/* Action button */}
+          {state !== "checking" && state !== "available" && (
+            <button onClick={checkForUpdate}
+              style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 20px", border: "none", borderRadius: 8, background: "#CF291D", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              🔍 Check for Updates
+            </button>
+          )}
+          {state === "checking" && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#6B7280" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: "spin 0.8s linear infinite" }}>
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+              </svg>
+              Checking GitHub releases…
+            </div>
+          )}
         </div>
 
-        {/* Status row */}
-        {checkState === "up-to-date" && (
+        {/* Status banners */}
+        {state === "up-to-date" && (
           <div style={{ margin: "0 20px 16px", padding: "10px 14px", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 8, display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 16 }}>✅</span>
-            <div>
+            <span style={{ fontSize: 18 }}>✅</span>
+            <div style={{ flex: 1 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#15803D" }}>You're up to date!</div>
-              <div style={{ fontSize: 11, color: "#6B7280" }}>Version v{currentVersion} is the latest release.</div>
+              <div style={{ fontSize: 11, color: "#6B7280" }}>v{current} is the latest release.</div>
             </div>
-            <button onClick={checkForUpdate} style={{ marginLeft: "auto", padding: "4px 12px", border: "1px solid #BBF7D0", borderRadius: 6, background: "#fff", color: "#16A34A", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+            <button onClick={checkForUpdate} style={{ padding: "4px 12px", border: "1px solid #BBF7D0", borderRadius: 6, background: "#fff", color: "#16A34A", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
               Check again
             </button>
           </div>
         )}
 
-        {checkState === "error" && (
-          <div style={{ margin: "0 20px 16px", padding: "10px 14px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8, display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 16 }}>⚠️</span>
-            <div style={{ flex: 1 }}>
+        {state === "error" && (
+          <div style={{ margin: "0 20px 16px", padding: "10px 14px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <span style={{ fontSize: 16 }}>⚠️</span>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#DC2626" }}>Update check failed</div>
-              <div style={{ fontSize: 11, color: "#6B7280" }}>{errMsg}</div>
+              <button onClick={checkForUpdate} style={{ marginLeft: "auto", padding: "3px 10px", border: "1px solid #FECACA", borderRadius: 6, background: "#fff", color: "#DC2626", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Retry</button>
             </div>
-            <button onClick={checkForUpdate} style={{ padding: "4px 12px", border: "1px solid #FECACA", borderRadius: 6, background: "#fff", color: "#DC2626", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-              Retry
-            </button>
+            <div style={{ fontSize: 11, color: "#6B7280", lineHeight: 1.5 }}>{errMsg}</div>
           </div>
         )}
       </div>
 
-      {/* ── Update Available Card ── */}
-      {checkState === "available" && release && !dismissed && (
+      {/* ── New version available card ── */}
+      {state === "available" && release && !dismissed && (
         <div style={{ background: "#fff", border: "2px solid #CF291D", borderRadius: 14, overflow: "hidden", animation: "fadeIn 0.3s ease" }}>
-          {/* Red top bar */}
           <div style={{ height: 4, background: "linear-gradient(90deg,#CF291D,#B50717)" }} />
+          <div style={{ padding: "16px 20px" }}>
 
-          <div style={{ padding: "14px 20px" }}>
             {/* Header */}
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: "#FEF2F2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
-                  🚀
-                </div>
+                <div style={{ width: 42, height: 42, borderRadius: 10, background: "#FEF2F2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>🚀</div>
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: 15, color: "#111827" }}>
-                    New Update Available
-                  </div>
+                  <div style={{ fontWeight: 800, fontSize: 15, color: "#111827" }}>New Update Available!</div>
                   <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>
-                    Version <strong style={{ color: "#CF291D" }}>v{release.version}</strong>
-                    {release.date && <span> · {new Date(release.date).toLocaleDateString("en-LK", { year: "numeric", month: "long", day: "numeric" })}</span>}
+                    Version <strong style={{ color: "#CF291D" }}>{release.tag_name}</strong>
+                    <span style={{ marginLeft: 8 }}>·</span>
+                    <span style={{ marginLeft: 8 }}>{new Date(release.published_at).toLocaleDateString("en-LK", { year: "numeric", month: "long", day: "numeric" })}</span>
                     <span style={{ marginLeft: 8, padding: "1px 7px", borderRadius: 20, background: "#FEF2F2", color: "#CF291D", fontSize: 10, fontWeight: 700, border: "1px solid #FECACA" }}>NEW</span>
                   </div>
                 </div>
               </div>
-              <button onClick={() => setDismissed(true)}
-                style={{ border: "none", background: "none", cursor: "pointer", color: "#9CA3AF", fontSize: 18, lineHeight: 1, padding: "0 2px" }}>×</button>
+              <button onClick={() => setDismiss(true)} style={{ border: "none", background: "none", cursor: "pointer", color: "#9CA3AF", fontSize: 20, lineHeight: 1, padding: "0 2px" }}>×</button>
             </div>
 
-            {/* Release Notes */}
+            {/* Release notes */}
             {release.body && (
-              <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 8, padding: "12px 14px", marginBottom: 14, maxHeight: 260, overflowY: "auto" }}>
+              <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 8, padding: "12px 14px", marginBottom: 14, maxHeight: 220, overflowY: "auto" }}>
                 <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 8px" }}>
-                  📋 What's New in v{release.version}
+                  📋 What's New in {release.tag_name}
                 </p>
-                {formatNotes(release.body)}
+                <ReleaseNotes body={release.body} />
               </div>
             )}
 
-            {/* Action buttons */}
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              <button onClick={installUpdate}
-                style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 8, background: "#CF291D", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                ⬇ Install Update Now
+            {/* Download options */}
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>
+              Download Installer
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+              {winAsset && (
+                <a href={winAsset.browser_download_url} target="_blank" rel="noreferrer"
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "10px 8px", border: "1px solid #E5E7EB", borderRadius: 8, background: "#F9FAFB", textDecoration: "none", cursor: "pointer" }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "#CF291D")}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "#E5E7EB")}>
+                  <span style={{ fontSize: 20 }}>🪟</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#111827" }}>Windows</span>
+                  <span style={{ fontSize: 10, color: "#9CA3AF" }}>{winAsset.name.endsWith(".msi") ? "MSI" : "EXE"} · {fmtSize(winAsset.size)}</span>
+                </a>
+              )}
+              {debAsset && (
+                <a href={debAsset.browser_download_url} target="_blank" rel="noreferrer"
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "10px 8px", border: "1px solid #E5E7EB", borderRadius: 8, background: "#F9FAFB", textDecoration: "none", cursor: "pointer" }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "#CF291D")}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "#E5E7EB")}>
+                  <span style={{ fontSize: 20 }}>🐧</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#111827" }}>Ubuntu/Debian</span>
+                  <span style={{ fontSize: 10, color: "#9CA3AF" }}>.deb · {fmtSize(debAsset.size)}</span>
+                </a>
+              )}
+              {appImage && (
+                <a href={appImage.browser_download_url} target="_blank" rel="noreferrer"
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "10px 8px", border: "1px solid #E5E7EB", borderRadius: 8, background: "#F9FAFB", textDecoration: "none", cursor: "pointer" }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "#CF291D")}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "#E5E7EB")}>
+                  <span style={{ fontSize: 20 }}>📦</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#111827" }}>Linux (All)</span>
+                  <span style={{ fontSize: 10, color: "#9CA3AF" }}>AppImage · {fmtSize(appImage.size)}</span>
+                </a>
+              )}
+            </div>
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={openReleasePage}
+                style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 8, background: "#CF291D", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                ⬇ View All Downloads on GitHub
               </button>
-              <button onClick={() => setDismissed(true)}
+              <button onClick={() => setDismiss(true)}
                 style={{ padding: "10px 20px", border: "1px solid #E5E7EB", borderRadius: 8, background: "#F9FAFB", color: "#6B7280", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                 Later
               </button>
             </div>
+
             <p style={{ fontSize: 10, color: "#9CA3AF", marginTop: 8, textAlign: "center" }}>
-              The app will restart automatically after the update is installed.
+              Download the installer for your platform and run it — the app will update automatically.
             </p>
           </div>
         </div>
       )}
 
-      {/* ── Downloading Card ── */}
-      {checkState === "downloading" && (
-        <div style={{ background: "#fff", border: "1px solid #E8E8E8", borderRadius: 14, padding: "20px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
-              ⬇
-            </div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>Downloading update…</div>
-              <div style={{ fontSize: 12, color: "#6B7280" }}>Please don't close the app. Installing v{release?.version}.</div>
-            </div>
-          </div>
-          {/* Progress bar */}
-          <div style={{ background: "#F3F4F6", borderRadius: 999, height: 8, overflow: "hidden", marginBottom: 8 }}>
-            <div style={{ height: "100%", background: "linear-gradient(90deg,#CF291D,#B50717)", borderRadius: 999, width: `${progress}%`, transition: "width 0.4s ease" }} />
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#9CA3AF" }}>
-            <span>Downloading…</span>
-            <span style={{ fontWeight: 700, color: "#CF291D" }}>{progress}%</span>
-          </div>
-        </div>
-      )}
-
-      {/* ── Ready / Restarting Card ── */}
-      {checkState === "ready" && (
-        <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 14, padding: "20px", textAlign: "center" }}>
-          <div style={{ fontSize: 36, marginBottom: 8 }}>✅</div>
-          <div style={{ fontWeight: 800, fontSize: 15, color: "#15803D", marginBottom: 4 }}>Update installed!</div>
-          <div style={{ fontSize: 12, color: "#6B7280" }}>The app is restarting with the new version…</div>
-        </div>
-      )}
-
-      {/* ── Version History Note ── */}
+      {/* ── Info footer ── */}
       <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 12, padding: "12px 16px" }}>
-        <p style={{ fontSize: 11, color: "#6B7280", margin: 0, lineHeight: 1.6 }}>
-          📦 <strong>Auto-update endpoint:</strong> github.com/Victor-dev-03-cmd/lottery-software/releases<br />
-          🔑 Updates are cryptographically signed and verified before installation.<br />
-          🕐 The app automatically checks for updates in the background every 4 hours.
+        <p style={{ fontSize: 11, color: "#6B7280", margin: 0, lineHeight: 1.65 }}>
+          📦 <strong>Release source:</strong> github.com/Victor-dev-03-cmd/lottery-software/releases<br />
+          🔒 All releases are built and signed via GitHub Actions.<br />
+          🕐 Click "Check for Updates" at any time to see if a new version is available.
         </p>
       </div>
 
       <style>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
     </div>
   );
