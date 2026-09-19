@@ -5,9 +5,9 @@
   "identifier": "com.ajithrohana.lotterymanager",
   "plugins": {
     "updater": {
-      "pubkey": "PASTE_YOUR_PUBLIC_KEY_HERE",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVDOUU5N0Q0Mjk2NDQ1NTUKUldSVlJXUXAxSmVlWFBBVGdjaEo3RCthbzIvQS93cW1WQWVJWWRjeEF3eHQ3ZndtTjJndlRUcE0K",
       "endpoints": [
-        "https://github.com/YOUR_GITHUB_USERNAME/lottery-software/releases/latest/download/latest.json"
+        "https://github.com/Victor-dev-03-cmd/lottery-software/releases/latest/download/latest.json"
       ],
       "dialog": false,
       "windows": { "installMode": "passive" }

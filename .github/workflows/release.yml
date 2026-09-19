@@ -1,87 +1,46 @@
-name: 🚀 Build & Release
+name: "Publish"
 
 on:
   push:
     tags:
-      - "v*"          # Triggers on any tag like v1.0.0, v1.2.3
+      - 'v*'
 
 jobs:
-  build:
+  publish-tauri:
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Windows .exe + .msi
-          - platform: windows-latest
+          - platform: "windows-latest"
             args: ""
-          # Linux .deb + AppImage
-          - platform: ubuntu-22.04
+          - platform: "ubuntu-22.04"
             args: ""
 
     runs-on: ${{ matrix.platform }}
-
     steps:
-      # ── Checkout ────────────────────────────────────────────────────────────
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # ── Node / Bun ──────────────────────────────────────────────────────────
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
 
-      - name: Install frontend dependencies
-        run: bun install
-
-      # ── Rust ────────────────────────────────────────────────────────────────
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: "./src-tauri -> target"
-
-      # ── Linux system dependencies ──────────────────────────────────────────
-      - name: Install Linux dependencies
+      - name: Install dependencies (Ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libappindicator3-dev \
-            librsvg2-dev \
-            patchelf \
-            libssl-dev \
-            pkg-config
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf
 
-      # ── Tauri Build & Release ────────────────────────────────────────────────
-      - name: Build and publish release
-        uses: tauri-apps/tauri-action@v0
+      - name: Install frontend dependencies
+        run: bun install
+
+      - name: Build the app
+        uses: tauri-apps/tauri-action@v0.5.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "Ajith Rohana Lottery Manager ${{ github.ref_name }}"
-          releaseBody: |
-            ## What's New
-            See the full changelog in the repository.
-
-            ## Downloads
-            | Platform | File |
-            |----------|------|
-            | 🪟 Windows | `.msi` or `.exe` installer |
-            | 🐧 Linux   | `.deb` (Ubuntu/Debian) or `.AppImage` (all distros) |
-
-            ## Install
-            **Windows:** Download and run the `.msi` file.
-            **Linux:** `sudo dpkg -i lottery-manager_*.deb`  or  run the `.AppImage` directly.
-
-            ## Auto-Update
-            If you already have the app installed, it will notify you automatically.
-          releaseDraft: false
-          prerelease: false
           args: ${{ matrix.args }}
