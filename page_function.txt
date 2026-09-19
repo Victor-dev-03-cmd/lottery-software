@@ -1,0 +1,1302 @@
+================================================================================
+  AJITH ROHANA ENTERPRISE — LOTTERY MANAGER
+  Page Function Reference Document
+  Generated: September 17, 2026
+================================================================================
+
+This document describes every page (view) in the application — its purpose,
+all input fields, all buttons and their effects, and the data it displays.
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+
+ 1.  Dashboard
+ 2.  Alerts & Reminders
+ 3.  New Invoice / Edit Invoice
+ 4.  Draft Invoices
+ 5.  Confirm / Waiting Invoices
+ 6.  Paid Invoices (Invoice List)
+ 7.  Cancelled Invoices
+ 8.  Invoice Model (Template Designer)
+ 9.  Agent Profiles
+10.  Stock Inventory
+11.  Agent Returns
+12.  Daily Collections
+13.  Payment Ledger
+14.  Commission & Schemes
+15.  Reports & Analytics
+16.  Profit & Margin Analytics
+17.  Live Lottery Results
+18.  Settings
+19.  Stock Purchases (Nimalsiri)
+20.  Return to Supplier
+21.  Payroll
+22.  Distribution Summary
+23.  AI Intelligence (Chat)
+24.  Print & Export
+
+================================================================================
+1. DASHBOARD
+   View key: "dashboard"
+   File: src/components/Dashboard.tsx (AgentDashboard)
+================================================================================
+
+PURPOSE
+-------
+Main overview screen. Shows the business health at a glance for a selected
+time period — revenue, tickets, cash collected, outstanding balance, collection
+rate, top agents, recent invoices, and supplier dues.
+
+INPUTS
+------
+- Period Selector Pills  : "7D" / "30D" / "All"
+                           Switches the date window used for all KPI metrics
+                           and chart data.
+- Agent Search Box       : Text input. Filters the agent summary table in
+                           real-time by agent name.
+
+BUTTONS
+-------
+- Refresh                : Reloads all dashboard data (KPIs, charts, tables)
+                           from the local SQLite database.
+- "7D" / "30D" / "All"  : Period pills. Changes the active period; all data
+                           recalculates automatically.
+- Export CSV             : Opens a native Tauri save-file dialog. Writes the
+                           current dashboard snapshot (stats, agent summary,
+                           recent invoices) to a .csv file.
+- "+ New Invoice"        : Navigates to the New Invoice page.
+- Agent Row (click)      : Navigates to the agent's detail / ledger view.
+
+DATA DISPLAYED
+--------------
+- 5 KPI cards: Total Revenue (Rs.), Tickets Distributed (count), Cash
+  Collected (Rs.), Outstanding Balance (Rs.), Invoice Count — all for the
+  selected period.
+- Collection Rate % — cash collected as % of invoiced amount.
+- Nimalsiri Dues card: total unpaid balance owed to the supplier.
+- Revenue Trend chart: daily bar/area chart of invoice totals.
+- Agent Performance table: top 7 agents with name, invoiced, collected,
+  outstanding, collection rate %.
+- Agent Summary table: all agents — tickets, total value, winnings, cash paid,
+  loan amount, outstanding balance. Filterable by search.
+- Recent Invoices list: last 6 invoices with number, agent, date, amount,
+  status badge.
+- Supplier Aging: payment aging brackets showing overdue purchases by period.
+
+================================================================================
+2. ALERTS & REMINDERS
+   View key: "alerts"
+   File: src/components/Alerts.tsx
+================================================================================
+
+PURPOSE
+-------
+Monitors overdue agent payments and generates WhatsApp reminder messages in
+English, Sinhala, or Tamil. Also shows low-stock inventory warnings and
+supplier aging information.
+
+INPUTS
+------
+- Language Selector      : Pills — "EN" / "සිංහල" / "தமிழ்".
+                           Controls the language of generated reminder messages.
+- Section Filter         : Pills — "All" / "Agents" / "Stock".
+                           Scrolls/filters which section is visible.
+
+BUTTONS
+-------
+- Refresh                : Reloads overdue agents, inventory stock, and
+                           supplier aging data.
+- "Send WhatsApp"        : (per agent) Opens the WhatsApp app / deep-link with
+                           a pre-formatted reminder message in the selected
+                           language.
+- "Copy"                 : (per agent) Copies the reminder message text to the
+                           clipboard so it can be pasted anywhere.
+- "Batch Send"           : Loops through every agent with overdue balance older
+                           than 7 days, opening WhatsApp one by one.
+- Expand/Collapse (▶)    : (per agent card) Shows or hides the per-invoice
+                           breakdown for that agent.
+
+DATA DISPLAYED
+--------------
+- Summary bar: Total Alert Outstanding (Rs.), Critical (>60 days) count,
+  Low Stock items count, Supplier owed (Rs.).
+- Agent Alert Cards: sorted by days overdue, colour-coded badges —
+  Current (green) / Overdue (amber) / High Risk (orange) / Critical (red).
+  Each card shows agent name, total outstanding, most overdue invoice.
+  Expanded: per-invoice table with invoice #, outstanding, days old, urgency.
+- Low Stock Section: game name, remaining qty, threshold, warning icon.
+- Supplier Aging Section: aging brackets (0-30d / 31-60d / 61-90d / 90+d)
+  with invoice count and total outstanding per bracket.
+
+================================================================================
+3. NEW INVOICE / EDIT INVOICE
+   View key: "new-invoice" / "edit-invoice"
+   File: src/components/NewInvoice.tsx
+================================================================================
+
+PURPOSE
+-------
+Creates a new delivery invoice or edits an existing draft/waiting invoice.
+Automatically fills the agent's previous outstanding balance, calculates
+line item values with optional discounts, and supports barcode auto-calculation
+(start + qty → end, or start + end → qty).
+
+INPUTS — INVOICE HEADER
+-----------------------
+- Invoice Number         : Text. Auto-generated (e.g., INV-2025-0043). Editable.
+- Invoice Date           : Date picker. Defaults to today.
+- Agent                  : Dropdown. Selecting an agent auto-fills the
+                           "Previous Outstanding" balance.
+- Prepared By            : Text. Default value from settings.
+- Delivery Route         : Text. Free-form route name.
+- Sales Rep              : Text. Sales representative name.
+- Cash Received          : Number. Cash collected at time of delivery.
+- DLB Winning (Rs.)      : Number. DLB winning ticket credit applied.
+- NLB Winning (Rs.)      : Number. NLB winning ticket credit applied.
+
+INPUTS — LINE ITEMS (per row)
+-----------------------------
+- Ticket Name            : Text with datalist. Selecting a known game name
+                           auto-fills the Unit Price from LotteryGames.
+- Barcode Start          : Text. Entering start + qty auto-calculates end.
+- Barcode End            : Text. Entering start + end auto-calculates qty.
+- Qty                    : Number. Entering start + qty auto-calculates end.
+- Unit Price             : Number. Auto-filled from game; editable.
+- Discount %             : Number. Percentage discount applied to the line.
+- Discount Amt (Rs.)     : Number. Fixed Rs. discount (alternative to %).
+
+BUTTONS
+-------
+- "Add Row"              : Appends a new empty line item row.
+- Trash icon (per row)   : Removes that line item.
+- Eye / EyeOff icon      : Toggles the live A4 invoice preview panel on the
+                           right side.
+- "Save Draft"           : Saves the invoice with status "draft" and navigates
+                           to the Draft Invoices page.
+- "Confirm"              : Saves the invoice with status "waiting" (awaiting
+                           confirmation) and navigates to Confirmed Invoices.
+- "Print"                : Saves the invoice and navigates to the Print view.
+
+DATA DISPLAYED
+--------------
+- Credit warning banner: appears if agent outstanding + new invoice > 90% of
+  their credit limit.
+- Commission preview: shows the expected commission amount based on active
+  scheme for the selected agent.
+- Invoice totals strip at the bottom:
+    Invoice Total | Discount Total | Prev Outstanding | Total Payable
+    Total Paid (Cash + Winnings) | Outstanding Balance
+- Live A4 preview panel (right side, toggled): renders the invoice in real-time
+  as you type, using the saved invoice template settings.
+
+================================================================================
+4. DRAFT INVOICES
+   View key: "draft-invoices"
+   File: src/components/DraftInvoices.tsx
+================================================================================
+
+PURPOSE
+-------
+Split-panel view for managing invoices in "draft" status. Left panel is a
+searchable list; right panel shows a full A4 preview of the selected invoice.
+Draft invoices do NOT count toward any agent's outstanding balance.
+
+INPUTS
+------
+- Search Box             : Text. Filters the list by invoice number or agent
+                           name in real-time.
+
+BUTTONS
+-------
+- Refresh                : Reloads the list of draft invoices.
+- Edit (Pencil icon)     : (per invoice, on hover/select) Navigates to the
+                           Edit Invoice page for that draft.
+- Confirm (✓)            : (per invoice) Moves the invoice from "draft" to
+                           "waiting" status. Removes it from this list.
+- Cancel (✗)             : (per invoice) Cancels the invoice (moves it to the
+                           Cancelled Invoices page).
+- Confirm Invoice (top bar) : Same as above — confirms the currently previewed
+                              invoice.
+- Cancel Invoice (top bar)  : Same as above — cancels the currently previewed
+                              invoice.
+- Edit Invoice (top bar)    : Same as above — navigates to edit.
+- Edit Invoice (bottom bar) : Duplicate of top bar for convenience after
+                              scrolling down through a long invoice.
+
+DATA DISPLAYED
+--------------
+- Left panel: list of draft invoices — invoice #, agent name, date, invoice
+  total (Rs.), "Draft" status badge.
+- Count badge: number of draft invoices.
+- Right panel (when an invoice is selected):
+  - Sticky top action bar: status badge, Edit / Confirm / Cancel buttons.
+  - Full A4 invoice preview: company header, logo, Bill To section, line items
+    table, totals, signature lines.
+  - Sticky bottom action bar: duplicate of top bar for long invoices.
+
+================================================================================
+5. CONFIRM / WAITING INVOICES
+   View key: "confirmed-invoices"
+   File: src/components/ConfirmedInvoices.tsx
+================================================================================
+
+PURPOSE
+-------
+Split-panel view for invoices in "waiting" (delivered, awaiting payment) or
+"confirmed" (payment confirmed) status. These invoices DO count toward agent
+outstanding balances. Invoices can be marked as fully paid from here.
+
+INPUTS
+------
+- Tab Pills              : "All" / "Waiting" / "Confirmed". Filters the list
+                           by sub-status.
+
+BUTTONS
+-------
+- Refresh                : Reloads the invoice list.
+- Preview (Eye icon)     : (per row) Loads that invoice's full detail into the
+                           right-panel A4 preview.
+- Mark Paid              : (in preview panel) Marks the invoice status as
+                           "paid" and navigates to the Paid Invoices page.
+- Cancel (✗)             : (in preview panel) Cancels the invoice.
+
+DATA DISPLAYED
+--------------
+- Left panel: list of invoices with invoice #, agent name, date, total,
+  status badge (Waiting = amber / Confirmed = blue).
+- Count labels: "Waiting (n)" and "Confirmed (n)".
+- Right panel (when an invoice is selected):
+  - A4 preview with full invoice details.
+  - Action buttons: Mark Paid / Cancel.
+
+================================================================================
+6. PAID INVOICES (INVOICE LIST)
+   View key: "invoices"
+   File: src/components/InvoiceList.tsx
+================================================================================
+
+PURPOSE
+-------
+Archive and management view for all invoices with "paid" status. Shows all
+historical delivery invoices with outstanding balance. Supports editing,
+reprinting, and admin-protected deletion.
+
+INPUTS
+------
+- Search Box             : Text. Filters by invoice number or agent name.
+- Status Filter Dropdown : "All Statuses" / "Outstanding" / "Settled".
+                           Filters rows by whether an outstanding balance
+                           remains.
+
+BUTTONS
+-------
+- Refresh                : Reloads the invoice list.
+- "+ New Invoice"        : Navigates to the New Invoice page.
+- Edit (Pencil per row)  : Navigates to Edit Invoice for that invoice.
+- Print (Printer per row): Navigates to the Print view for that invoice.
+- Delete (Trash per row) : Opens the Admin PIN modal. On correct PIN, shows a
+                           confirmation dialog, then permanently deletes the
+                           invoice and all its line items.
+
+DATA DISPLAYED
+--------------
+- Table columns: Invoice #, Agent, Date, Invoice Total, Outstanding Balance,
+  Status (Settled / Outstanding badge).
+- Footer: Total Outstanding (Rs.) across all filtered rows.
+
+================================================================================
+7. CANCELLED INVOICES
+   View key: "cancelled-invoices"
+   File: src/components/CancelledInvoices.tsx
+================================================================================
+
+PURPOSE
+-------
+Read-only archive of all cancelled invoices. Cancelled invoices do NOT count
+toward agent outstanding balances. Invoices can be restored to draft or
+permanently deleted.
+
+INPUTS
+------
+- Search Box             : Text. Filters by invoice number or agent name.
+
+BUTTONS
+-------
+- Refresh                : Reloads the list.
+- Eye icon (per row)     : Opens that invoice's A4 preview in the right panel.
+- Restore (RotateCcw)    : (per row) Restores the invoice back to "draft"
+                           status. It reappears in Draft Invoices.
+- Delete (Trash per row) : Shows a confirmation dialog, then permanently
+                           deletes the invoice (cannot be undone).
+
+DATA DISPLAYED
+--------------
+- Left panel: list with invoice #, agent, date, invoice total, cancelled date,
+  "Cancelled" status badge.
+- Right panel: A4 preview of the selected invoice with "CANCELLED" watermark.
+- Delete confirmation dialog: warns that the action cannot be undone.
+
+================================================================================
+8. INVOICE MODEL (TEMPLATE DESIGNER)
+   View key: "invoice-model"
+   File: src/components/InvoiceModel.tsx
+================================================================================
+
+PURPOSE
+-------
+Visual designer for the invoice print template. Customise branding colours,
+upload a company logo, control which fields appear on the invoice, edit footer
+text, or supply a fully custom HTML/CSS layout. A live A4 preview on the right
+updates instantly as you make changes.
+
+INPUTS — COLOR THEME SECTION
+-----------------------------
+- Primary Color          : Colour picker + hex text input. Controls header bar,
+                           table header background, invoice number colour, and
+                           accent lines.
+- Accent / Text Color    : Colour picker + hex text input. Controls agent name
+                           and secondary text colour.
+- Preset Buttons (6)     : One-click presets — Red/Black, Navy/Gold,
+                           Forest/Dark, Violet/Gray, Teal/Slate, Rose/Dark.
+                           Sets both primary and accent at once.
+
+INPUTS — COMPANY LOGO SECTION
+------------------------------
+- Upload Logo button     : File picker (PNG, JPG, SVG). Converts the selected
+                           image to base64 and shows it in the preview.
+
+INPUTS — INVOICE FIELDS SECTION
+---------------------------------
+- Show Barcode Range     : Toggle. Shows/hides the Barcode Range column in the
+                           items table.
+- Show Discount %        : Toggle. Shows/hides the Discount % column.
+- Show Delivery Route    : Toggle. Shows/hides the Route field in Bill To.
+- Show Sales Rep         : Toggle. Shows/hides the Sales Rep field.
+- Show Commission        : Toggle. Shows/hides the Commission row in totals.
+
+INPUTS — FOOTER TEXT SECTION
+-----------------------------
+- Footer Text            : Textarea. Text printed at the bottom of every
+                           invoice (e.g., "Thank you for your business.").
+
+INPUTS — CUSTOM HTML SECTION (collapsible)
+------------------------------------------
+- Use Custom HTML toggle : Enables/disables the custom HTML editor. When
+                           enabled, the custom HTML completely overrides the
+                           standard template in print output.
+- HTML Editor            : Large textarea for raw HTML. Supports placeholder
+                           variables: {{invoice_number}}, {{agent_name}},
+                           {{company_name}}, {{invoice_date}}, {{items_table}},
+                           {{total}}, {{total_payable}}, {{footer_text}}.
+
+BUTTONS
+-------
+- Save                   : Persists all current template settings to the local
+                           SQLite database. Button turns green ("Saved!") on
+                           success.
+- Reset                  : Shows a confirmation dialog, then restores all
+                           settings to factory defaults (red/black, no logo,
+                           all fields shown, default footer text).
+- Import (.json)         : File picker for a previously exported template JSON
+                           file. Applies its settings to the current template.
+- Export (.json)         : Downloads the current template settings as a .json
+                           file (logo excluded to keep file size small).
+- Change Logo            : (when logo is uploaded) Re-opens the file picker to
+                           replace the existing logo.
+- Remove Logo            : Clears the logo; the invoice will show a building
+                           icon placeholder instead.
+- Load Starter           : (in HTML editor) Inserts a working starter HTML
+                           template pre-styled with the current primary colour.
+- Zoom Buttons (5)       : 45% / 55% / 65% / 75% / 85%. Adjusts the preview
+                           zoom level using CSS zoom property.
+
+DATA DISPLAYED
+--------------
+- Live A4 preview (right panel): renders the exact same design used in the
+  Draft, Confirmed, and Paid invoice pages — Outfit font, red/coloured accent
+  bar, logo, company details, mock agent data, 3 line items, totals section,
+  signature lines, and bottom status ribbon.
+- Saved/Saving status: button label changes while saving.
+
+================================================================================
+9. AGENT PROFILES
+   View key: "agents"
+   File: src/components/Agents.tsx (AgentsManager)
+================================================================================
+
+PURPOSE
+-------
+Full CRUD management of all sub-agents (ticket distributors). Stores contact
+details, NLB/DLB registration numbers, banking details, NIC, credit limit,
+and a photo. Admin PIN required to delete an agent.
+
+INPUTS — ADD / EDIT FORM
+------------------------
+- Name                   : Text (required).
+- NLB Reg #              : Text. National Lottery Board registration number.
+- DLB Reg #              : Text. Development Lottery Board registration number.
+- Phone                  : Text. Mobile / landline number.
+- Address                : Textarea. Agent's physical address.
+- NIC Number             : Text. National Identity Card number.
+- Bank Name              : Dropdown. 26 Sri Lankan banks listed.
+- Bank Account #         : Text. Bank account number.
+- Credit Limit (Rs.)     : Number. Maximum outstanding balance allowed.
+- Photo                  : File input (camera icon). Converts image to base64
+                           for local storage.
+
+INPUTS — LIST FILTER
+--------------------
+- Search Box             : Text. Filters agent cards by name in real-time.
+
+BUTTONS
+-------
+- Refresh                : Reloads the agent list.
+- "+ Add Agent"          : Opens a blank add form on the right panel.
+- Edit (Pencil per card) : Loads the agent's data into the edit form.
+- Delete (Trash per card): Opens the Admin PIN modal. On correct PIN, shows a
+                           confirmation dialog, then permanently deletes the
+                           agent. This will also affect invoices linked to them.
+- Save (form)            : Persists the new or edited agent to the database.
+- Cancel (X)             : Closes the form without saving.
+- Agent card (click)     : Opens the agent's read-only detail panel showing
+                           all fields including masked bank account.
+
+DATA DISPLAYED
+--------------
+- Agent grid cards: photo (or initials placeholder), name, NLB/DLB reg,
+  phone, credit limit badge (shown if set).
+- Total agent count in header.
+- Detail panel (on card click): all agent fields, bank details, NIC.
+
+================================================================================
+10. STOCK INVENTORY
+    View key: "inventory"
+    File: src/components/Inventory.tsx
+================================================================================
+
+PURPOSE
+-------
+Manages lottery ticket inventory in batches. Tracks each batch by game, barcode
+range, warehouse location, and stock levels. Shows low-stock warnings when
+remaining quantity falls below the threshold.
+
+INPUTS — ADD / EDIT FORM
+------------------------
+- Game Name              : Dropdown (from LotteryGames). Selects the game type.
+- Batch Date             : Date picker.
+- Barcode Start          : Text. Auto-calculates Barcode End when Qty is known.
+- Barcode End            : Text. Auto-calculates Qty when Start is known.
+- Total Qty              : Number. Total tickets in this batch.
+- Unit Price (Rs.)       : Number. Price per ticket.
+- Low Stock Threshold    : Number. Alert when remaining qty falls below this.
+- Batch Number           : Text. Supplier batch reference.
+- Ticket Start No        : Text. Physical ticket serial start.
+- Ticket End No          : Text. Physical ticket serial end.
+- Books Qty              : Number. Number of books in the batch.
+- Tickets Per Book       : Number. Tickets per book (default 100).
+- Warehouse Location     : Text. Storage location identifier.
+- Rack Tag               : Text. Rack/shelf label.
+- NLB/DLB Category       : Dropdown — NLB Daily / NLB Weekly / NLB Special /
+                           DLB Daily / DLB Weekly / DLB Special.
+- Notes                  : Textarea.
+
+INPUTS — LIST FILTERS
+---------------------
+- Search Box             : Text. Filters batches by game name.
+- Tab Pills              : "All" / "Low Stock" / "In Stock". Filters the list.
+
+BUTTONS
+-------
+- Refresh                : Reloads inventory batches.
+- "+ Add Batch"          : Opens blank add form.
+- Sync Stock             : Shows a confirmation dialog. On confirm, recalculates
+                           the distributed_qty for every batch by scanning all
+                           purchases, invoices, and returns — fixes any stale
+                           stock counts.
+- Edit (Pencil per row)  : Loads the batch into the edit form.
+- Delete (Trash per row) : Confirmation dialog, then permanently deletes the
+                           batch record.
+- Save (form)            : Persists the new or edited batch.
+- Cancel (X)             : Closes the form.
+
+DATA DISPLAYED
+--------------
+- Summary cards: Total Batches, Low Stock count, In Stock count.
+- Table: Game, Batch Date, Barcode Range, Total Qty, Distributed, Remaining,
+  Unit Price, Threshold, NLB/DLB Category, Warehouse, Rack Tag.
+- Low-stock rows: highlighted with warning icon and amber badge.
+
+================================================================================
+11. AGENT RETURNS
+    View key: "returns"
+    File: src/components/Returns.tsx
+================================================================================
+
+PURPOSE
+-------
+Records and manages ticket returns from sub-agents. Supports manual form entry
+and a Quick Scan barcode-scanner mode. Settling a return restores the tickets
+to inventory stock.
+
+INPUTS — MANUAL FORM
+--------------------
+- Agent                  : Dropdown (required).
+- Invoice                : Dropdown. Filtered by selected agent.
+- Return Date            : Date picker.
+- Game Name              : Dropdown (from LotteryGames).
+- Barcode Start          : Text. Auto-calculates end/qty.
+- Barcode End            : Text. Auto-calculates qty.
+- Qty                    : Number.
+- Unit Price (Rs.)       : Number. Auto-filled from game.
+- Return Reason          : Pills — Unsold / Damaged / Expired Draw / Exchange /
+                           Other.
+- Notes                  : Textarea.
+
+INPUTS — QUICK SCAN MODE
+------------------------
+- Agent                  : Dropdown.
+- Invoice                : Dropdown.
+- Game Name              : Text.
+- Unit Price             : Number.
+- Scan Input             : Text (for barcode scanner). First scan sets
+                           Barcode Start; second scan sets Barcode End and
+                           auto-calculates Qty. A third scan starts a new entry.
+
+INPUTS — LIST FILTER
+--------------------
+- Tab Pills              : "All" / "Pending" / "Settled".
+
+BUTTONS
+-------
+- Refresh                : Reloads returns list.
+- Quick Scan (Zap icon)  : Opens the barcode scan mode side panel.
+- "+ Add Return"         : Opens the manual entry form.
+- Save (form)            : Saves the return record with status "pending".
+- Cancel (X)             : Closes form / scan panel.
+- Settle (✓ per pending) : Marks the return as "settled". Restores the
+                           returned ticket quantity back to inventory stock.
+- Delete (Trash)         : Confirmation dialog, then permanently removes the
+                           return record.
+- "Commit Scan"          : (Quick Scan panel) Saves all scanned barcode pairs
+                           as a single return entry in the database.
+
+DATA DISPLAYED
+--------------
+- Summary cards: Pending Qty, Pending Value (Rs.), Settled Qty, Settled Value.
+- Table: Agent, Invoice, Date, Game, Barcode Range, Qty, Unit Price, Total
+  Value, Return Reason badge, Status badge (Pending / Settled).
+- Quick Scan panel: live queue of scanned pairs with running total value.
+
+================================================================================
+12. DAILY COLLECTIONS
+    View key: "collections"
+    File: src/components/DailyCollection.tsx
+================================================================================
+
+PURPOSE
+-------
+Records daily cash, cheque, and winning-ticket collections from agents. Each
+entry is tied to a specific date. A daily collection sheet can be printed.
+
+INPUTS — DATE SELECTOR
+----------------------
+- Date Picker            : Selects the collection date. Loading a date fetches
+                           all entries for that day.
+
+INPUTS — ADD / EDIT FORM
+------------------------
+- Agent                  : Dropdown (required).
+- Collector Name         : Text. Person who collected the payment.
+- Route                  : Text. Collection route name.
+- Cash Amount (Rs.)      : Number.
+- Cheque Amount (Rs.)    : Number.
+- NLB Winning (Rs.)      : Number.
+- DLB Winning (Rs.)      : Number.
+- Cheque Number          : Text (visible when cheque amount > 0).
+- Bank Name              : Text (visible when cheque amount > 0).
+- Clearance Date         : Date (visible when cheque amount > 0).
+- Notes                  : Textarea.
+
+BUTTONS
+-------
+- Print Sheet            : Calls window.print() to print the current day's
+                           collection summary.
+- "+ Add Entry"          : Opens a blank form for the current date.
+- Save (form)            : Persists the collection entry.
+- Cancel (X)             : Closes the form.
+- Delete (Trash per row) : Confirmation dialog, then deletes that entry.
+
+DATA DISPLAYED
+--------------
+- Date sidebar: list of all collection dates with the total collected and entry
+  count per day. Clicking a date loads that day.
+- Daily table: Agent, Collector, Route, Cash, Cheque, NLB Winning, DLB
+  Winning, Notes.
+- Totals row: Total Cash, Total Cheque, Total NLB Winning, Total DLB Winning,
+  Grand Total for the day.
+
+================================================================================
+13. PAYMENT LEDGER
+    View key: "ledger"
+    File: src/components/Ledger.tsx
+================================================================================
+
+PURPOSE
+-------
+Per-agent payment recording and ledger view. Record cash, cheque, or winning
+ticket payments against a selected agent. Shows both individual payments and
+an invoice-level running balance. Supports multi-split entries to record
+multiple payment types in one transaction. Admin token required for deletes.
+
+INPUTS — AGENT SELECTOR
+-----------------------
+- Agent Dropdown         : Selects which agent's ledger to view. Loading an
+                           agent fetches their payment history and invoice
+                           ledger immediately.
+
+INPUTS — PAYMENT FORM (SINGLE MODE)
+------------------------------------
+- Payment Date           : Date picker.
+- Payment Type           : Dropdown — Cash / Cheque / NLB Winning / DLB
+                           Winning.
+- Amount (Rs.)           : Number.
+- Reference              : Text. Optional reference note.
+- Invoice # (link)       : Optional dropdown to associate payment with a
+                           specific invoice.
+- Cheque Number          : Text (shown only for Cheque type).
+- Bank Name              : Dropdown (shown for Cheque type).
+- Clearance Date         : Date (shown for Cheque type).
+- Notes                  : Textarea.
+
+INPUTS — MULTI-SPLIT MODE (per split row)
+------------------------------------------
+- Payment Type           : Dropdown per row.
+- Amount                 : Number per row.
+- Cheque #, Bank, Date   : Shown per row if type = Cheque.
+- Notes                  : Text per row.
+
+PAGE TABS
+---------
+- Payments tab           : List of all recorded payments for the agent.
+- Invoice Ledger tab     : Per-invoice running balance view.
+
+BUTTONS
+-------
+- Refresh                : Reloads payments and ledger data.
+- "+ Add Payment"        : Opens the payment form (single mode).
+- Multi-Split toggle     : Switches the form to multi-row split entry mode.
+- "+ Add Row"            : (Multi-Split) Appends another payment row.
+- Remove Row (-)         : (Multi-Split) Removes a payment row.
+- Save                   : Persists the payment(s) to the database.
+- Cancel (X)             : Closes the form without saving.
+- Delete (Trash per row) : Requires a valid admin session token to proceed.
+                           Deletes the payment record permanently.
+
+DATA DISPLAYED
+--------------
+- Payments tab: table of payments — Date, Type badge (colour-coded), Amount,
+  Reference, Cheque/bank details if applicable.
+- Invoice Ledger tab: per invoice — Invoice #, Date, Invoice Total, Prev
+  Outstanding, Snapshot Balance, Post Payments, Settled Returns, Live Balance.
+- Running totals at the bottom: Total Paid (Rs.), Current Outstanding (Rs.).
+
+================================================================================
+14. COMMISSION & SCHEMES
+    View key: "commission"
+    File: src/components/Commission.tsx
+================================================================================
+
+PURPOSE
+-------
+Defines commission schemes that auto-calculate agent commission on each invoice.
+Schemes can apply to all agents or a specific agent, and can be one of three
+types: percentage of invoice, fixed Rs. per ticket, or fixed amount per invoice.
+Also shows a commission report per invoice.
+
+INPUTS — ADD / EDIT FORM
+------------------------
+- Scheme Name            : Text (required).
+- Apply To               : Dropdown — "All Agents (Default)" or a specific
+                           agent from the list.
+- Commission Type        : Pills — "% of Invoice" / "Per Ticket (Rs.)" /
+                           "Fixed Per Invoice".
+- Rate                   : Number. Interpreted according to the selected type.
+- Effective From         : Date.
+- Effective To           : Date (optional; leave blank for open-ended).
+- Active                 : Toggle. Inactive schemes are ignored in calculations.
+- Notes                  : Textarea.
+
+PAGE TABS
+---------
+- Schemes tab            : List of all configured commission schemes.
+- Commission Report tab  : Invoice-level commission breakdown.
+
+BUTTONS
+-------
+- Refresh                : Reloads all data.
+- "+ Add Scheme"         : Opens a blank scheme form.
+- Edit (Pencil per row)  : Loads scheme into the edit form.
+- Delete (Trash per row) : Confirmation dialog, then deletes the scheme.
+- Save (form)            : Persists the scheme.
+- Cancel (X)             : Closes the form.
+- Tab switcher           : Switches between Schemes and Commission Report.
+
+DATA DISPLAYED
+--------------
+- Summary cards: Active Schemes count, Total Commission Calculated (Rs.),
+  Number of Invoices with commission applied.
+- Schemes table: Name, Applied To (agent or "All"), Type, Rate, Effective
+  dates, Active status.
+- Commission Report table: Invoice #, Agent, Date, Invoice Total, Qty
+  Tickets, Rate, Commission Type, Commission Amount.
+- Grand total commission row.
+
+================================================================================
+15. REPORTS & ANALYTICS
+    View key: "reports"
+    File: src/components/Reports.tsx
+================================================================================
+
+PURPOSE
+-------
+Multi-tab analytics dashboard with charts and tables covering revenue overview,
+game-by-game breakdown, agent performance rankings, and an overdue aging report.
+
+INPUTS
+------
+- Period Pills           : "7d" / "30d". Controls the data window for charts
+                           and daily revenue data.
+
+PAGE TABS
+---------
+- Overview               : Charts and KPI summary.
+- Game Breakdown         : Per-game stats.
+- Agent Performance      : Per-agent stats ranked by invoice value.
+- Aging Report           : Overdue invoices by agent.
+
+BUTTONS
+-------
+- Period pills (7d/30d)  : Reload all charts and data with the selected period.
+- Refresh                : Force-reload current data.
+
+DATA DISPLAYED
+--------------
+- 6 KPI cards: Tickets Distributed, Total Invoiced, Cash Collected, Winnings
+  Returned, Outstanding Balance, Total Invoices.
+- Overview tab:
+    Bar chart — daily revenue (for selected period).
+    Line chart — monthly revenue trend (last 6 months).
+    Donut chart — Collected vs Outstanding.
+- Game Breakdown tab: table — Ticket Name, Total Qty, Total Value, Invoice
+  Count, Average Unit Price.
+- Agent Performance tab: table — Agent Name, Total Value, Invoice Count,
+  Outstanding, Collection Rate %. Sorted by Total Value descending.
+- Aging Report tab: table — Agent, Invoice #, Date, Outstanding, Days Old,
+  urgency badge (Current / Overdue / High Risk / Critical).
+
+================================================================================
+16. PROFIT & MARGIN ANALYTICS
+    View key: "profit-analytics"
+    File: src/components/ProfitAnalytics.tsx
+================================================================================
+
+PURPOSE
+-------
+Net profit dashboard. Calculates and visualises business profitability by
+subtracting stock costs (Nimalsiri purchases) and commission paid from
+collected revenue.
+Formula: Net Profit = Revenue Collected − Stock Cost − Commissions Paid.
+
+INPUTS
+------
+- Period Pills           : "Today" / "7 Days" / "30 Days" / "90 Days".
+                           Controls all profit calculations.
+
+BUTTONS
+-------
+- Period pills           : Reload profit data for the selected period.
+- Refresh                : Force-reload current period data.
+
+DATA DISPLAYED
+--------------
+- 5 KPI cards: Total Revenue (Rs.), Stock Cost — Nimalsiri (Rs.), Gross Profit
+  (Rs.), Commission Paid (Rs.), Net Profit (Rs.).
+- Gross Margin % badge.
+- Daily Net Profit bar chart: each bar represents one day. Green bars = profit,
+  red bars = loss day. Bars show date and net Rs. amount.
+
+================================================================================
+17. LIVE LOTTERY RESULTS
+    View key: "live-results"
+    File: src/components/LiveResults.tsx
+================================================================================
+
+PURPOSE
+-------
+Fetches, displays, and stores Sri Lankan NLB/DLB lottery draw results for 16
+games. Results are fetched from the web via the Rust backend, manually entered,
+or loaded from the local database. Optional cloud sync to/from Supabase.
+
+INPUTS — GLOBAL
+---------------
+- Date Picker            : Loads saved lottery results for a specific date from
+                           the local database.
+
+INPUTS — MANUAL ENTRY (per game panel)
+---------------------------------------
+- Draw Date              : Date picker.
+- Draw Number            : Text.
+- Winning Letter         : Text (e.g., "A", "B").
+- Winning Numbers        : Multiple text inputs; count varies by game type.
+- Super Number           : Text (for games that have one).
+- Prize rows             : Editable table: Rank, Prize Amount (Rs.), Match
+                           Description.
+
+BUTTONS
+-------
+- "Fetch All"            : Batch-fetches all 16 games from the web via the
+                           Tauri Rust backend. Shows progress per game.
+- "Fetch" (per game)     : Fetches a single game's latest result.
+- Edit icon (per game)   : Opens the manual entry panel for that game.
+- "Save Manual Entry"    : Saves the manually entered result to SQLite.
+- "Push to Cloud"        : Pushes all local results to Supabase cloud storage.
+- "Pull from Cloud"      : Downloads results from Supabase and saves to local
+                           SQLite.
+- Cloud Subscribe toggle : Enables/disables listening for cloud result updates.
+
+DATA DISPLAYED
+--------------
+- 16 game cards in two sections: NLB games and DLB games.
+  Each card shows: game name, draw number, draw date, winning letter ball
+  (large coloured sphere), numbered winning balls, super number ball.
+- Prize table per card: Rank, Prize Amount, Match Description, medal icon.
+- Fetch status per game: loading spinner / "fetched at HH:MM" / error message.
+
+================================================================================
+18. SETTINGS
+    View key: "settings"
+    File: src/components/Settings.tsx
+================================================================================
+
+PURPOSE
+-------
+Application-wide configuration. Seven tabs covering company identity, game
+management, financial rules, printing, backup/security, AI configuration, and
+data management.
+
+--- TAB 1: GENERAL ---
+Inputs:
+- Company Name           : Text.
+- Address                : Textarea.
+- Phone                  : Text.
+- NLB Reg #              : Text.
+- DLB Reg #              : Text.
+- Email                  : Text.
+- Bank Details           : Textarea (for printing on invoices).
+- Prepared By (default)  : Text. Default name on new invoices.
+- Auto-print on save     : Toggle.
+Buttons:
+- Save Settings          : Persists all General tab settings.
+
+--- TAB 2: GAMES ---
+Inputs (per game row):
+- Game Name              : Text (editable in form).
+- Board                  : NLB / DLB selector.
+- Unit Price (Rs.)       : Number.
+- Enabled                : Toggle per row.
+Buttons:
+- "+ Add Game"           : Opens game form.
+- Edit (per game)        : Loads game into form.
+- Delete (per game)      : Confirmation, then deletes.
+- Bulk Update Price      : Sets the same unit price for all enabled games at once.
+- Save (form)            : Persists game.
+- Cancel (X)             : Closes form.
+
+--- TAB 3: FINANCIAL ---
+Inputs (per agent row):
+- Credit Limit (Rs.)     : Number. Inline editable per agent.
+Buttons:
+- Save All Credit Limits : Persists all changed credit limits at once.
+
+--- TAB 4: PRINTING ---
+Inputs:
+- Print margins, header/footer text toggles, paper size.
+Buttons:
+- Save Printing Settings : Persists printing configuration.
+
+--- TAB 5: BACKUP & SECURITY ---
+Data Displayed:
+- DB file path, file existence status, list of existing backups.
+- Admin session status banner (green if active, amber if no active session).
+Inputs:
+- Admin PIN (new)        : Number input (4–8 digits). Sets or changes the
+                           admin PIN.
+- Cashier PIN (new)      : Number input. Sets or changes the cashier PIN.
+- Auto Backup            : Toggle.
+- Backup Frequency       : Dropdown (daily / weekly).
+Buttons:
+- "Backup Database"      : Opens a Tauri save-file dialog. Saves a copy of the
+                           SQLite database to the chosen path.
+- "Restore Database"     : Opens a Tauri open-file dialog. Replaces the active
+                           database with the chosen file. Requires admin session.
+                           App auto-reloads after restore.
+- "Save PINs"            : Saves the new admin and/or cashier PIN hashes.
+                           Requires admin session (auto-established if no PIN
+                           is set yet; otherwise must log in as ADMIN first).
+- "Clear [admin/cashier] PIN" : Clears the stored PIN hash. Disables PIN
+                           protection for that role.
+
+--- TAB 6: AI CONFIGURATION ---
+Inputs:
+- Gemini/Claude API Key  : Password input. Stored encrypted in local DB, used
+                           by Rust backend for AI chat requests.
+Buttons:
+- Save API Key           : Persists the API key via secure Rust command.
+- Test Connection        : Verifies the key works with a simple ping.
+
+--- TAB 7: DEMO DATA ---
+Buttons:
+- Seed Demo Data         : Inserts sample agents, games, and invoices.
+- Clear Demo Data        : Deletes all demo records from the database.
+                           WARNING: this clears all data including real data
+                           if demo and real are mixed.
+
+--- ALSO IN SETTINGS: SUPABASE CONFIGURATION ---
+(Rendered as a standalone card within various tabs)
+Inputs:
+- Supabase Project URL   : Text.
+- Supabase Anon Key      : Password input.
+Buttons:
+- Save Supabase Config   : Saves URL and anon key. Requires admin session.
+- Test Connection        : Calls test_supabase_connection Tauri command; shows
+                           connected/disconnected status.
+
+================================================================================
+19. STOCK PURCHASES (NIMALSIRI)
+    View key: "purchases"
+    File: src/components/Purchases.tsx
+================================================================================
+
+PURPOSE
+-------
+Manages stock purchase invoices from the supplier Nimalsiri Enterprises.
+Records what was purchased, at what price, and tracks payments made against
+each purchase. Admin session required for deletes.
+
+INPUTS — PURCHASE FORM
+-----------------------
+- Purchase Number        : Text. Auto-generated (e.g., PUR-2025-001). Editable.
+- Supplier Name          : Text. Defaults to "Nimalsiri Enterprises".
+- Purchase Date          : Date picker.
+- Stock Date             : Date picker. When the stock was received.
+- Initial Payment (Rs.)  : Number. Payment made at time of purchase.
+- Notes                  : Textarea.
+- Line items (per row):
+    - Game Name          : Dropdown from LotteryGames.
+    - Barcode Start      : Text.
+    - Barcode End        : Text.
+    - Qty                : Number.
+    - Unit Price (Rs.)   : Number.
+
+INPUTS — PAYMENT FORM
+----------------------
+- Payment Date           : Date picker.
+- Payment Type           : Dropdown — Cash / Cheque / Return Credit (Tickets).
+- Amount (Rs.)           : Number.
+- Reference              : Text.
+- Notes                  : Textarea.
+
+BUTTONS
+-------
+- Refresh                : Reloads purchase list.
+- "+ New Purchase"       : Opens form with next auto-generated purchase number.
+- Edit (per purchase)    : Loads purchase into edit form.
+- Delete (trash)         : Requires valid admin session. Permanently deletes the
+                           purchase and its line items.
+- Expand/Collapse (▶)   : Shows or hides payment history for a purchase.
+- "+ Add Payment"        : (per purchase) Opens payment entry form.
+- Delete Payment         : Requires admin session. Removes a payment record.
+- Save (form)            : Persists the purchase with all line items.
+- Cancel (X)             : Closes the form.
+
+DATA DISPLAYED
+--------------
+- Summary card: Total Supplier Outstanding (Rs.) across all pending purchases.
+- Purchases table: Purchase #, Supplier, Date, Invoice Total, Initial Payment,
+  Outstanding, Status (Pending / Settled).
+- Expanded row: payment history table per purchase — Date, Type, Amount,
+  Reference.
+- Purchase form: computed outstanding = Total − Initial − Post-Payments.
+
+================================================================================
+20. RETURN TO SUPPLIER
+    View key: "supplier-returns"
+    File: src/components/SupplierReturns.tsx
+================================================================================
+
+PURPOSE
+-------
+Records tickets returned back to the supplier Nimalsiri. When a return is
+credited, it decreases the linked purchase invoice's outstanding balance and
+reduces the inventory total quantity for that batch.
+
+INPUTS — FORM
+-------------
+- Return Date            : Date picker.
+- Game Name              : Dropdown (from LotteryGames).
+- Barcode Start          : Text. Auto-calculates end/qty.
+- Barcode End            : Text.
+- Qty                    : Number.
+- Unit Price (Rs.)       : Number.
+- Return Reason          : Dropdown — Unsold / Damaged / Expired Draw /
+                           Exchange / Other.
+- Linked Purchase #      : Dropdown (from purchase invoices). Associates this
+                           return with a specific supplier invoice.
+- Notes                  : Textarea.
+
+BUTTONS
+-------
+- Refresh                : Reloads the returns list.
+- "+ Add Return"         : Opens the blank form.
+- Save (form)            : Saves the return with status "pending".
+- Cancel (X)             : Closes the form.
+- Credit Return (✓ per pending row): Marks return as "credited". Automatically
+                           reduces the purchase invoice outstanding AND reduces
+                           inventory distributed_qty for that batch.
+- Delete (Trash per row) : Confirmation dialog, then permanently deletes.
+
+DATA DISPLAYED
+--------------
+- Summary cards: Pending Returns count and value (Rs.), Credited Returns count
+  and value.
+- Table: Return Date, Game, Barcode Range, Qty, Unit Price, Total Value,
+  Reason badge, Linked Purchase #, Status badge (Pending / Credited).
+
+================================================================================
+21. PAYROLL
+    View key: "payroll"
+    File: src/components/Payroll.tsx
+================================================================================
+
+PURPOSE
+-------
+Manages employee/worker records and monthly payroll processing. Workers can be
+drivers, cashiers, warehouse keepers, sales reps, etc. Each month, payroll is
+generated and salary rows are marked as paid individually.
+
+INPUTS — WORKER FORM
+--------------------
+- Name                   : Text (required).
+- Role                   : Dropdown — Cashier / Driver / Warehouse Keeper /
+                           Sales Rep / Ticket Checker / Manager / Other.
+- Basic Salary (Rs.)     : Number.
+- Bank Name              : Dropdown (12 Sri Lankan banks).
+- Bank Account #         : Text.
+- NIC Number             : Text.
+- Work Start Date        : Date.
+- Work End Date          : Date (leave blank if still employed).
+- Transport Allowance    : Number.
+- Meal Allowance         : Number.
+- Other Allowances       : Number.
+- Is Active              : Toggle. Inactive workers are excluded from payroll.
+- Notes                  : Textarea.
+- Photo                  : File input (base64).
+
+INPUTS — PAYROLL TAB
+--------------------
+- Payroll Month          : Month picker (YYYY-MM). Selecting a month loads or
+                           generates salary rows for that period.
+- Per salary row (editable): Overtime Pay, Deductions, Advance Paid, Notes.
+
+PAGE TABS
+---------
+- Workers tab            : Roster of all employees.
+- Payroll tab            : Monthly salary processing.
+
+BUTTONS
+-------
+- Refresh                : Reloads data.
+- "+ Add Worker"         : Opens blank worker form.
+- Edit (per card)        : Loads worker into edit form.
+- Delete (trash)         : Requires admin session. Permanently removes worker.
+- Save Worker (form)     : Persists the worker record.
+- Cancel (X)             : Closes the form.
+- "Generate Payroll"     : Creates a WorkerSalary record for every active
+                           worker for the selected month (if not already exists).
+- "Mark Paid"            : (per salary row) Updates the salary status to "paid"
+                           and records the paid date as today.
+- "Save Edits"           : (per salary row) Saves changes to overtime,
+                           deductions, advance, and notes.
+
+DATA DISPLAYED
+--------------
+- Workers tab: grid of employee cards with photo (or initials), name, role
+  badge (colour-coded per role), basic salary, bank info (masked account).
+- Payroll tab:
+    Summary cards — Total Payroll (Rs.), Paid (Rs.), Pending (Rs.), Worker Count.
+    Business context (for the month): Invoice Count, Total Invoiced, Outstanding.
+    Salary table: Worker, Role, Basic, Transport, Meal, Overtime, Deductions,
+    Advance, Total Earnings, Net Salary, Status badge (Pending / Paid).
+
+================================================================================
+22. DISTRIBUTION SUMMARY
+    View key: "distribution"
+    File: src/components/DistributionSummary.tsx
+================================================================================
+
+PURPOSE
+-------
+Read-only analytical overview of all agents' distribution activity. Aggregates
+invoicing, collection, returns, commissions, and live outstanding balance per
+agent for management review.
+
+INPUTS
+------
+- Search Box             : Text. Filters agents by name in real-time.
+
+BUTTONS
+-------
+- Refresh                : Reloads all distribution data.
+
+DATA DISPLAYED
+--------------
+- Grand Totals row: Total Invoiced (Rs.), Total Collected (Rs.), Total Returns
+  (Rs.), Total Outstanding (Rs.), Total Commission (Rs.) across all agents.
+- Agent distribution table (sorted by Total Invoiced desc):
+    Agent Name, Phone, Invoice Count, Total Invoiced, Total Collected,
+    Collection Rate %, Return Value, Settled Returns Value, Commission Amount,
+    Live Outstanding Balance.
+
+================================================================================
+23. AI INTELLIGENCE (CHAT)
+    View key: "ai-analytics"
+    File: src/components/AIAnalytics.tsx
+================================================================================
+
+PURPOSE
+-------
+AI-powered business analyst chat. Loads all live business KPIs, agent risk
+data, inventory levels, revenue trends, payroll, and supplier info into context,
+then sends user questions to Google Gemini / Claude via the Rust backend. The AI
+can suggest navigation actions which appear as clickable buttons in its response.
+
+INPUTS — CHAT PANEL
+-------------------
+- Chat Input Box         : Text. Type any business question or request.
+- Language Selector      : Pills — EN / Sinhala / Tamil. Appends a language
+                           instruction to every prompt sent to the AI.
+
+INPUTS — QUICK PROMPTS (pre-defined buttons)
+--------------------------------------------
+- "Executive Summary"    : Sends a business overview prompt.
+- "Critical Agent Alerts": Sends an overdue agent analysis prompt.
+- "Inventory Reorder"    : Sends a stock replenishment prompt.
+- "Profit Tips"          : Sends a profitability improvement prompt.
+- "Payroll Analysis"     : Sends a salary and cost analysis prompt.
+
+BUTTONS
+-------
+- Refresh                : Reloads all live business data panels (period stats,
+                           agent risks, inventory velocity, revenue trend,
+                           payroll, workers, agents).
+- Send (arrow icon)      : Submits the chat message to the AI. Displays the
+                           response with role labels and timestamps.
+- Copy (per AI response) : Copies the full AI response text to the clipboard.
+- "Execute Action"       : (appears when AI suggests a navigation action) Clicks
+                           to navigate directly to the view the AI mentioned.
+- Quick prompt buttons   : See above — each sends a pre-written prompt.
+
+DATA DISPLAYED
+--------------
+- Left data panel:
+    Period stats (30-day): Invoice Count, Invoiced, Collected, Outstanding.
+    Agent Risk table: Agent Name, Days Overdue, Outstanding, Risk Level.
+    Inventory Velocity: Game, Total, Distributed, Velocity %, Days Remaining.
+    Monthly Revenue trend (6 months): Revenue, Cost, Salary, Net.
+    Supplier outstanding amount.
+    Payroll summary and worker count.
+- Right chat panel:
+    Full conversation history with timestamps.
+    AI responses with formatting (headers, bullet points).
+    Action buttons for suggested navigation steps.
+    Token-saving mode indicator.
+
+================================================================================
+24. PRINT & EXPORT
+    View key: "print-export"
+    File: src/components/PrintExport.tsx
+================================================================================
+
+PURPOSE
+-------
+Generates a formatted management report for printing. Two modes: a full A4
+monthly summary report, or a compact 80mm thermal bill layout. Clicking
+"Print Now" triggers the browser/Tauri print dialog.
+
+INPUTS
+------
+- Mode Selector          : Card toggle — "A4 Monthly Report" (full page) or
+                           "Thermal Daily Bill" (80mm compact). Switches which
+                           report layout is rendered.
+
+BUTTONS
+-------
+- Refresh                : Reloads all report data — company settings, 30-day
+                           financial stats, agent summaries, payroll summary,
+                           supplier outstanding, inventory velocity.
+- "Print Now"            : Calls window.print(). The sidebar and toolbar are
+                           hidden during print (.no-print CSS class).
+
+DATA DISPLAYED — A4 MONTHLY REPORT
+------------------------------------
+- Company header: name, address, NLB/DLB registration, phone, email.
+- Report period: current month label and generation timestamp.
+- KPI section: Total Revenue (30d), Tickets Distributed, Cash Collected,
+  Outstanding Balance, Net Profit Estimate.
+- Supplier dues: Nimalsiri outstanding amount.
+- Payroll summary: Total Payroll, Paid, Pending, Worker count.
+- Top 10 Agents table: Name, Invoiced, Collected, Outstanding, Collection Rate.
+- Top 8 Inventory items: Game, Remaining Qty, Velocity %.
+- Alert flags: counts of outstanding invoices and low-stock items.
+
+DATA DISPLAYED — THERMAL DAILY BILL
+------------------------------------
+- Same data as A4 report, condensed into an 80mm-width receipt layout.
+- Designed for 80mm thermal receipt printers.
+
+================================================================================
+APPENDIX: QUICK REFERENCE — ALL VIEWS
+================================================================================
+
+View Key             | Page Title                | File
+---------------------+---------------------------+-------------------------------
+dashboard            | Dashboard                 | Dashboard.tsx
+alerts               | Alerts & Reminders        | Alerts.tsx
+new-invoice          | New Invoice               | NewInvoice.tsx
+edit-invoice         | Edit Invoice              | NewInvoice.tsx
+draft-invoices       | Draft Invoices            | DraftInvoices.tsx
+confirmed-invoices   | Confirm / Waiting         | ConfirmedInvoices.tsx
+invoices             | Paid Invoices             | InvoiceList.tsx
+cancelled-invoices   | Cancelled Invoices        | CancelledInvoices.tsx
+invoice-model        | Invoice Template          | InvoiceModel.tsx
+agents               | Agent Profiles            | Agents.tsx
+inventory            | Stock Inventory           | Inventory.tsx
+returns              | Agent Returns             | Returns.tsx
+collections          | Daily Collections         | DailyCollection.tsx
+ledger               | Payment Ledger            | Ledger.tsx
+commission           | Commission & Schemes      | Commission.tsx
+reports              | Reports & Analytics       | Reports.tsx
+profit-analytics     | Profit & Margin           | ProfitAnalytics.tsx
+live-results         | Live Lottery Results      | LiveResults.tsx
+settings             | Settings (7 tabs)         | Settings.tsx
+purchases            | Stock Purchases           | Purchases.tsx
+supplier-returns     | Return to Supplier        | SupplierReturns.tsx
+payroll              | Payroll                   | Payroll.tsx
+distribution         | Distribution Summary      | DistributionSummary.tsx
+ai-analytics         | AI Intelligence           | AIAnalytics.tsx
+print-export         | Print & Export            | PrintExport.tsx
+
+================================================================================
+END OF DOCUMENT
+================================================================================

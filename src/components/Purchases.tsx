@@ -1,0 +1,739 @@
+import { useEffect, useState } from "react";
+import {
+  Plus, Trash2, X, Save, RefreshCw, ShoppingCart,
+  Home, ChevronRight, Package, CheckCircle, AlertTriangle,
+  CreditCard, ChevronDown, ChevronUp, ShieldAlert,
+} from "lucide-react";
+import {
+  getPurchaseInvoices, savePurchaseInvoice, deletePurchaseInvoice,
+  getPurchasePayments, savePurchasePayment, deletePurchasePayment,
+  getNextPurchaseNumber, getSupplierOutstanding, getLotteryGames,
+} from "../services/database";
+import type {
+  PurchaseInvoice, PurchaseInvoiceItem, PurchasePayment, PurchasePaymentType,
+} from "../types";
+import { useAuth } from "../contexts/AuthContext";
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const fmt = (n: number) =>
+  new Intl.NumberFormat("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+
+function fmtDate(d: string) {
+  try { const [y, m, dd] = d.split("-"); return `${dd}/${m}/${y}`; }
+  catch { return d; }
+}
+
+const today = () => new Date().toISOString().split("T")[0];
+
+const PAYMENT_TYPE_LABELS: Record<PurchasePaymentType, string> = {
+  cash:          "Cash",
+  cheque:        "Cheque",
+  return_credit: "Return Credit (Tickets)",
+};
+
+const PAYMENT_TYPE_COLORS: Record<PurchasePaymentType, { bg: string; color: string }> = {
+  cash:          { bg: "#DCFCE7", color: "#16a34a" },
+  cheque:        { bg: "#DBEAFE", color: "#2563eb" },
+  return_credit: { bg: "#F3E8FF", color: "#7c3aed" },
+};
+
+// ── Empty state helpers ───────────────────────────────────────────────────────
+
+const EMPTY_ITEM = (): PurchaseInvoiceItem => ({
+  game_name: "", barcode_start: "", barcode_end: "", qty: 0, unit_price: 0, value: 0,
+});
+
+const EMPTY_PURCHASE = (num: string): PurchaseInvoice => ({
+  purchase_number: num,
+  supplier_name:   "Nimalsiri Enterprises",
+  purchase_date:   today(),
+  stock_date:      today(),
+  invoice_total:   0,
+  initial_payment: 0,
+  outstanding_balance: 0,
+  status:          "pending",
+  notes:           "",
+});
+
+const EMPTY_PAYMENT = (purchaseId: number): PurchasePayment => ({
+  purchase_id:  purchaseId,
+  payment_date: today(),
+  payment_type: "cash",
+  amount:       0,
+  reference:    "",
+  notes:        "",
+});
+
+// ── Main component ────────────────────────────────────────────────────────────
+
+export default function Purchases() {
+  const { withAdminToken } = useAuth();
+  const [purchases, setPurchases]     = useState<PurchaseInvoice[]>([]);
+  const [totalOwed, setTotalOwed]     = useState(0);
+  const [games, setGames]             = useState<string[]>([]);
+  const [gameCostMap, setGameCostMap] = useState<Record<string, number>>({});
+  const [loading, setLoading]         = useState(false);
+  const [showForm, setShowForm]       = useState(false);
+  const [editPurchase, setEdit]       = useState<PurchaseInvoice | null>(null);
+  const [formItems, setFormItems]     = useState<PurchaseInvoiceItem[]>([EMPTY_ITEM()]);
+  const [focusedField, setFocused]    = useState<string | null>(null);
+  const [expandedId, setExpanded]     = useState<number | null>(null);
+  const [paymentsMap, setPaymentsMap] = useState<Record<number, PurchasePayment[]>>({});
+  const [paymentForm, setPaymentForm] = useState<PurchasePayment | null>(null);
+  const [authError, setAuthError]     = useState<string | null>(null);
+
+  useEffect(() => {
+    load();
+    getLotteryGames().then(gs => {
+      setGames(gs.map(g => g.name));
+      // Store cost_price per game for auto-fill on game select
+      const cp: Record<string, number> = {};
+      gs.forEach(g => { cp[g.name] = g.cost_price ?? g.unit_price; });
+      setGameCostMap(cp);
+    });
+  }, []);
+
+  async function load() {
+    setLoading(true);
+    const [list, owed] = await Promise.all([
+      getPurchaseInvoices(),
+      getSupplierOutstanding(),
+    ]);
+    setPurchases(list);
+    setTotalOwed(owed);
+    setLoading(false);
+  }
+
+  async function openNew() {
+    const num = await getNextPurchaseNumber();
+    setEdit(EMPTY_PURCHASE(num));
+    setFormItems([EMPTY_ITEM()]);
+    setShowForm(true);
+  }
+
+  function openEdit(p: PurchaseInvoice) {
+    setEdit({ ...p });
+    setFormItems(p.items?.length ? [...p.items] : [EMPTY_ITEM()]);
+    setShowForm(true);
+  }
+
+  async function handleSave() {
+    if (!editPurchase) return;
+    const validItems = formItems.filter(it => it.game_name && it.qty > 0 && it.unit_price > 0);
+    if (!validItems.length) { alert("Add at least one item with game name, qty and price."); return; }
+    if (editPurchase.initial_payment < 0) { alert("Initial payment cannot be negative."); return; }
+    await savePurchaseInvoice(editPurchase, validItems);
+    setShowForm(false);
+    setEdit(null);
+    load();
+  }
+
+  async function handleDelete(id: number) {
+    if (!confirm("Delete this purchase invoice? All linked payments will also be deleted.")) return;
+    setAuthError(null);
+    try {
+      await withAdminToken(async () => {
+        await deletePurchaseInvoice(id!);
+        load();
+      });
+    } catch (err) {
+      setAuthError(String(err).includes("session") ? "Admin session required to delete purchase invoices." : String(err));
+    }
+  }
+
+  async function toggleExpand(id: number) {
+    if (expandedId === id) { setExpanded(null); return; }
+    setExpanded(id);
+    const pmts = await getPurchasePayments(id);
+    setPaymentsMap(prev => ({ ...prev, [id]: pmts }));
+  }
+
+  async function handleAddPayment() {
+    if (!paymentForm) return;
+    if (paymentForm.amount <= 0) { alert("Amount must be greater than 0."); return; }
+    await savePurchasePayment(paymentForm);
+    const pmts = await getPurchasePayments(paymentForm.purchase_id);
+    setPaymentsMap(prev => ({ ...prev, [paymentForm.purchase_id]: pmts }));
+    setPaymentForm(null);
+    load();
+  }
+
+  async function handleDeletePayment(id: number, purchaseId: number) {
+    if (!confirm("Delete this payment record?")) return;
+    setAuthError(null);
+    try {
+      await withAdminToken(async () => {
+        await deletePurchasePayment(id);
+        const pmts = await getPurchasePayments(purchaseId);
+        setPaymentsMap(prev => ({ ...prev, [purchaseId]: pmts }));
+        load();
+      });
+    } catch (err) {
+      setAuthError(String(err).includes("session") ? "Admin session required to delete payment records." : String(err));
+    }
+  }
+
+  // ── Item helpers ─────────────────────────────────────────────────────────────
+
+  function updateItem(index: number, field: keyof PurchaseInvoiceItem, val: string | number) {
+    const updated = formItems.map((it, i) => {
+      if (i !== index) return it;
+      const next = { ...it, [field]: val };
+      // Auto-fill cost price (Nimalsiri → Ajith) when game is selected
+      if (field === "game_name" && gameCostMap[val as string]) {
+        next.unit_price = gameCostMap[val as string];
+      }
+      if (field === "qty" || field === "unit_price" || field === "game_name") {
+        next.value = Number(next.qty) * Number(next.unit_price);
+      }
+      return next;
+    });
+    setFormItems(updated);
+    if (editPurchase) {
+      const total = updated.reduce((s, it) => s + it.value, 0);
+      setEdit({ ...editPurchase, invoice_total: total });
+    }
+  }
+
+  const formTotal = formItems.reduce((s, it) => s + it.value, 0);
+  const formBalance = formTotal - (editPurchase?.initial_payment ?? 0);
+
+  const inputCls = "w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors";
+  const inputStyle = (f: string) => ({
+    border: `1px solid ${focusedField === f ? "#CF291D" : "#E8E8E8"}`,
+    background: "#FAFAFA",
+  });
+
+  return (
+    <div style={{ background: "#F5F5F5", minHeight: "100%" }}>
+
+      {/* Breadcrumb */}
+      <div className="flex items-center justify-between px-6 pt-4 pb-2">
+        <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
+          <Home size={12}/><ChevronRight size={11}/>
+          <span className="font-semibold" style={{ color: "#1D1D1D" }}>Stock Purchases</span>
+        </nav>
+        <div className="flex gap-2">
+          <button onClick={load} disabled={loading}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", color:"#1D1D1D" }}>
+            <RefreshCw size={13} className={loading ? "animate-spin" : ""}/> Refresh
+          </button>
+          <button onClick={openNew}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90"
+            style={{ background:"#CF291D" }}>
+            <Plus size={15}/> New Purchase
+          </button>
+        </div>
+      </div>
+
+      {/* Auth error banner */}
+      {authError && (
+        <div className="mx-6 mt-2 flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium"
+          style={{ background: "#FEF2F2", border: "1px solid #FECACA", color: "#CF291D" }}>
+          <ShieldAlert size={14}/>
+          <span>{authError}</span>
+          <button className="ml-auto font-bold" onClick={() => setAuthError(null)}>×</button>
+        </div>
+      )}
+
+      <div className="px-6 pb-8 space-y-5">
+
+        {/* Page header */}
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color:"#1D1D1D" }}>Stock Purchases</h1>
+          <p className="text-xs mt-0.5" style={{ color:"#9CA3AF" }}>
+            Track ticket stock bought from Nimalsiri Enterprises — partial payments &amp; return settlements
+          </p>
+        </div>
+
+        {/* KPI cards */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="rounded-xl p-4 shadow-sm" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", borderTop:"3px solid #CF291D" }}>
+            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color:"#9CA3AF" }}>Owed to Nimalsiri</p>
+            <p className="text-2xl font-black" style={{ color: totalOwed > 0 ? "#CF291D" : "#16a34a" }}>
+              Rs. {fmt(totalOwed)}
+            </p>
+            <p className="text-xs mt-1" style={{ color:"#9CA3AF" }}>live outstanding balance</p>
+          </div>
+          <div className="rounded-xl p-4 shadow-sm" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", borderTop:"3px solid #2563eb" }}>
+            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color:"#9CA3AF" }}>Total Purchases</p>
+            <p className="text-2xl font-black" style={{ color:"#1D1D1D" }}>{purchases.length}</p>
+            <p className="text-xs mt-1" style={{ color:"#9CA3AF" }}>purchase invoices</p>
+          </div>
+          <div className="rounded-xl p-4 shadow-sm" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", borderTop:"3px solid #16a34a" }}>
+            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color:"#9CA3AF" }}>Settled</p>
+            <p className="text-2xl font-black" style={{ color:"#16a34a" }}>
+              {purchases.filter(p => p.status === "settled").length}
+            </p>
+            <p className="text-xs mt-1" style={{ color:"#9CA3AF" }}>fully paid invoices</p>
+          </div>
+        </div>
+
+        {/* ── New/Edit Purchase Form ── */}
+        {showForm && editPurchase && (
+          <div className="rounded-2xl shadow-sm overflow-hidden" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8" }}>
+            <div className="px-5 py-3.5 flex items-center justify-between"
+              style={{ background:"linear-gradient(135deg,#1D1D1D,#374151)", borderBottom:"2px solid #CF291D" }}>
+              <h2 className="text-sm font-bold text-white">
+                {editPurchase.id ? `Edit Purchase — ${editPurchase.purchase_number}` : `New Purchase — ${editPurchase.purchase_number}`}
+              </h2>
+              <button onClick={() => { setShowForm(false); setEdit(null); }}
+                className="p-1 rounded" style={{ color:"#9CA3AF" }}>
+                <X size={15}/>
+              </button>
+            </div>
+
+            <div className="p-5 space-y-5">
+              {/* Header fields */}
+              <div className="grid grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Purchase No.</label>
+                  <input value={editPurchase.purchase_number} readOnly
+                    className={inputCls} style={{ ...inputStyle("pno"), background:"#F5F5F5", color:"#6B7280" }}/>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Supplier</label>
+                  <input value={editPurchase.supplier_name}
+                    onChange={e => setEdit({ ...editPurchase, supplier_name: e.target.value })}
+                    className={inputCls} style={inputStyle("sup")}
+                    onFocus={() => setFocused("sup")} onBlur={() => setFocused(null)}/>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Purchase Date</label>
+                  <input type="date" value={editPurchase.purchase_date}
+                    onChange={e => setEdit({ ...editPurchase, purchase_date: e.target.value })}
+                    className={inputCls} style={inputStyle("pd")}
+                    onFocus={() => setFocused("pd")} onBlur={() => setFocused(null)}/>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Stock / Draw Date</label>
+                  <input type="date" value={editPurchase.stock_date}
+                    onChange={e => setEdit({ ...editPurchase, stock_date: e.target.value })}
+                    className={inputCls} style={inputStyle("sd")}
+                    onFocus={() => setFocused("sd")} onBlur={() => setFocused(null)}/>
+                </div>
+              </div>
+
+              {/* Line items */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[11px] font-semibold uppercase tracking-wide" style={{ color:"#9CA3AF" }}>Stock Items</label>
+                  <button onClick={() => setFormItems([...formItems, EMPTY_ITEM()])}
+                    className="text-xs font-semibold hover:underline" style={{ color:"#CF291D" }}>
+                    + Add Row
+                  </button>
+                </div>
+                <div className="rounded-xl overflow-hidden" style={{ border:"1px solid #E8E8E8" }}>
+                  <table className="w-full">
+                    <thead>
+                      <tr style={{ background:"#F9F9F9" }}>
+                        {["Game / Ticket Name","Barcode Start","Barcode End","Qty","Unit Price","Value",""].map(h => (
+                          <th key={h} className="px-3 py-2.5 text-left"
+                            style={{ fontSize:10, color:"#9CA3AF", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {formItems.map((it, idx) => (
+                        <tr key={idx} style={{ borderTop:"1px solid #F3F4F6" }}>
+                          <td className="px-2 py-2" style={{ minWidth:180 }}>
+                            <select value={it.game_name}
+                              onChange={e => updateItem(idx, "game_name", e.target.value)}
+                              className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none"
+                              style={{ border:"1px solid #E8E8E8", background:"#FAFAFA" }}>
+                              <option value="">— Select Game —</option>
+                              {games.map(g => <option key={g} value={g}>{g}</option>)}
+                              <option value="__other__">Other…</option>
+                            </select>
+                            {it.game_name === "__other__" && (
+                              <input placeholder="Type game name…" value=""
+                                onChange={e => updateItem(idx, "game_name", e.target.value)}
+                                className="w-full rounded-lg px-2 py-1.5 text-xs mt-1 focus:outline-none"
+                                style={{ border:"1px solid #E8E8E8", background:"#FAFAFA" }}/>
+                            )}
+                          </td>
+                          <td className="px-2 py-2">
+                            <input value={it.barcode_start}
+                              onChange={e => updateItem(idx, "barcode_start", e.target.value)}
+                              placeholder="e.g. 100001"
+                              className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none font-mono"
+                              style={{ border:"1px solid #E8E8E8", background:"#FAFAFA" }}/>
+                          </td>
+                          <td className="px-2 py-2">
+                            <input value={it.barcode_end}
+                              onChange={e => updateItem(idx, "barcode_end", e.target.value)}
+                              placeholder="e.g. 101000"
+                              className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none font-mono"
+                              style={{ border:"1px solid #E8E8E8", background:"#FAFAFA" }}/>
+                          </td>
+                          <td className="px-2 py-2" style={{ width:90 }}>
+                            <input type="number" value={it.qty || ""}
+                              placeholder="0"
+                              onChange={e => updateItem(idx, "qty", parseInt(e.target.value) || 0)}
+                              className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none text-right"
+                              style={{ border:"1px solid #E8E8E8", background:"#FAFAFA" }}
+                              onFocus={(e) => e.target.select()}/>
+                          </td>
+                          <td className="px-2 py-2" style={{ width:100 }}>
+                            <input type="number" step="0.01" value={it.unit_price || ""}
+                              placeholder="0"
+                              onChange={e => updateItem(idx, "unit_price", parseFloat(e.target.value) || 0)}
+                              className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none text-right"
+                              style={{ border:"1px solid #E8E8E8", background:"#FAFAFA" }}
+                              onFocus={(e) => e.target.select()}/>
+                          </td>
+                          <td className="px-3 py-2 text-xs text-right font-semibold" style={{ color:"#1D1D1D", minWidth:100 }}>
+                            Rs. {fmt(it.value)}
+                          </td>
+                          <td className="px-2 py-2">
+                            {formItems.length > 1 && (
+                              <button onClick={() => setFormItems(formItems.filter((_,i) => i !== idx))}
+                                className="p-1 rounded" style={{ color:"#CF291D" }}>
+                                <X size={12}/>
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Payment summary */}
+              <div className="grid grid-cols-3 gap-4 p-4 rounded-xl" style={{ background:"#F9F9F9", border:"1px solid #E8E8E8" }}>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Invoice Total</p>
+                  <p className="text-xl font-black" style={{ color:"#1D1D1D" }}>Rs. {fmt(formTotal)}</p>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Cash Paid at Delivery</label>
+                  <input type="number" step="0.01"
+                    value={editPurchase.initial_payment || ""}
+                    onChange={e => setEdit({ ...editPurchase, initial_payment: parseFloat(e.target.value) || 0 })}
+                    className="w-full rounded-lg px-3 py-2 text-sm font-bold focus:outline-none"
+                    style={{ border:`1px solid ${focusedField==="ip" ? "#CF291D" : "#E8E8E8"}`, background:"#FFFFFF", color:"#16a34a" }}
+                    onFocus={(e) => { e.target.select(); setFocused("ip"); }} onBlur={() => setFocused(null)}
+                    placeholder="e.g. 400000"/>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Balance Remaining</p>
+                  <p className="text-xl font-black" style={{ color: formBalance > 0 ? "#CF291D" : "#16a34a" }}>
+                    Rs. {fmt(Math.max(0, formBalance))}
+                  </p>
+                  <p className="text-[10px] mt-0.5" style={{ color:"#9CA3AF" }}>to be settled by cash / returns</p>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Notes</label>
+                <input value={editPurchase.notes}
+                  onChange={e => setEdit({ ...editPurchase, notes: e.target.value })}
+                  placeholder="Optional notes…"
+                  className={inputCls} style={inputStyle("notes")}
+                  onFocus={() => setFocused("notes")} onBlur={() => setFocused(null)}/>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-1">
+                <button onClick={handleSave}
+                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-bold text-white hover:opacity-90"
+                  style={{ background:"linear-gradient(135deg,#CF291D,#B50717)", boxShadow:"0 4px 14px rgba(207,41,29,0.3)" }}>
+                  <Save size={14}/> Save Purchase
+                </button>
+                <button onClick={() => { setShowForm(false); setEdit(null); }}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50"
+                  style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", color:"#1D1D1D" }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Purchase Invoices List ── */}
+        <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8" }}>
+          <div className="px-5 py-3 flex items-center justify-between"
+            style={{ background:"linear-gradient(135deg,#1D1D1D,#374151)", borderBottom:"2px solid #CF291D" }}>
+            <div className="flex items-center gap-2">
+              <ShoppingCart size={15} style={{ color:"#CF291D" }}/>
+              <span className="text-sm font-semibold text-white">Purchase Invoices — Nimalsiri Enterprises</span>
+            </div>
+            <span className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+              style={{ background:"rgba(255,255,255,0.15)", color:"#fff" }}>
+              {purchases.length} record{purchases.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+
+          {loading ? (
+            <div className="p-10 text-center text-sm" style={{ color:"#9CA3AF" }}>Loading…</div>
+          ) : purchases.length === 0 ? (
+            <div className="p-12 text-center">
+              <Package size={40} className="mx-auto mb-3" style={{ color:"#E8E8E8" }}/>
+              <p className="text-sm font-medium mb-1" style={{ color:"#9CA3AF" }}>No purchases recorded yet</p>
+              <p className="text-xs" style={{ color:"#BFBFBF" }}>Click "New Purchase" to record stock bought from Nimalsiri Enterprises</p>
+            </div>
+          ) : (
+            <div>
+              {purchases.map(pur => {
+                const isExpanded = expandedId === pur.id;
+                const pmts = paymentsMap[pur.id!] ?? [];
+                const paidAfter = pmts.reduce((s, p) => s + p.amount, 0);
+                const live = Math.max(0, pur.outstanding_balance);
+                const isSettled = live < 0.005;
+
+                return (
+                  <div key={pur.id} style={{ borderBottom:"1px solid #F3F4F6" }}>
+                    {/* Summary row */}
+                    <div className="px-5 py-4 flex items-center gap-4">
+                      {/* Status dot */}
+                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ background: isSettled ? "#16a34a" : "#CF291D",
+                          boxShadow: isSettled ? "0 0 6px #16a34a60" : "0 0 6px #CF291D60" }}/>
+
+                      {/* Purchase number + date */}
+                      <div className="w-32">
+                        <p className="text-sm font-bold font-mono" style={{ color:"#1D1D1D" }}>{pur.purchase_number}</p>
+                        <p className="text-[10px]" style={{ color:"#9CA3AF" }}>{fmtDate(pur.purchase_date)}</p>
+                      </div>
+
+                      {/* Supplier */}
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold" style={{ color:"#1D1D1D" }}>{pur.supplier_name}</p>
+                        <p className="text-[10px]" style={{ color:"#9CA3AF" }}>Stock for: {fmtDate(pur.stock_date)}</p>
+                      </div>
+
+                      {/* Financials */}
+                      <div className="text-right w-28">
+                        <p className="text-[10px] font-semibold uppercase" style={{ color:"#9CA3AF" }}>Invoice</p>
+                        <p className="text-sm font-bold" style={{ color:"#1D1D1D" }}>Rs. {fmt(pur.invoice_total)}</p>
+                      </div>
+                      <div className="text-right w-28">
+                        <p className="text-[10px] font-semibold uppercase" style={{ color:"#9CA3AF" }}>Paid at Delivery</p>
+                        <p className="text-sm font-semibold" style={{ color:"#16a34a" }}>Rs. {fmt(pur.initial_payment)}</p>
+                      </div>
+                      {paidAfter > 0 && (
+                        <div className="text-right w-28">
+                          <p className="text-[10px] font-semibold uppercase" style={{ color:"#9CA3AF" }}>Later Paid</p>
+                          <p className="text-sm font-semibold" style={{ color:"#2563eb" }}>Rs. {fmt(paidAfter)}</p>
+                        </div>
+                      )}
+                      <div className="text-right w-32">
+                        <p className="text-[10px] font-semibold uppercase" style={{ color:"#9CA3AF" }}>Balance Owed</p>
+                        <p className="text-base font-black" style={{ color: live > 0 ? "#CF291D" : "#16a34a" }}>
+                          Rs. {fmt(live)}
+                        </p>
+                      </div>
+
+                      {/* Status badge */}
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold w-20 text-center"
+                        style={{ background: isSettled ? "#DCFCE7" : "#FEE2E2",
+                          color: isSettled ? "#16a34a" : "#CF291D" }}>
+                        {isSettled ? "✓ Settled" : "Pending"}
+                      </span>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1.5">
+                        <button onClick={() => toggleExpand(pur.id!)}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all"
+                          style={{ background: isExpanded ? "#F3F4F6" : "#FFFFFF",
+                            border:"1px solid #E8E8E8", color:"#1D1D1D" }}>
+                          {isExpanded ? <ChevronUp size={12}/> : <ChevronDown size={12}/>}
+                          {isExpanded ? "Hide" : "Details"}
+                        </button>
+                        <button onClick={() => openEdit(pur)}
+                          className="p-1.5 rounded-lg" style={{ background:"#EFF6FF", color:"#2563eb" }}
+                          title="Edit">
+                          <Package size={12}/>
+                        </button>
+                        <button onClick={() => handleDelete(pur.id!)}
+                          className="p-1.5 rounded-lg" style={{ background:"#FFF1F0", color:"#CF291D" }}
+                          title="Delete">
+                          <Trash2 size={12}/>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Expanded detail panel */}
+                    {isExpanded && (
+                      <div className="px-5 pb-5 space-y-4" style={{ borderTop:"1px solid #F3F4F6", background:"#FAFAFA" }}>
+
+                        {/* Settlement breakdown */}
+                        <div className="grid grid-cols-4 gap-3 pt-4">
+                          {[
+                            { label:"Invoice Total",      val: pur.invoice_total,   color:"#1D1D1D" },
+                            { label:"Cash at Delivery",   val: pur.initial_payment, color:"#16a34a" },
+                            { label:"Later Payments",     val: paidAfter,           color:"#2563eb" },
+                            { label:"Balance Remaining",  val: live,                color: live > 0 ? "#CF291D" : "#16a34a" },
+                          ].map(c => (
+                            <div key={c.label} className="rounded-xl p-3" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8" }}>
+                              <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>{c.label}</p>
+                              <p className="text-lg font-black" style={{ color: c.color }}>Rs. {fmt(c.val)}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Add payment button + form */}
+                        {!isSettled && !paymentForm && (
+                          <button onClick={() => setPaymentForm(EMPTY_PAYMENT(pur.id!))}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90"
+                            style={{ background:"#CF291D" }}>
+                            <Plus size={14}/> Record Settlement Payment
+                          </button>
+                        )}
+
+                        {paymentForm && paymentForm.purchase_id === pur.id && (
+                          <div className="rounded-xl p-4" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8" }}>
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-xs font-bold uppercase tracking-wide" style={{ color:"#1D1D1D" }}>Record Payment to Nimalsiri</span>
+                              <button onClick={() => setPaymentForm(null)}>
+                                <X size={13} style={{ color:"#9CA3AF" }}/>
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-4 gap-3">
+                              <div>
+                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Date</label>
+                                <input type="date" value={paymentForm.payment_date}
+                                  onChange={e => setPaymentForm({ ...paymentForm, payment_date: e.target.value })}
+                                  className={inputCls} style={inputStyle("pp-date")}
+                                  onFocus={() => setFocused("pp-date")} onBlur={() => setFocused(null)}/>
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Type</label>
+                                <select value={paymentForm.payment_type}
+                                  onChange={e => setPaymentForm({ ...paymentForm, payment_type: e.target.value as PurchasePaymentType })}
+                                  className={inputCls} style={inputStyle("pp-type")}
+                                  onFocus={() => setFocused("pp-type")} onBlur={() => setFocused(null)}>
+                                  {(Object.keys(PAYMENT_TYPE_LABELS) as PurchasePaymentType[]).map(t => (
+                                    <option key={t} value={t}>{PAYMENT_TYPE_LABELS[t]}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Amount (Rs.)</label>
+                                <input type="number" step="0.01" value={paymentForm.amount || ""}
+                                  onChange={e => setPaymentForm({ ...paymentForm, amount: parseFloat(e.target.value) || 0 })}
+                                  placeholder={`Max: ${fmt(live)}`}
+                                  className={inputCls} style={{ ...inputStyle("pp-amt"), color:"#16a34a", fontWeight:700 }}
+                                  onFocus={(e) => { e.target.select(); setFocused("pp-amt"); }} onBlur={() => setFocused(null)}/>
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Reference / Notes</label>
+                                <input value={paymentForm.notes}
+                                  onChange={e => setPaymentForm({ ...paymentForm, notes: e.target.value })}
+                                  placeholder="e.g. return batch A01–A50"
+                                  className={inputCls} style={inputStyle("pp-notes")}
+                                  onFocus={() => setFocused("pp-notes")} onBlur={() => setFocused(null)}/>
+                              </div>
+                            </div>
+                            <div className="flex gap-2 mt-3">
+                              <button onClick={handleAddPayment}
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90"
+                                style={{ background:"#CF291D" }}>
+                                <Save size={13}/> Save Payment
+                              </button>
+                              <button onClick={() => setPaymentForm(null)}
+                                className="px-3 py-2 rounded-lg text-sm hover:bg-gray-50"
+                                style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", color:"#1D1D1D" }}>
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Payment history */}
+                        {pmts.length > 0 && (
+                          <div className="rounded-xl overflow-hidden" style={{ border:"1px solid #E8E8E8" }}>
+                            <div className="px-4 py-2.5" style={{ background:"#374151", borderBottom:"1px solid #CF291D" }}>
+                              <span className="text-xs font-semibold text-white">Settlement History</span>
+                            </div>
+                            <table className="w-full">
+                              <thead>
+                                <tr style={{ background:"#F9F9F9" }}>
+                                  {["Date","Type","Amount","Notes",""].map(h => (
+                                    <th key={h} className={`px-4 py-2 ${h==="Amount"?"text-right":"text-left"}`}
+                                      style={{ fontSize:10, color:"#9CA3AF", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em" }}>{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {pmts.map(p => {
+                                  const tc = PAYMENT_TYPE_COLORS[p.payment_type];
+                                  return (
+                                    <tr key={p.id} className="hover:bg-gray-50/50" style={{ borderTop:"1px solid #F3F4F6" }}>
+                                      <td className="px-4 py-2.5 text-xs" style={{ color:"#6B7280" }}>{fmtDate(p.payment_date)}</td>
+                                      <td className="px-4 py-2.5">
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                                          style={{ background:tc.bg, color:tc.color }}>
+                                          {PAYMENT_TYPE_LABELS[p.payment_type]}
+                                        </span>
+                                      </td>
+                                      <td className="px-4 py-2.5 text-xs font-bold text-right" style={{ color:"#16a34a" }}>
+                                        Rs. {fmt(p.amount)}
+                                      </td>
+                                      <td className="px-4 py-2.5 text-xs" style={{ color:"#9CA3AF" }}>{p.notes || "—"}</td>
+                                      <td className="px-3 py-2.5">
+                                        <button onClick={() => handleDeletePayment(p.id!, pur.id!)}
+                                          className="p-1 rounded" style={{ color:"#CF291D" }}>
+                                          <Trash2 size={11}/>
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                              <tfoot>
+                                <tr style={{ background:"#374151", borderTop:"2px solid #CF291D" }}>
+                                  <td colSpan={2} className="px-4 py-2 text-right text-[10px] font-semibold uppercase" style={{ color:"#9CA3AF" }}>Total Paid After Delivery</td>
+                                  <td className="px-4 py-2 text-right text-xs font-bold text-white">{fmt(paidAfter)}</td>
+                                  <td colSpan={2}/>
+                                </tr>
+                              </tfoot>
+                            </table>
+                          </div>
+                        )}
+
+                        {pmts.length === 0 && isSettled && (
+                          <div className="flex items-center gap-2 text-xs px-4 py-2 rounded-lg"
+                            style={{ background:"#DCFCE7", border:"1px solid #BBF7D0", color:"#16a34a" }}>
+                            <CheckCircle size={13}/> Fully paid at delivery — no additional payments needed.
+                          </div>
+                        )}
+
+                        {pmts.length === 0 && !isSettled && !paymentForm && (
+                          <div className="flex items-center gap-2 text-xs px-4 py-2 rounded-lg"
+                            style={{ background:"#FEF9C3", border:"1px solid #FDE68A", color:"#d97706" }}>
+                            <AlertTriangle size={13}/> Balance of Rs. {fmt(live)} pending — record a cash payment or return credit above.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Info box */}
+        <div className="rounded-xl p-4 flex items-start gap-3"
+          style={{ background:"#EFF6FF", border:"1px solid #BFDBFE" }}>
+          <CreditCard size={16} style={{ color:"#2563eb", flexShrink:0, marginTop:2 }}/>
+          <div>
+            <p className="text-xs font-bold mb-1" style={{ color:"#1e40af" }}>How settlement works</p>
+            <p className="text-xs leading-relaxed" style={{ color:"#3730a3" }}>
+              Record the full invoice from Nimalsiri. Enter the <strong>initial cash paid at delivery</strong>.
+              The remaining balance shows in red. Use <strong>Record Settlement Payment</strong> to pay it off later —
+              either as <strong>cash</strong>, <strong>cheque</strong>, or <strong>return credit</strong>
+              (unsold tickets handed back to Nimalsiri). The live balance updates instantly.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}

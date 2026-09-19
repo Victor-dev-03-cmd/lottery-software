@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//home/laxsan_victor/.claude/plugins/cache/brag/brag/0.2.2/skills/brag/assets/music/**)"
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+Ajith Rohana Enterprises — Lottery Manager.
+Your business. Under control.
+
+AI-powered desktop app for Sri Lankan wholesale lottery distribution — real-time business health scoring, algorithmic inventory forecasting, agent credit risk management, and natural-language AI insights. Built with Tauri v2 + React.

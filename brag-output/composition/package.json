@@ -1,0 +1,9 @@
+{
+  "name": "lottery-manager-brag",
+  "version": "1.0.0",
+  "scripts": {
+    "render": "npx hyperframes render --quality looks --output ../brag.mp4",
+    "check": "npx hyperframes check",
+    "preview": "npx hyperframes preview --background"
+  }
+}

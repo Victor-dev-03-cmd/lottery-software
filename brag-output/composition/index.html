@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Ajith Rohana Enterprises — Lottery Manager</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script src="assets/music/cues/audio-data-20s.js"></script>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        background: #1D1D1D;
+        color: #fff;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+      .clip {
+        position: absolute;
+        inset: 0;
+      }
+
+      /* ── Scene 1 — Hook ──────────────────────────────── */
+      #s1-bg {
+        background: #0E0E0E;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+      }
+      #s1-line1, #s1-line2 {
+        font-size: 128px;
+        font-weight: 900;
+        letter-spacing: -2px;
+        text-align: center;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+      #s1-line1 { color: #CF291D; }
+      #s1-line2 { color: #FFFFFF; }
+      #s1-accent-bar {
+        width: 120px;
+        height: 6px;
+        background: #CF291D;
+        border-radius: 3px;
+        margin-top: 8px;
+      }
+
+      /* ── Scene 2 — Dashboard ────────────────────────── */
+      #s2-bg {
+        background: #161616;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 40px;
+      }
+      #s2-header {
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        color: #D85349;
+      }
+      #s2-main {
+        display: flex;
+        align-items: center;
+        gap: 80px;
+      }
+      #s2-dial-wrap {
+        position: relative;
+        width: 240px;
+        height: 240px;
+        flex-shrink: 0;
+      }
+      #s2-dial-ring {
+        width: 240px;
+        height: 240px;
+        border-radius: 50%;
+        background: conic-gradient(#F59E0B 0% 40%, #2E2E2E 40% 100%);
+        display: grid;
+        place-items: center;
+        filter: drop-shadow(0 0 0px rgba(207,41,29,0.0));
+      }
+      #s2-dial-inner {
+        width: 188px;
+        height: 188px;
+        border-radius: 50%;
+        background: #161616;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      #s2-dial-score {
+        font-size: 68px;
+        font-weight: 900;
+        color: #F59E0B;
+        line-height: 1;
+      }
+      #s2-dial-grade {
+        font-size: 13px;
+        color: #9CA3AF;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-top: 4px;
+      }
+      #s2-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .s2-stat {
+        background: #1F1F1F;
+        border-left: 4px solid #CF291D;
+        border-radius: 8px;
+        padding: 16px 28px;
+        min-width: 300px;
+        opacity: 0;
+      }
+      .s2-stat-label {
+        font-size: 12px;
+        color: #9CA3AF;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+      .s2-stat-value {
+        font-size: 38px;
+        font-weight: 800;
+        color: #FFFFFF;
+        margin-top: 2px;
+      }
+
+      /* ── Scene 3 — Inventory ────────────────────────── */
+      #s3-bg {
+        background: #161616;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 32px;
+        padding: 0 120px;
+      }
+      #s3-header {
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        color: #D85349;
+        align-self: flex-start;
+      }
+      #s3-table {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .s3-row {
+        background: #1F1F1F;
+        border-radius: 10px;
+        padding: 20px 28px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        transform: translateX(500px);
+        opacity: 0;
+      }
+      .s3-game {
+        font-size: 22px;
+        font-weight: 700;
+        color: #FFFFFF;
+        flex: 1;
+      }
+      .s3-bar-wrap {
+        flex: 2;
+        height: 8px;
+        background: #2E2E2E;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .s3-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+      }
+      .s3-days {
+        font-size: 18px;
+        font-weight: 700;
+        padding: 6px 18px;
+        border-radius: 20px;
+        min-width: 120px;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      /* ── Scene 4 — Agent Credit ─────────────────────── */
+      #s4-bg {
+        background: #161616;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 60px;
+        padding: 0 80px;
+      }
+      #s4-left {
+        flex: 1.2;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      #s4-right {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      #s4-header {
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: #D85349;
+      }
+      .s4-agent-row {
+        background: #1F1F1F;
+        border-radius: 10px;
+        padding: 18px 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transform: translateX(-400px);
+        opacity: 0;
+      }
+      .s4-agent-name {
+        font-size: 20px;
+        font-weight: 700;
+        color: #FFFFFF;
+        flex: 1;
+      }
+      .s4-agent-amount {
+        font-size: 18px;
+        color: #D1D5DB;
+        font-weight: 600;
+      }
+      .s4-badge {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        padding: 4px 12px;
+        border-radius: 12px;
+        text-transform: uppercase;
+      }
+      .badge-critical { background: #FEE2E2; color: #991B1B; }
+      .badge-high     { background: #FFEDD5; color: #92400E; }
+      #s4-ai-bubble {
+        background: #1F1F1F;
+        border: 1px solid #CF291D;
+        border-radius: 12px;
+        padding: 16px 20px;
+        opacity: 0;
+      }
+      #s4-ai-label {
+        font-size: 11px;
+        color: #DB5E55;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+      }
+      #s4-ai-text {
+        font-size: 15px;
+        color: #D1D5DB;
+        line-height: 1.5;
+      }
+      #s4-execute-btn {
+        background: #CF291D;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 800;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        padding: 16px 32px;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        opacity: 0;
+      }
+      #s4-cursor {
+        position: absolute;
+        width: 0;
+        height: 0;
+        border-left: 10px solid transparent;
+        border-right: 10px solid transparent;
+        border-top: 20px solid white;
+        filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.8));
+        opacity: 0;
+        pointer-events: none;
+      }
+      #s4-token {
+        background: #1F1F1F;
+        border-radius: 10px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        opacity: 0;
+      }
+      #s4-token-icon {
+        font-size: 28px;
+      }
+      #s4-token-text {
+        font-size: 16px;
+        font-weight: 700;
+        color: #16A34A;
+      }
+      #s4-success {
+        background: #16A34A;
+        border-radius: 10px;
+        padding: 18px 24px;
+        text-align: center;
+        font-size: 22px;
+        font-weight: 900;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        opacity: 0;
+      }
+
+      /* ── Scene 5 — Outro ────────────────────────────── */
+      #s5-bg {
+        background: #0E0E0E;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+      }
+      #s5-logo-wrap {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: #CF291D;
+        display: grid;
+        place-items: center;
+        opacity: 0;
+      }
+      #s5-logo-letter {
+        font-size: 52px;
+        font-weight: 900;
+        color: #fff;
+      }
+      #s5-company {
+        font-size: 56px;
+        font-weight: 900;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        color: #FFFFFF;
+        text-align: center;
+        opacity: 0;
+      }
+      #s5-product {
+        font-size: 28px;
+        font-weight: 600;
+        letter-spacing: 8px;
+        text-transform: uppercase;
+        color: #CF291D;
+        opacity: 0;
+      }
+      #s5-divider {
+        width: 80px;
+        height: 3px;
+        background: #CF291D;
+        border-radius: 2px;
+        opacity: 0;
+      }
+      #s5-tagline {
+        font-size: 26px;
+        font-weight: 400;
+        color: #9CA3AF;
+        font-style: italic;
+        opacity: 0;
+      }
+      #s5-cta {
+        font-size: 16px;
+        color: #9CA3AF;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="lottery-brag"
+      data-start="0"
+      data-width="1920"
+      data-height="1080"
+      data-duration="20"
+    >
+
+      <!-- ── SCENE 1: Hook (0 – 3.7s) ─────────────────── -->
+      <section id="s1-bg" class="clip" data-start="0" data-duration="3.7" data-track-index="1">
+        <div id="s1-line1">Wholesale Lottery.</div>
+        <div id="s1-line2">Managed by AI.</div>
+        <div id="s1-accent-bar"></div>
+      </section>
+
+      <!-- ── SCENE 2: Dashboard (3.5 – 8.2s) ──────────── -->
+      <section id="s2-bg" class="clip" data-start="3.5" data-duration="4.7" data-track-index="2">
+        <div id="s2-header">AI Business Intelligence</div>
+        <div id="s2-main">
+          <div id="s2-dial-wrap">
+            <div id="s2-dial-ring">
+              <div id="s2-dial-inner">
+                <div id="s2-dial-score">40</div>
+                <div id="s2-dial-grade">Fair</div>
+              </div>
+            </div>
+          </div>
+          <div id="s2-stats">
+            <div class="s2-stat" id="s2-stat-rev">
+              <div class="s2-stat-label">Revenue (30 days)</div>
+              <div class="s2-stat-value" id="s2-rev-val">Rs. 0</div>
+            </div>
+            <div class="s2-stat" id="s2-stat-profit">
+              <div class="s2-stat-label">Net Profit</div>
+              <div class="s2-stat-value" id="s2-profit-val">Rs. 0</div>
+            </div>
+            <div class="s2-stat" id="s2-stat-coll">
+              <div class="s2-stat-label">Collection Rate</div>
+              <div class="s2-stat-value" id="s2-coll-val">0%</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── SCENE 3: Inventory (8.0 – 11.7s) ─────────── -->
+      <section id="s3-bg" class="clip" data-start="8.0" data-duration="3.7" data-track-index="3">
+        <div id="s3-header">Demand Forecast &amp; Inventory Velocity</div>
+        <div id="s3-table">
+          <div class="s3-row" id="s3-r1">
+            <div class="s3-game">MEGA POWER</div>
+            <div class="s3-bar-wrap"><div class="s3-bar-fill" style="width:45%; background:#16A34A;"></div></div>
+            <div class="s3-days" style="background:#DCFCE7; color:#166534;">12 Days</div>
+          </div>
+          <div class="s3-row" id="s3-r2">
+            <div class="s3-game">Ada Kotipathi</div>
+            <div class="s3-bar-wrap"><div class="s3-bar-fill" style="width:68%; background:#D97706;"></div></div>
+            <div class="s3-days" style="background:#FEF9C3; color:#92400E;">5 Days</div>
+          </div>
+          <div class="s3-row" id="s3-r3">
+            <div class="s3-game">Super Ball</div>
+            <div class="s3-bar-wrap"><div class="s3-bar-fill" style="width:88%; background:#DC2626;"></div></div>
+            <div id="s3-reorder" class="s3-days" style="background:#FEE2E2; color:#991B1B;">2 Days — REORDER</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── SCENE 4: Agent Credit (11.5 – 15.7s) ──────── -->
+      <section id="s4-bg" class="clip" data-start="11.5" data-duration="4.2" data-track-index="4">
+        <div id="s4-left">
+          <div id="s4-header">Collection Priority</div>
+          <div class="s4-agent-row" id="s4-a1">
+            <div class="s4-agent-name">Chaminda Silva</div>
+            <div class="s4-agent-amount">Rs. 89,500</div>
+            <div class="s4-badge badge-critical">Critical</div>
+          </div>
+          <div class="s4-agent-row" id="s4-a2">
+            <div class="s4-agent-name">Prasad Bandara</div>
+            <div class="s4-agent-amount">Rs. 67,200</div>
+            <div class="s4-badge badge-high">High</div>
+          </div>
+        </div>
+        <div id="s4-right">
+          <div id="s4-ai-bubble">
+            <div id="s4-ai-label">AI Recommendation</div>
+            <div id="s4-ai-text">Suspend credit — Chaminda Silva.<br>47 days overdue. Immediate action required.</div>
+          </div>
+          <div id="s4-execute-btn">Execute Action</div>
+          <div id="s4-token">
+            <div id="s4-token-icon">🔒</div>
+            <div id="s4-token-text">Admin Token Verified</div>
+          </div>
+          <div id="s4-success">✓ Action Successful</div>
+        </div>
+        <div id="s4-cursor"></div>
+      </section>
+
+      <!-- ── SCENE 5: Outro (15.5 – 20s) ──────────────── -->
+      <section id="s5-bg" class="clip" data-start="15.5" data-duration="4.5" data-track-index="5">
+        <div id="s5-logo-wrap"><div id="s5-logo-letter">A</div></div>
+        <div id="s5-company">Ajith Rohana Enterprises</div>
+        <div id="s5-product">Lottery Manager</div>
+        <div id="s5-divider"></div>
+        <div id="s5-tagline">"Your business. Under control."</div>
+        <div id="s5-cta">Contact us for a demo</div>
+      </section>
+
+      <!-- ── AUDIO ─────────────────────────────────────── -->
+      <audio id="bg-music"
+        data-start="0" data-duration="20"
+        data-track-index="10"
+        src="assets/music/happy-beats-business-moves-vol-12-by-ende-dot-app.mp3">
+      </audio>
+      <audio id="sfx-s1-1"
+        data-start="0.22" data-duration="0.19"
+        data-track-index="11" data-volume="0.7"
+        src="assets/sfx/impact/impactSoft_medium_001.ogg">
+      </audio>
+      <audio id="sfx-s1-2"
+        data-start="1.05" data-duration="0.14"
+        data-track-index="12" data-volume="0.7"
+        src="assets/sfx/impact/impactSoft_medium_002.ogg">
+      </audio>
+      <audio id="sfx-s2-bell"
+        data-start="5.15" data-duration="1.5"
+        data-track-index="13" data-volume="0.65"
+        src="assets/sfx/impact/impactBell_heavy_000.ogg">
+      </audio>
+      <audio id="sfx-s2-d1"
+        data-start="5.4" data-duration="0.11"
+        data-track-index="14" data-volume="0.55"
+        src="assets/sfx/interface/drop_001.ogg">
+      </audio>
+      <audio id="sfx-s2-d2"
+        data-start="5.95" data-duration="0.19"
+        data-track-index="15" data-volume="0.55"
+        src="assets/sfx/interface/drop_002.ogg">
+      </audio>
+      <audio id="sfx-s2-d3"
+        data-start="6.5" data-duration="0.11"
+        data-track-index="16" data-volume="0.55"
+        src="assets/sfx/interface/drop_001.ogg">
+      </audio>
+      <audio id="sfx-s3-r1"
+        data-start="8.3" data-duration="0.6"
+        data-track-index="17" data-volume="0.60"
+        src="assets/sfx/casino/card-slide-3.ogg">
+      </audio>
+      <audio id="sfx-s3-r2"
+        data-start="8.85" data-duration="0.6"
+        data-track-index="18" data-volume="0.60"
+        src="assets/sfx/casino/card-slide-3.ogg">
+      </audio>
+      <audio id="sfx-s3-r3"
+        data-start="9.4" data-duration="0.6"
+        data-track-index="19" data-volume="0.60"
+        src="assets/sfx/casino/card-slide-3.ogg">
+      </audio>
+      <audio id="sfx-s4-a1"
+        data-start="12.0" data-duration="0.5"
+        data-track-index="20" data-volume="0.60"
+        src="assets/sfx/casino/card-place-1.ogg">
+      </audio>
+      <audio id="sfx-s4-a2"
+        data-start="12.55" data-duration="0.5"
+        data-track-index="21" data-volume="0.60"
+        src="assets/sfx/casino/card-place-2.ogg">
+      </audio>
+      <audio id="sfx-s4-click"
+        data-start="13.1" data-duration="0.06"
+        data-track-index="22" data-volume="0.75"
+        src="assets/sfx/ui/mouseclick1.ogg">
+      </audio>
+      <audio id="sfx-s4-success"
+        data-start="14.05" data-duration="0.66"
+        data-track-index="23" data-volume="0.70"
+        src="assets/sfx/impact/impactBell_heavy_003.ogg">
+      </audio>
+      <audio id="sfx-s5-logo"
+        data-start="17.0" data-duration="0.30"
+        data-track-index="24" data-volume="0.72"
+        src="assets/sfx/impact/impactBell_heavy_004.ogg">
+      </audio>
+    </div>
+
+    <script>
+      var tl = gsap.timeline({ paused: true });
+
+      // Set music volume at t=0; fade out at 19s — GSAP owns all volume
+      tl.set('#bg-music', { volume: 0.35 }, 0);
+
+      // Cache DOM refs
+      var dialRing    = document.getElementById('s2-dial-ring');
+      var dialScore   = document.getElementById('s2-dial-score');
+      var dialGrade   = document.getElementById('s2-dial-grade');
+      var revVal      = document.getElementById('s2-rev-val');
+      var profitVal   = document.getElementById('s2-profit-val');
+      var collVal     = document.getElementById('s2-coll-val');
+      var s3reorder   = document.getElementById('s3-reorder');
+      var s4cursor    = document.getElementById('s4-cursor');
+      var s5company   = document.getElementById('s5-company');
+
+      // ── Scene 1: Hook ──────────────────────────────────────────────
+      // Lines start off-screen (scale 1.2, invisible) — set via GSAP from
+      tl.from('#s1-line1', { scale: 1.25, opacity: 0, duration: 0.45, ease: 'power3.out' }, 0.25);
+      tl.from('#s1-line2', { scale: 1.25, opacity: 0, duration: 0.45, ease: 'power3.out' }, 1.08);
+      tl.from('#s1-accent-bar', { scaleX: 0, opacity: 0, duration: 0.5, ease: 'power2.out', transformOrigin: 'left center' }, 1.6);
+
+      // Scene 1 → 2 crossfade: s2-bg fades in from 0 at start
+      tl.from('#s2-bg', { opacity: 0, duration: 0.35, ease: 'power1.inOut' }, 3.5);
+      tl.from('#s2-header', { opacity: 0, y: -20, duration: 0.4, ease: 'power2.out' }, 3.75);
+
+      // ── Scene 2: Dashboard ─────────────────────────────────────────
+      // Dial animates 40 → 75 over 1.4s starting at 3.9s (absolute)
+      // Pre-calculate per-frame conic-gradient updates
+      var dialStart = 3.9, dialDur = 1.4;
+      var dialFrames = Math.ceil(dialDur * 30);
+      var DIAL_GRADES = ['Needs Attention','Needs Attention','Fair','Fair','Good','Good','Excellent'];
+      var DIAL_COLORS = ['#EF4444','#EF4444','#F59E0B','#F59E0B','#60A5FA','#60A5FA','#4ADE80'];
+      for (var f = 0; f <= dialFrames; f++) {
+        (function(frame) {
+          var t = frame / dialFrames;
+          // cubic ease out
+          var eased = 1 - Math.pow(1 - t, 3);
+          var score = 40 + 35 * eased; // 40 → 75
+          var scoreInt = Math.round(score);
+          var ci = scoreInt >= 80 ? 6 : scoreInt >= 60 ? 4 : scoreInt >= 40 ? 2 : 0;
+          var color = DIAL_COLORS[ci];
+          var grade = DIAL_GRADES[ci];
+          var pct = score;
+          tl.call(function() {
+            dialRing.style.background =
+              'conic-gradient(' + color + ' 0% ' + pct.toFixed(1) + '%, #2E2E2E ' + pct.toFixed(1) + '% 100%)';
+            dialScore.textContent = scoreInt;
+            dialScore.style.color = color;
+            dialGrade.textContent = grade;
+            dialGrade.style.color = color;
+          }, [], dialStart + frame / 30);
+        })(f);
+      }
+
+      // Stat tiles pop in — beat-grid: 5.4s, 5.95s (≈beat 6.00), 6.5s (≈beat 6.56)
+      // beat-grid: stat1 at 5.4s, stat2 at 5.95s, stat3 at 6.50s
+      tl.fromTo('#s2-stat-rev', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: 'back.out(1.5)' }, 5.4);
+      tl.fromTo('#s2-stat-profit', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: 'back.out(1.5)' }, 5.95);
+      tl.fromTo('#s2-stat-coll', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: 'back.out(1.5)' }, 6.5);
+
+      // Revenue count up: 0 → 478250 over 0.5s starting at 5.4s
+      var revFrames = 15; // 0.5s * 30fps
+      for (var f = 0; f <= revFrames; f++) {
+        (function(frame) {
+          var val = Math.round(478250 * frame / revFrames);
+          tl.call(function() {
+            revVal.textContent = 'Rs. ' + val.toLocaleString('en-LK');
+          }, [], 5.4 + frame / 30);
+        })(f);
+      }
+      // Profit count up
+      for (var f = 0; f <= revFrames; f++) {
+        (function(frame) {
+          var val = Math.round(212593 * frame / revFrames);
+          tl.call(function() {
+            profitVal.textContent = 'Rs. ' + val.toLocaleString('en-LK');
+          }, [], 5.95 + frame / 30);
+        })(f);
+      }
+      // Collection rate count up
+      for (var f = 0; f <= revFrames; f++) {
+        (function(frame) {
+          var val = Math.round(84 * frame / revFrames);
+          tl.call(function() {
+            collVal.textContent = val + '%';
+          }, [], 6.5 + frame / 30);
+        })(f);
+      }
+
+      // Scene 2 → 3 crossfade
+      tl.from('#s3-bg', { opacity: 0, duration: 0.3, ease: 'power1.inOut' }, 8.0);
+      tl.from('#s3-header', { opacity: 0, x: -30, duration: 0.4, ease: 'power2.out' }, 8.1);
+
+      // ── Scene 3: Inventory rows ──────────────────────────────────
+      // beat-grid: row1 at 8.3s (≈beat 8.19s), row2 at 8.85s (≈strong cue 8.74s // beat-locked: 8.74s), row3 at 9.4s (≈beat 9.29s)
+      tl.to('#s3-r1', { x: 0, opacity: 1, duration: 0.5, ease: 'power3.out' }, 8.3);
+      tl.to('#s3-r2', { x: 0, opacity: 1, duration: 0.5, ease: 'power3.out' }, 8.85); // beat-locked: 8.74s
+      tl.to('#s3-r3', { x: 0, opacity: 1, duration: 0.5, ease: 'power3.out' }, 9.4);
+
+      // REORDER badge pulse — beat 9.83s
+      tl.to('#s3-reorder', {
+        boxShadow: '0 0 20px rgba(220,38,38,0.8)',
+        scale: 1.06,
+        duration: 0.3, ease: 'power2.out', yoyo: true, repeat: 1
+      }, 9.85);
+
+      // Scene 3 → 4 crossfade
+      tl.from('#s4-bg', { opacity: 0, duration: 0.3, ease: 'power1.inOut' }, 11.5);
+      tl.from('#s4-header', { opacity: 0, x: -20, duration: 0.35, ease: 'power2.out' }, 11.65);
+
+      // ── Scene 4: Agent rows ───────────────────────────────────────
+      // beat-grid: a1 at 12.0s (≈beat 12.02s), a2 at 12.55s (≈beat 12.55s)
+      tl.to('#s4-a1', { x: 0, opacity: 1, duration: 0.45, ease: 'power3.out' }, 12.0); // beat-grid: 12.02s
+      tl.to('#s4-a2', { x: 0, opacity: 1, duration: 0.45, ease: 'power3.out' }, 12.55); // beat-grid: 12.55s
+      // AI bubble
+      tl.fromTo('#s4-ai-bubble', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }, 12.85);
+
+      // Execute button appears
+      tl.fromTo('#s4-execute-btn', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' }, 13.0);
+
+      // Cursor animates to button at strong cue 13.11s // beat-locked: 13.11s
+      // Position cursor to hover over the execute button area in right panel
+      tl.set(s4cursor, { opacity: 1, x: 1460, y: 680 });
+      tl.to(s4cursor, { x: 1340, y: 720, duration: 0.35, ease: 'power2.inOut' }, 13.0);
+      // Click: scale button briefly
+      tl.to('#s4-execute-btn', { scale: 0.95, duration: 0.1 }, 13.1); // beat-locked: 13.11s
+      tl.to('#s4-execute-btn', { scale: 1, duration: 0.15, ease: 'back.out(2)' }, 13.2);
+      tl.to(s4cursor, { opacity: 0, duration: 0.15 }, 13.25);
+
+      // Token verified
+      tl.fromTo('#s4-token', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out' }, 13.5);
+
+      // Success banner sweeps in at 14.05s
+      tl.fromTo('#s4-success', { scaleY: 0, opacity: 0, transformOrigin: 'top center' }, { scaleY: 1, opacity: 1, duration: 0.4, ease: 'back.out(1.2)' }, 14.05);
+
+      // Scene 4 → 5 crossfade
+      tl.from('#s5-bg', { opacity: 0, duration: 0.4, ease: 'power1.inOut' }, 15.5);
+
+      // ── Scene 5: Outro ────────────────────────────────────────────
+      tl.fromTo('#s5-logo-wrap', { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(1.5)' }, 15.8);
+
+      // Company name slams in at 17.47s // beat-locked: 17.47s (strong cue, intensity 0.99)
+      tl.fromTo('#s5-company', { opacity: 0, scale: 1.08 }, { opacity: 1, scale: 1.0, duration: 0.35, ease: 'power3.out' }, 17.0);
+      // Final slam snap at strong cue
+      tl.to('#s5-company', { scale: 1.0, duration: 0.2, ease: 'elastic.out(1.2, 0.4)' }, 17.47); // beat-locked: 17.47s
+
+      tl.fromTo('#s5-product', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }, 17.75);
+      tl.fromTo('#s5-divider', { opacity: 0, scaleX: 0 }, { opacity: 1, scaleX: 1, duration: 0.4, ease: 'power2.out', transformOrigin: 'left center' }, 18.0);
+      tl.fromTo('#s5-tagline', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }, 18.3);
+      tl.to('#s5-cta', { opacity: 1, duration: 0.4, ease: 'power2.out' }, 18.7);
+
+      // Music fade out at 19.0s
+      tl.to('#bg-music', { volume: 0, duration: 1.0, ease: 'power1.in' }, 19.0);
+
+      // ── Audio-reactive: per-frame ─────────────────────────────────
+      // Drive glow on the dial ring (scene 2) and on the s5-company text
+      var totalAudioFrames = AUDIO_DATA.totalFrames;
+      for (var f = 0; f < totalAudioFrames; f++) {
+        (function(frame) {
+          tl.call(function() {
+            var d = AUDIO_DATA.frames[frame];
+            var bass = d.bass;
+            var rms  = d.rms;
+            // Scene 2: dial glow breathes with RMS/bass
+            var glowPx = Math.round(bass * 40);
+            var glowAlpha = (0.2 + bass * 0.5).toFixed(2);
+            dialRing.style.filter =
+              'drop-shadow(0 0 ' + glowPx + 'px rgba(207,41,29,' + glowAlpha + '))';
+            // Scene 5: company name treble glow
+            var treble = d.treble;
+            var tGlow = Math.round(treble * 30);
+            s5company.style.textShadow =
+              '0 0 ' + tGlow + 'px rgba(255,255,255,' + (0.1 + treble * 0.4).toFixed(2) + ')';
+          }, [], frame / AUDIO_DATA.fps);
+        })(f);
+      }
+
+      window.__timelines['lottery-brag'] = tl;
+    </script>
+  </body>
+</html>
