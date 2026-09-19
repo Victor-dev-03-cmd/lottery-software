@@ -22,10 +22,17 @@ function parseCSV(text: string): string[][] {
 }
 
 function downloadCSV(filename: string, headers: string[], rows: string[][]) {
-  const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
-  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-  const a = document.createElement("a"); a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
+  const bom = "﻿"; // UTF-8 BOM so Excel opens it correctly
+  const csv = bom + [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
 }
 
 // ── Config ─────────────────────────────────────────────────────────────────────

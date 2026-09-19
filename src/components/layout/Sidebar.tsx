@@ -41,7 +41,7 @@ const NAV_GROUPS: NavGroup[] = [
       { view: "cancelled-invoices",   label: "Cancelled",        icon: <FileX size={17} /> },
       { view: "invoice-model",        label: "Invoice Model",    icon: <Palette size={17} /> },
       { view: "returns",              label: "Agent Returns",    icon: <HandCoins size={17} /> },
-      { view: "ledger",               label: "Payment Ledger",   icon: <BookOpen size={17} /> },
+      { view: "ledger",               label: "Payment Agent",   icon: <BookOpen size={17} /> },
     ],
   },
   {

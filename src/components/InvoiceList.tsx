@@ -224,12 +224,7 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
                       </td>
                       <td className="px-4 py-3 text-sm text-right font-bold"
                         style={{ color: inv.outstanding_balance > 0 ? "#CF291D" : "#16a34a" }}>
-                        {inv.outstanding_balance < 0
-                          ? <span style={{ color: "#2563eb" }} title="Advance credit / overpayment">
-                              Cr. {fmt(Math.abs(inv.outstanding_balance))}
-                            </span>
-                          : fmt(inv.outstanding_balance)
-                        }
+                        {fmt(Math.max(0, inv.outstanding_balance))}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span
