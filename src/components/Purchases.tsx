@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Plus, Trash2, X, Save, RefreshCw, ShoppingCart,
-  Home, ChevronRight, Package, CheckCircle, AlertTriangle,
+  Home, ChevronRight, Package,
   CreditCard, ChevronDown, ChevronUp, ShieldAlert, Image,
 } from "lucide-react";
 import {
@@ -763,72 +763,217 @@ export default function Purchases() {
                       </div>
                     </div>
 
-                    {/* Expanded detail panel */}
+                    {/* ── Expanded Full History Panel ── */}
                     {isExpanded && (
-                      <div className="px-5 pb-5 space-y-4" style={{ borderTop:"1px solid #F3F4F6", background:"#FAFAFA" }}>
+                      <div style={{ borderTop:"2px solid #CF291D", background:"#F8FAFC" }}>
 
-                        {/* Items in this purchase */}
-                        {pur.items && pur.items.length > 0 && (
-                          <div className="pt-4">
-                            <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color:"#9CA3AF" }}>🎫 Ticket Details</p>
-                            <div className="rounded-lg overflow-hidden" style={{ border:"1px solid #E5E7EB" }}>
-                              <table className="w-full" style={{ fontSize:11 }}>
-                                <thead style={{ background:"#374151" }}>
-                                  <tr>
-                                    {["Ticket","Draw No.","Barcode Start","Barcode End","Qty","Unit Price","Total"].map(h => (
-                                      <th key={h} className="px-3 py-2 text-left" style={{ color:"#9CA3AF", fontWeight:600, fontSize:10, textTransform:"uppercase" }}>{h}</th>
-                                    ))}
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {pur.items.map((item, ii) => (
-                                    <tr key={ii} style={{ borderBottom:"1px solid #F3F4F6", background: ii%2===0?"#fff":"#FAFAFA" }}>
-                                      <td className="px-3 py-2 font-semibold" style={{ color:"#111827" }}>{item.game_name}</td>
-                                      <td className="px-3 py-2" style={{ color:"#6B7280", fontFamily:"monospace" }}>{item.draw_number || "—"}</td>
-                                      <td className="px-3 py-2" style={{ fontFamily:"monospace", color:"#374151" }}>{item.barcode_start}</td>
-                                      <td className="px-3 py-2" style={{ fontFamily:"monospace", color:"#374151" }}>{item.barcode_end}</td>
-                                      <td className="px-3 py-2 font-bold" style={{ color:"#16A34A" }}>{item.qty.toLocaleString()}</td>
-                                      <td className="px-3 py-2" style={{ color:"#374151" }}>Rs. {fmt(item.unit_price)}</td>
-                                      <td className="px-3 py-2 font-bold" style={{ color:"#111827" }}>Rs. {fmt(item.value)}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                        {/* ── HEADER: Invoice identity ── */}
+                        <div style={{ padding:"16px 20px 0", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+                            <div style={{ background:"linear-gradient(135deg,#CF291D,#B50717)", borderRadius:10, padding:"8px 14px", color:"#fff" }}>
+                              <div style={{ fontSize:10, fontWeight:600, opacity:0.8, marginBottom:2 }}>PURCHASE INVOICE</div>
+                              <div style={{ fontSize:16, fontWeight:900, fontFamily:"monospace" }}>{pur.purchase_number}</div>
+                            </div>
+                            <div>
+                              <div style={{ display:"flex", gap:20, flexWrap:"wrap" }}>
+                                <div>
+                                  <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:"0.08em" }}>Purchase Date</div>
+                                  <div style={{ fontSize:13, fontWeight:700, color:"#111827" }}>{fmtDate(pur.purchase_date)}</div>
+                                </div>
+                                <div>
+                                  <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:"0.08em" }}>Stock / Draw Date</div>
+                                  <div style={{ fontSize:13, fontWeight:700, color:"#111827" }}>{fmtDate(pur.stock_date)}</div>
+                                </div>
+                                <div>
+                                  <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:"0.08em" }}>Supplier</div>
+                                  <div style={{ fontSize:13, fontWeight:700, color:"#111827" }}>{pur.supplier_name}</div>
+                                </div>
+                                {pur.notes && (
+                                  <div>
+                                    <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:"0.08em" }}>Notes</div>
+                                    <div style={{ fontSize:12, color:"#6B7280" }}>{pur.notes}</div>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        )}
+                          <span style={{ padding:"5px 14px", borderRadius:20, fontSize:12, fontWeight:800,
+                            background: isSettled ? "#DCFCE7" : "#FEE2E2",
+                            color: isSettled ? "#16A34A" : "#CF291D",
+                            border: `1px solid ${isSettled?"#BBF7D0":"#FECACA"}` }}>
+                            {isSettled ? "✅ Fully Settled" : "⏳ Payment Pending"}
+                          </span>
+                        </div>
 
-                        {/* Settlement breakdown */}
-                        <div className="grid grid-cols-4 gap-3 pt-4">
+                        {/* ── Financial summary strip ── */}
+                        <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:12, padding:"14px 20px" }}>
                           {[
-                            { label:"Invoice Total",      val: pur.invoice_total,   color:"#1D1D1D" },
-                            { label:"Cash at Delivery",   val: pur.initial_payment, color:"#16a34a" },
-                            { label:"Later Payments",     val: paidAfter,           color:"#2563eb" },
-                            { label:"Balance Remaining",  val: live,                color: live > 0 ? "#CF291D" : "#16a34a" },
+                            { label:"Invoice Total",    val:pur.invoice_total,   color:"#111827", bg:"#fff",     border:"#E5E7EB" },
+                            { label:"Cash at Delivery", val:pur.initial_payment, color:"#16A34A", bg:"#F0FFF4",  border:"#BBF7D0" },
+                            { label:"Later Payments",   val:paidAfter,           color:"#2563EB", bg:"#EFF6FF",  border:"#BFDBFE" },
+                            { label:"Total Paid",       val:pur.initial_payment+paidAfter, color:"#7C3AED", bg:"#F5F3FF", border:"#DDD6FE" },
+                            { label:"Balance Owed",     val:live,                color: live>0?"#CF291D":"#16A34A", bg: live>0?"#FEF2F2":"#F0FFF4", border: live>0?"#FECACA":"#BBF7D0" },
                           ].map(c => (
-                            <div key={c.label} className="rounded-xl p-3" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8" }}>
-                              <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>{c.label}</p>
-                              <p className="text-lg font-black" style={{ color: c.color }}>Rs. {fmt(c.val)}</p>
+                            <div key={c.label} style={{ padding:"10px 14px", borderRadius:10, background:c.bg, border:`1px solid ${c.border}` }}>
+                              <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4 }}>{c.label}</div>
+                              <div style={{ fontSize:15, fontWeight:900, color:c.color }}>Rs. {fmt(c.val)}</div>
                             </div>
                           ))}
                         </div>
 
-                        {/* Add payment button + form */}
-                        {!isSettled && !paymentForm && (
-                          <button onClick={() => setPaymentForm(EMPTY_PAYMENT(pur.id!))}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90"
-                            style={{ background:"#CF291D" }}>
-                            <Plus size={14}/> Record Settlement Payment
-                          </button>
+                        {/* ── Ticket batch details ── */}
+                        {pur.items && pur.items.length > 0 && (
+                          <div style={{ padding:"0 20px 14px" }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                              <div style={{ width:3, height:16, borderRadius:2, background:"#CF291D" }}/>
+                              <span style={{ fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:"0.06em" }}>
+                                🎫 Ticket Batches — {pur.items.reduce((s,it)=>s+it.qty,0).toLocaleString()} tickets · Rs. {fmt(pur.items.reduce((s,it)=>s+it.value,0))}
+                              </span>
+                            </div>
+                            {pur.items.map((item, ii) => {
+                              const lastTk = lastTicketBarcode(item.barcode_end);
+                              return (
+                                <div key={ii} style={{
+                                  display:"flex", alignItems:"stretch", gap:0,
+                                  background:"#fff", border:"1px solid #E5E7EB", borderRadius:10,
+                                  marginBottom:8, overflow:"hidden",
+                                }}>
+                                  {/* Ticket logo + name */}
+                                  <div style={{ width:130, flexShrink:0, background:"#F8FAFC", borderRight:"1px solid #E5E7EB", padding:"12px 14px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:6 }}>
+                                    <img src={resolveLogoUrl(item.game_name)} alt=""
+                                      style={{ width:44, height:44, objectFit:"contain", borderRadius:6 }}
+                                      onError={e=>{(e.currentTarget as HTMLImageElement).src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Crect width='44' height='44' rx='6' fill='%23F3F4F6'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='20'%3E🎫%3C/text%3E%3C/svg%3E"}}/>
+                                    <span style={{ fontSize:11, fontWeight:700, color:"#111827", textAlign:"center", lineHeight:1.3 }}>{item.game_name}</span>
+                                    {item.draw_number && (
+                                      <span style={{ fontSize:10, padding:"2px 8px", background:"#FEF3C7", color:"#92400E", borderRadius:20, fontWeight:700, border:"1px solid #FDE68A" }}>
+                                        Draw #{item.draw_number}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Barcode details */}
+                                  <div style={{ flex:1, padding:"12px 16px", display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr 1fr", gap:12, alignItems:"center" }}>
+                                    <div>
+                                      <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", marginBottom:3 }}>First Ticket</div>
+                                      <div style={{ fontSize:12, fontWeight:700, fontFamily:"monospace", color:"#2563EB" }}>{item.barcode_start}</div>
+                                    </div>
+                                    <div>
+                                      <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", marginBottom:3 }}>Last Ticket</div>
+                                      <div style={{ fontSize:12, fontWeight:700, fontFamily:"monospace", color:"#7C3AED" }}>{lastTk}</div>
+                                    </div>
+                                    <div>
+                                      <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", marginBottom:3 }}>Next Batch Starts</div>
+                                      <div style={{ fontSize:11, fontFamily:"monospace", color:"#6B7280" }}>{item.barcode_end}</div>
+                                    </div>
+                                    <div>
+                                      <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", marginBottom:3 }}>Quantity</div>
+                                      <div style={{ fontSize:16, fontWeight:900, color:"#16A34A" }}>{item.qty.toLocaleString()}</div>
+                                      <div style={{ fontSize:9, color:"#9CA3AF" }}>tickets</div>
+                                    </div>
+                                    <div style={{ textAlign:"right" }}>
+                                      <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", marginBottom:3 }}>
+                                        @ Rs. {fmt(item.unit_price)} each
+                                      </div>
+                                      <div style={{ fontSize:15, fontWeight:900, color:"#CF291D" }}>Rs. {fmt(item.value)}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         )}
 
-                        {paymentForm && paymentForm.purchase_id === pur.id && (
-                          <div className="rounded-xl p-4" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8" }}>
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-xs font-bold uppercase tracking-wide" style={{ color:"#1D1D1D" }}>Record Payment to Nimalsiri</span>
-                              <button onClick={() => setPaymentForm(null)}>
-                                <X size={13} style={{ color:"#9CA3AF" }}/>
+                        {/* ── Payment/Settlement history ── */}
+                        <div style={{ padding:"0 20px 14px" }}>
+                          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                              <div style={{ width:3, height:16, borderRadius:2, background:"#16A34A" }}/>
+                              <span style={{ fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:"0.06em" }}>
+                                💰 Settlement History
+                              </span>
+                            </div>
+                            {!isSettled && !paymentForm && (
+                              <button onClick={() => setPaymentForm(EMPTY_PAYMENT(pur.id!))}
+                                style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 16px", border:"none", borderRadius:8, background:"#CF291D", color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                                <Plus size={13}/> Record Payment
                               </button>
+                            )}
+                          </div>
+
+                          {/* Delivery cash as first history entry */}
+                          <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:10, overflow:"hidden" }}>
+                            <table className="w-full" style={{ fontSize:12 }}>
+                              <thead>
+                                <tr style={{ background:"#F9FAFB" }}>
+                                  {["#","Date","Type","Amount (Rs.)","Reference / Notes","Action"].map((h,i) => (
+                                    <th key={i} style={{ padding:"8px 14px", textAlign:i>=3?"right":"left", fontSize:10, fontWeight:700, color:"#6B7280", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #E5E7EB" }}>{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {/* Delivery payment row */}
+                                <tr style={{ background:"#F0FFF4" }}>
+                                  <td style={{ padding:"10px 14px", color:"#9CA3AF", fontWeight:700 }}>0</td>
+                                  <td style={{ padding:"10px 14px" }}>
+                                    <div style={{ fontWeight:700, color:"#111827" }}>{fmtDate(pur.purchase_date)}</div>
+                                    <div style={{ fontSize:10, color:"#6B7280" }}>At delivery</div>
+                                  </td>
+                                  <td style={{ padding:"10px 14px" }}>
+                                    <span style={{ padding:"2px 10px", borderRadius:20, fontSize:11, fontWeight:700, background:"#DCFCE7", color:"#16A34A" }}>Cash at Delivery</span>
+                                  </td>
+                                  <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:900, fontSize:14, color:"#16A34A" }}>Rs. {fmt(pur.initial_payment)}</td>
+                                  <td style={{ padding:"10px 14px", color:"#9CA3AF", fontSize:11 }}>Paid when stock received</td>
+                                  <td style={{ padding:"10px 14px" }}/>
+                                </tr>
+
+                                {/* Post-delivery payments */}
+                                {pmts.map((p, pi) => {
+                                  const tc = PAYMENT_TYPE_COLORS[p.payment_type];
+                                  return (
+                                    <tr key={p.id} style={{ borderTop:"1px solid #F3F4F6" }}>
+                                      <td style={{ padding:"10px 14px", color:"#9CA3AF", fontWeight:700 }}>{pi+1}</td>
+                                      <td style={{ padding:"10px 14px" }}>
+                                        <div style={{ fontWeight:700, color:"#111827" }}>{fmtDate(p.payment_date)}</div>
+                                      </td>
+                                      <td style={{ padding:"10px 14px" }}>
+                                        <span style={{ padding:"2px 10px", borderRadius:20, fontSize:11, fontWeight:700, background:tc.bg, color:tc.color }}>
+                                          {PAYMENT_TYPE_LABELS[p.payment_type]}
+                                        </span>
+                                      </td>
+                                      <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:900, fontSize:14, color:"#2563EB" }}>Rs. {fmt(p.amount)}</td>
+                                      <td style={{ padding:"10px 14px", color:"#6B7280", fontSize:11 }}>{p.notes || "—"}</td>
+                                      <td style={{ padding:"10px 14px" }}>
+                                        <button onClick={() => handleDeletePayment(p.id!, pur.id!)} style={{ border:"none", background:"#FFF1F0", borderRadius:6, padding:"3px 8px", color:"#CF291D", cursor:"pointer" }}>
+                                          <Trash2 size={11}/>
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+
+                                {/* Total row */}
+                                <tr style={{ background:"#374151", borderTop:"2px solid #CF291D" }}>
+                                  <td colSpan={3} style={{ padding:"10px 14px", color:"#9CA3AF", fontSize:11, fontWeight:700 }}>
+                                    TOTAL PAID ({1 + pmts.length} entries)
+                                  </td>
+                                  <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:900, fontSize:15, color:"#fff" }}>
+                                    Rs. {fmt(pur.initial_payment + paidAfter)}
+                                  </td>
+                                  <td colSpan={2} style={{ padding:"10px 14px", textAlign:"right", fontWeight:900, fontSize:13, color: live>0?"#FCA5A5":"#86EFAC" }}>
+                                    {live > 0 ? `Balance: Rs. ${fmt(live)} remaining` : "✅ Fully Settled"}
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        {/* Payment form */}
+                        {paymentForm && paymentForm.purchase_id === pur.id && (
+                          <div style={{ margin:"0 20px 14px", padding:16, background:"#fff", border:"1px solid #E5E7EB", borderRadius:10 }}>
+                            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+                              <span style={{ fontWeight:700, fontSize:13, color:"#111827" }}>💳 Record Payment to Nimalsiri</span>
+                              <button onClick={() => setPaymentForm(null)} style={{ border:"none", background:"none", cursor:"pointer", color:"#9CA3AF" }}><X size={15}/></button>
                             </div>
                             <div className="grid grid-cols-4 gap-3">
                               <div>
@@ -839,7 +984,7 @@ export default function Purchases() {
                                   onFocus={() => setFocused("pp-date")} onBlur={() => setFocused(null)}/>
                               </div>
                               <div>
-                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Type</label>
+                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Payment Type</label>
                                 <select value={paymentForm.payment_type}
                                   onChange={e => setPaymentForm({ ...paymentForm, payment_type: e.target.value as PurchasePaymentType })}
                                   className={inputCls} style={inputStyle("pp-type")}
@@ -850,11 +995,11 @@ export default function Purchases() {
                                 </select>
                               </div>
                               <div>
-                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Amount (Rs.)</label>
+                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Amount (Rs.) — Balance: {fmt(live)}</label>
                                 <input type="number" step="0.01" value={paymentForm.amount || ""}
                                   onChange={e => setPaymentForm({ ...paymentForm, amount: parseFloat(e.target.value) || 0 })}
                                   onKeyDown={e => { if (e.key==="Enter") handleAddPayment(); }}
-                                  placeholder={`Max: ${fmt(live)}`}
+                                  placeholder={`Enter amount (max ${fmt(live)})`}
                                   className={inputCls} style={{ ...inputStyle("pp-amt"), color:"#16a34a", fontWeight:700 }}
                                   onFocus={(e) => { e.target.select(); setFocused("pp-amt"); }} onBlur={() => setFocused(null)}/>
                               </div>
@@ -862,91 +1007,24 @@ export default function Purchases() {
                                 <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Reference / Notes</label>
                                 <input value={paymentForm.notes}
                                   onChange={e => setPaymentForm({ ...paymentForm, notes: e.target.value })}
-                                  placeholder="e.g. return batch A01–A50"
+                                  placeholder="e.g. Cheque #12345"
                                   className={inputCls} style={inputStyle("pp-notes")}
                                   onFocus={() => setFocused("pp-notes")} onBlur={() => setFocused(null)}/>
                               </div>
                             </div>
-                            <div className="flex gap-2 mt-3">
+                            <div style={{ display:"flex", gap:8, marginTop:12 }}>
                               <button onClick={handleAddPayment}
-                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90"
-                                style={{ background:"#CF291D" }}>
-                                <Save size={13}/> Save Payment
+                                style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 20px", border:"none", borderRadius:8, background:"#CF291D", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                                <Save size={13}/> Save Payment (Enter)
                               </button>
                               <button onClick={() => setPaymentForm(null)}
-                                className="px-3 py-2 rounded-lg text-sm hover:bg-gray-50"
-                                style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", color:"#1D1D1D" }}>
+                                style={{ padding:"8px 16px", border:"1px solid #E5E7EB", borderRadius:8, background:"#F9FAFB", color:"#6B7280", fontSize:13, fontWeight:600, cursor:"pointer" }}>
                                 Cancel
                               </button>
                             </div>
                           </div>
                         )}
 
-                        {/* Payment history */}
-                        {pmts.length > 0 && (
-                          <div className="rounded-xl overflow-hidden" style={{ border:"1px solid #E8E8E8" }}>
-                            <div className="px-4 py-2.5" style={{ background:"#374151", borderBottom:"1px solid #CF291D" }}>
-                              <span className="text-xs font-semibold text-white">Settlement History</span>
-                            </div>
-                            <table className="w-full">
-                              <thead>
-                                <tr style={{ background:"#F9F9F9" }}>
-                                  {["Date","Type","Amount","Notes",""].map(h => (
-                                    <th key={h} className={`px-4 py-2 ${h==="Amount"?"text-right":"text-left"}`}
-                                      style={{ fontSize:10, color:"#9CA3AF", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em" }}>{h}</th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {pmts.map(p => {
-                                  const tc = PAYMENT_TYPE_COLORS[p.payment_type];
-                                  return (
-                                    <tr key={p.id} className="hover:bg-gray-50/50" style={{ borderTop:"1px solid #F3F4F6" }}>
-                                      <td className="px-4 py-2.5 text-xs" style={{ color:"#6B7280" }}>{fmtDate(p.payment_date)}</td>
-                                      <td className="px-4 py-2.5">
-                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                                          style={{ background:tc.bg, color:tc.color }}>
-                                          {PAYMENT_TYPE_LABELS[p.payment_type]}
-                                        </span>
-                                      </td>
-                                      <td className="px-4 py-2.5 text-xs font-bold text-right" style={{ color:"#16a34a" }}>
-                                        Rs. {fmt(p.amount)}
-                                      </td>
-                                      <td className="px-4 py-2.5 text-xs" style={{ color:"#9CA3AF" }}>{p.notes || "—"}</td>
-                                      <td className="px-3 py-2.5">
-                                        <button onClick={() => handleDeletePayment(p.id!, pur.id!)}
-                                          className="p-1 rounded" style={{ color:"#CF291D" }}>
-                                          <Trash2 size={11}/>
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                              <tfoot>
-                                <tr style={{ background:"#374151", borderTop:"2px solid #CF291D" }}>
-                                  <td colSpan={2} className="px-4 py-2 text-right text-[10px] font-semibold uppercase" style={{ color:"#9CA3AF" }}>Total Paid After Delivery</td>
-                                  <td className="px-4 py-2 text-right text-xs font-bold text-white">{fmt(paidAfter)}</td>
-                                  <td colSpan={2}/>
-                                </tr>
-                              </tfoot>
-                            </table>
-                          </div>
-                        )}
-
-                        {pmts.length === 0 && isSettled && (
-                          <div className="flex items-center gap-2 text-xs px-4 py-2 rounded-lg"
-                            style={{ background:"#DCFCE7", border:"1px solid #BBF7D0", color:"#16a34a" }}>
-                            <CheckCircle size={13}/> Fully paid at delivery — no additional payments needed.
-                          </div>
-                        )}
-
-                        {pmts.length === 0 && !isSettled && !paymentForm && (
-                          <div className="flex items-center gap-2 text-xs px-4 py-2 rounded-lg"
-                            style={{ background:"#FEF9C3", border:"1px solid #FDE68A", color:"#d97706" }}>
-                            <AlertTriangle size={13}/> Balance of Rs. {fmt(live)} pending — record a cash payment or return credit above.
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>
