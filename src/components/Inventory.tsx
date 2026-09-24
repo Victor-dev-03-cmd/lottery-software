@@ -526,119 +526,118 @@ export default function Inventory() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table style={{ width:"100%", borderCollapse:"collapse" }}>
                 <thead>
-                  <tr style={{ background: "#FAFAFA", borderBottom: "1px solid #F3F4F6" }}>
-                    {["Game", "Batch No.", "Category", "Batch Date", "Barcode Range", "Ticket Range", "Books", "Total", "Distributed", "Remaining", "Warehouse", "Unit Price", "Status"].map((h) => (
-                      <th
-                        key={h}
-                        className="px-4 py-3 text-left"
-                        style={{
-                          fontSize: 10,
-                          color: "#9CA3AF",
-                          fontWeight: 600,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.04em",
-                        }}
-                      >
-                        {h}
-                      </th>
+                  <tr style={{ background:"#F9FAFB", borderBottom:"2px solid #F3F4F6" }}>
+                    {[
+                      { label:"Game",         align:"left",   w:220 },
+                      { label:"Date",          align:"center", w:100 },
+                      { label:"Barcode Range", align:"left",   w:230 },
+                      { label:"Total",         align:"right",  w:80  },
+                      { label:"Sold",          align:"right",  w:80  },
+                      { label:"Remaining",     align:"right",  w:100 },
+                      { label:"Unit Price",    align:"right",  w:90  },
+                      { label:"Status",        align:"center", w:100 },
+                    ].map(h => (
+                      <th key={h.label} style={{
+                        padding:"10px 14px", textAlign: h.align as "left"|"right"|"center",
+                        fontSize:10, fontWeight:700, color:"#9CA3AF",
+                        textTransform:"uppercase", letterSpacing:"0.05em",
+                        width: h.w, whiteSpace:"nowrap",
+                      }}>{h.label}</th>
                     ))}
-                    <th
-                      className="px-4 py-3"
-                      style={{
-                        fontSize: 10,
-                        color: "#9CA3AF",
-                        fontWeight: 600,
-                        width: 72,
-                      }}
-                    />
+                    <th style={{ width:70 }}/>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((b) => {
                     const isLow = b.remaining_qty <= b.low_stock_threshold;
+                    const isNLB = ["ada sampatha","dhana nidhanaya","govi setha","hada hana","mahajana sampatha","mega power","nlb jaya","suba dasawak"].some(n => b.game_name.toLowerCase().includes(n));
                     return (
-                      <tr
-                        key={b.id}
-                        className="hover:bg-gray-50/60 transition-colors"
-                        style={{
-                          borderBottom: "1px solid #F9F9F9",
-                          background: isLow ? "#FFF8F8" : undefined,
-                        }}
-                      >
-                        <td className="px-3 py-2.5">
-                          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                      <tr key={b.id}
+                        style={{ borderBottom:"1px solid #F3F4F6", background: isLow?"#FFF8F8":undefined }}
+                        onMouseEnter={e => { if (!isLow) (e.currentTarget as HTMLElement).style.background="#F9FAFB"; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isLow?"#FFF8F8":""; }}>
+
+                        {/* Game — logo + name + board */}
+                        <td style={{ padding:"10px 14px" }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                             <img src={resolveLogoUrl(b.game_name)} alt=""
-                              style={{ width:52, height:52, objectFit:"contain", borderRadius:7, flexShrink:0, background:"#F3F4F6" }}
-                              onError={e=>{(e.currentTarget as HTMLImageElement).src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='38' height='38'%3E%3Crect width='38' height='38' rx='7' fill='%23F3F4F6'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='18'%3E🎫%3C/text%3E%3C/svg%3E"}}/>
+                              style={{ width:52, height:52, objectFit:"contain", borderRadius:8, flexShrink:0, background:"#F3F4F6", padding:2 }}
+                              onError={e=>{(e.currentTarget as HTMLImageElement).src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='52'%3E%3Crect width='52' height='52' rx='8' fill='%23F3F4F6'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='24'%3E🎫%3C/text%3E%3C/svg%3E"}}/>
                             <div>
                               <div style={{ fontSize:13, fontWeight:700, color:"#111827", display:"flex", alignItems:"center", gap:5 }}>
-                                {isLow && <AlertTriangle size={11} style={{ color:"#CF291D", flexShrink:0 }}/>}
+                                {isLow && <AlertTriangle size={12} style={{ color:"#CF291D" }}/>}
                                 {b.game_name}
                               </div>
-                              <div style={{ fontSize:10, color:"#9CA3AF", marginTop:1 }}>
-                                {b.game_name.toLowerCase().includes("nlb") || ["ada sampatha","dhana nidhanaya","govi setha","hada hana","mahajana sampatha","mega power","nlb jaya","suba dasawak"].some(n => b.game_name.toLowerCase().includes(n))
-                                  ? <span style={{ color:"#1d4ed8", fontWeight:600 }}>📘 NLB</span>
-                                  : <span style={{ color:"#c2410c", fontWeight:600 }}>📙 DLB</span>}
-                              </div>
+                              <span style={{
+                                marginTop:3, display:"inline-block", padding:"1px 8px", borderRadius:20,
+                                fontSize:9, fontWeight:700,
+                                background: isNLB?"#DBEAFE":"#FFEDD5",
+                                color: isNLB?"#1d4ed8":"#c2410c",
+                              }}>
+                                {isNLB?"📘 NLB":"📙 DLB"}
+                              </span>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-xs font-mono" style={{ color: "#2563eb" }}>
-                          {b.batch_number || "—"}
-                        </td>
-                        <td className="px-4 py-3 text-xs" style={{ color: "#7c3aed" }}>
-                          {b.nlb_dlb_category
-                            ? <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                                style={{ background:"#F3E8FF", color:"#7c3aed" }}>{b.nlb_dlb_category}</span>
-                            : "—"}
-                        </td>
-                        <td className="px-4 py-3 text-sm" style={{ color: "#6B7280" }}>
+
+                        {/* Batch date */}
+                        <td style={{ padding:"10px 14px", textAlign:"center", fontSize:12, color:"#6B7280" }}>
                           {fmtDate(b.batch_date)}
                         </td>
-                        <td className="px-4 py-3 text-xs font-mono" style={{ color: "#6B7280" }}>
-                          {b.barcode_start} → {b.barcode_end}
+
+                        {/* Barcode range — compact with two lines */}
+                        <td style={{ padding:"10px 14px" }}>
+                          <div style={{ fontSize:11, fontFamily:"monospace", color:"#374151", lineHeight:1.7 }}>
+                            <span style={{ color:"#2563EB", fontWeight:700 }}>{b.barcode_start}</span>
+                            <span style={{ color:"#9CA3AF", margin:"0 4px" }}>→</span>
+                            <span style={{ color:"#7C3AED", fontWeight:700 }}>{b.barcode_end}</span>
+                          </div>
+                          <div style={{ fontSize:9, color:"#9CA3AF", marginTop:1 }}>
+                            {b.total_qty > 0 ? `${Math.ceil(b.total_qty / (b.tickets_per_book||100))} books × ${b.tickets_per_book||100}` : ""}
+                          </div>
                         </td>
-                        <td className="px-4 py-3 text-xs font-mono" style={{ color: "#9CA3AF" }}>
-                          {b.ticket_start_no && b.ticket_end_no
-                            ? `${b.ticket_start_no} → ${b.ticket_end_no}`
-                            : b.barcode_start && b.barcode_end
-                            ? <span style={{ color:"#6B7280" }}>{b.barcode_start} → {b.barcode_end}</span>
-                            : "—"}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-right" style={{ color: "#6B7280" }}>
-                          {b.books_qty ? `${b.books_qty} × ${b.tickets_per_book ?? 100}` : (
-                            b.total_qty > 0 && (b.tickets_per_book ?? 100) > 0
-                              ? <span style={{ color:"#9CA3AF" }}>{Math.ceil(b.total_qty / (b.tickets_per_book ?? 100))} est.</span>
-                              : "—"
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-right" style={{ color: "#1D1D1D" }}>
+
+                        {/* Total */}
+                        <td style={{ padding:"10px 14px", textAlign:"right", fontSize:13, fontWeight:700, color:"#111827" }}>
                           {b.total_qty.toLocaleString()}
                         </td>
-                        <td className="px-4 py-3 text-sm text-right" style={{ color: "#3B82F6" }}>
+
+                        {/* Sold (distributed) */}
+                        <td style={{ padding:"10px 14px", textAlign:"right", fontSize:13, fontWeight:600, color:"#2563EB" }}>
                           {b.distributed_qty.toLocaleString()}
                         </td>
-                        <td className="px-4 py-3 text-sm text-right font-semibold" style={{ color: isLow ? "#CF291D" : "#16a34a" }}>
-                          {b.remaining_qty.toLocaleString()}
+
+                        {/* Remaining — big green/red */}
+                        <td style={{ padding:"10px 14px", textAlign:"right" }}>
+                          <div style={{ fontSize:16, fontWeight:900, color: isLow?"#CF291D":"#16a34a" }}>
+                            {b.remaining_qty.toLocaleString()}
+                          </div>
+                          {b.total_qty > 0 && (
+                            <div style={{ height:4, background:"#F3F4F6", borderRadius:999, marginTop:3, overflow:"hidden" }}>
+                              <div style={{ height:"100%", borderRadius:999,
+                                width:`${Math.min(100,(b.remaining_qty/b.total_qty)*100)}%`,
+                                background: isLow?"#CF291D":"#16a34a", transition:"width 0.3s" }}/>
+                            </div>
+                          )}
                         </td>
-                        <td className="px-4 py-3 text-xs" style={{ color: "#6B7280" }}>
-                          {b.warehouse_location
-                            ? <span className="flex items-center gap-1">
-                                <span>{b.warehouse_location}</span>
-                                {b.rack_tag && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold"
-                                  style={{ background:"#F3F4F6", color:"#6B7280" }}>{b.rack_tag}</span>}
-                              </span>
-                            : "—"}
+
+                        {/* Unit price */}
+                        <td style={{ padding:"10px 14px", textAlign:"right", fontSize:12, color:"#6B7280" }}>
+                          Rs. {fmt(b.unit_price)}
                         </td>
-                        <td className="px-4 py-3 text-sm text-right" style={{ color: "#6B7280" }}>
-                          {fmt(b.unit_price)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-white"
-                            style={{ background: isLow ? "#CF291D" : "#16a34a" }}>
-                            {isLow ? "Low Stock" : "In Stock"}
+
+                        {/* Status */}
+                        <td style={{ padding:"10px 14px", textAlign:"center" }}>
+                          <span style={{
+                            display:"inline-block", padding:"4px 12px", borderRadius:20,
+                            fontSize:11, fontWeight:700,
+                            background: isLow?"#FEE2E2":"#DCFCE7",
+                            color: isLow?"#CF291D":"#16a34a",
+                            border: `1px solid ${isLow?"#FECACA":"#BBF7D0"}`,
+                          }}>
+                            {isLow ? "⚠ Low Stock" : "✓ In Stock"}
                           </span>
                         </td>
                         <td className="px-3 py-3">
