@@ -454,14 +454,21 @@ async function initSchema() {
     "ALTER TABLE invoices ADD COLUMN discount_total REAL DEFAULT 0",
   ]) { try { await d.execute(col); } catch {} }
 
-  // invoice_items — books, discount, net_value
+  // invoice_items — books, discount, net_value, purchase_batch_id
   for (const col of [
     "ALTER TABLE invoice_items ADD COLUMN books_qty INTEGER DEFAULT 0",
     "ALTER TABLE invoice_items ADD COLUMN tickets_per_book INTEGER DEFAULT 0",
     "ALTER TABLE invoice_items ADD COLUMN discount_pct REAL DEFAULT 0",
     "ALTER TABLE invoice_items ADD COLUMN discount_amt REAL DEFAULT 0",
     "ALTER TABLE invoice_items ADD COLUMN net_value REAL DEFAULT 0",
+    "ALTER TABLE invoice_items ADD COLUMN purchase_batch_id INTEGER DEFAULT NULL",
   ]) { try { await d.execute(col); } catch {} }
+
+  // Index for fast batch-level sales tracking
+  try {
+    await d.execute("CREATE INDEX IF NOT EXISTS idx_ii_batch ON invoice_items(purchase_batch_id)");
+    await d.execute("CREATE INDEX IF NOT EXISTS idx_ii_barcode ON invoice_items(ticket_name, barcode_start, barcode_end)");
+  } catch {}
 
   // inventory_batches — ERP fields
   for (const col of [
@@ -714,13 +721,14 @@ export async function saveInvoice(invoice: Invoice): Promise<number> {
     await d.execute(
       `INSERT INTO invoice_items
        (invoice_id, sn, ticket_name, barcode_start, barcode_end, qty, qty_unit, unit_price, value,
-        books_qty, tickets_per_book, discount_pct, discount_amt, net_value)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        books_qty, tickets_per_book, discount_pct, discount_amt, net_value, purchase_batch_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [invoiceId, i + 1, item.ticket_name, item.barcode_start, item.barcode_end,
        item.qty, item.qty_unit, item.unit_price, item.value,
        item.books_qty ?? 0, item.tickets_per_book ?? 0,
        item.discount_pct ?? 0, item.discount_amt ?? 0,
-       item.net_value ?? item.value]
+       item.net_value ?? item.value,
+       item.purchase_batch_id ?? null]
     );
   };
 
@@ -999,6 +1007,73 @@ export async function saveInventoryBatch(batch: import("../types").InventoryBatc
 export async function deleteInventoryBatch(id: number): Promise<void> {
   const d = await getDb();
   await d.execute("DELETE FROM inventory_batches WHERE id=?", [id]);
+}
+
+// ── Batch Sales Tracking ──────────────────────────────────────────────────────
+
+/**
+ * Returns available inventory batches for a specific game, with sales tracking.
+ * Used in New Invoice to let the operator pick which batch to issue from.
+ */
+export async function getBatchesForGame(gameName: string): Promise<{
+  id: number; game_name: string; batch_date: string;
+  barcode_start: string; barcode_end: string;
+  total_qty: number; distributed_qty: number; remaining_qty: number;
+  sold_from_invoices: number; next_start_barcode: string;
+  batch_number: string; nlb_dlb_category: string;
+}[]> {
+  const d = await getDb();
+  const batches = await d.select<{
+    id: number; game_name: string; batch_date: string;
+    barcode_start: string; barcode_end: string;
+    total_qty: number; distributed_qty: number;
+    batch_number: string; nlb_dlb_category: string;
+  }[]>(
+    `SELECT id, game_name, batch_date, barcode_start, barcode_end,
+            total_qty, distributed_qty,
+            COALESCE(batch_number,'') as batch_number,
+            COALESCE(nlb_dlb_category,'') as nlb_dlb_category
+     FROM inventory_batches WHERE game_name=? ORDER BY batch_date ASC`,
+    [gameName]
+  );
+  return Promise.all(batches.map(async b => {
+    // Tickets sold via confirmed/paid invoices from this batch
+    const [soldRow] = await d.select<{ sold: number; max_end: string | null }[]>(`
+      SELECT COALESCE(SUM(ii.qty),0) as sold,
+             MAX(ii.barcode_end) as max_end
+      FROM invoice_items ii
+      JOIN invoices i ON i.id = ii.invoice_id
+      WHERE ii.purchase_batch_id = ?
+        AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')
+    `, [b.id]);
+    const sold      = soldRow?.sold ?? 0;
+    const maxEnd    = soldRow?.max_end ?? "";
+    // Next available start = last issued end (exclusive convention: end = first NOT included)
+    const nextStart = maxEnd || b.barcode_start;
+    const remaining = b.total_qty - b.distributed_qty;
+    return { ...b, sold_from_invoices: sold, next_start_barcode: nextStart, remaining_qty: remaining };
+  }));
+}
+
+/**
+ * Full sales detail for one batch: which invoices took tickets from it.
+ */
+export async function getBatchSalesDetail(batchId: number): Promise<{
+  invoice_id: number; invoice_number: string; agent_name: string;
+  invoice_date: string; invoice_status: string;
+  barcode_start: string; barcode_end: string; qty: number;
+}[]> {
+  const d = await getDb();
+  return d.select(`
+    SELECT ii.invoice_id, i.invoice_number, a.name as agent_name,
+           i.invoice_date, COALESCE(i.invoice_status,'paid') as invoice_status,
+           ii.barcode_start, ii.barcode_end, ii.qty
+    FROM invoice_items ii
+    JOIN invoices i ON i.id = ii.invoice_id
+    JOIN agents a ON a.id = i.agent_id
+    WHERE ii.purchase_batch_id = ?
+    ORDER BY ii.barcode_start ASC
+  `, [batchId]);
 }
 
 export async function getLowStockBatches() {

@@ -11,6 +11,7 @@ import {
   saveInvoice,
   getInvoiceWithItems,
   getInventoryBatches,
+  getBatchesForGame,
 } from "../services/database";
 import type { Agent, LotteryGame, Invoice, InvoiceItem, View } from "../types";
 import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode } from "../utils/barcode";
@@ -35,6 +36,9 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
   const [games, setGames] = useState<LotteryGame[]>([]);
   const [stockMap, setStockMap] = useState<Record<string, number>>({}); // game_name → available qty
   const [pickerRow, setPickerRow] = useState<number | null>(null); // which row is picking a ticket
+  // Batch picker: batchOptions[rowIndex] = list of batches for the selected game in that row
+  const [batchOptions, setBatchOptions] = useState<Record<number, Awaited<ReturnType<typeof getBatchesForGame>>>>({});
+  const [batchPickerRow, setBatchPickerRow] = useState<number | null>(null); // which row is picking a batch
   const [items, setItems] = useState<InvoiceItem[]>([EMPTY_ITEM()]);
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -129,13 +133,19 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
           const price = field === "unit_price" ? Number(value) : item.unit_price;
           updated.value = Math.round(qty * price * 100) / 100;
         }
-        // Auto-fill unit price when game is selected
+        // Auto-fill unit price when game is selected + load available batches
         if (field === "ticket_name") {
           const game = games.find((g) => g.name === value);
           if (game) {
             updated.unit_price = game.unit_price;
             updated.value = Math.round(updated.qty * game.unit_price * 100) / 100;
           }
+          // Reset batch when ticket changes
+          updated.purchase_batch_id = undefined;
+          // Load batches for this game asynchronously
+          getBatchesForGame(String(value)).then(batches => {
+            setBatchOptions(prev => ({ ...prev, [index]: batches }));
+          }).catch(() => {});
         }
         // Stock validation: cap qty at available stock
         if (field === "qty" || field === "barcode_end" || field === "barcode_start") {
@@ -196,6 +206,21 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
       });
       return next;
     });
+  }
+
+  /** Apply a purchase batch to a row: set batch_id and auto-fill next start barcode */
+  function applyBatch(rowIndex: number, batch: Awaited<ReturnType<typeof getBatchesForGame>>[0]) {
+    setBatchPickerRow(null);
+    setItems(prev => prev.map((item, i) => {
+      if (i !== rowIndex) return item;
+      return {
+        ...item,
+        purchase_batch_id: batch.id,
+        barcode_start: batch.next_start_barcode,
+        // End will auto-calculate when qty is entered
+        barcode_end: item.qty > 0 ? calcEndBarcode(batch.next_start_barcode, item.qty) : "",
+      };
+    }));
   }
 
   function addItem() {
@@ -543,6 +568,10 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                   >
                     🎫 Ticket (click to pick)
                   </th>
+                  <th className="px-4 py-3 text-left"
+                    style={{ fontSize:10, color:"#9CA3AF", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", minWidth:130 }}>
+                    📦 Batch
+                  </th>
                   <th
                     className="px-4 py-3 text-left"
                     style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", minWidth: 130 }}
@@ -641,6 +670,63 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                         onClose={() => setPickerRow(null)}
                       />
                     )}
+
+                    {/* Batch selector */}
+                    <td className="px-2 py-1.5" style={{ minWidth:130 }}>
+                      {item.ticket_name ? (
+                        <div>
+                          <button type="button"
+                            onClick={() => setBatchPickerRow(batchPickerRow === i ? null : i)}
+                            style={{
+                              display:"flex", flexDirection:"column", width:"100%",
+                              padding:"4px 8px", border:`1px solid ${item.purchase_batch_id?"#BBF7D0":"#E5E7EB"}`,
+                              borderRadius:6, background: item.purchase_batch_id?"#F0FFF4":"#FAFAFA",
+                              cursor:"pointer", textAlign:"left", fontSize:10,
+                            }}>
+                            <span style={{ fontWeight:700, color: item.purchase_batch_id?"#16A34A":"#CF291D" }}>
+                              {item.purchase_batch_id
+                                ? `📦 Batch #${item.purchase_batch_id}`
+                                : "📦 Select Batch"}
+                            </span>
+                            {item.purchase_batch_id && batchOptions[i]?.find(b=>b.id===item.purchase_batch_id) && (
+                              <span style={{ color:"#6B7280" }}>
+                                {batchOptions[i].find(b=>b.id===item.purchase_batch_id)?.remaining_qty.toLocaleString()} left
+                              </span>
+                            )}
+                          </button>
+                          {/* Batch dropdown */}
+                          {batchPickerRow === i && (
+                            <div style={{ position:"absolute", zIndex:200, background:"#fff", border:"1px solid #E5E7EB", borderRadius:10, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", minWidth:280, maxHeight:280, overflowY:"auto" }}>
+                              <div style={{ padding:"8px 12px 6px", borderBottom:"1px solid #F3F4F6", fontSize:11, fontWeight:700, color:"#374151" }}>
+                                Available Batches for {item.ticket_name}
+                              </div>
+                              {(batchOptions[i] ?? []).length === 0 ? (
+                                <div style={{ padding:"12px", fontSize:11, color:"#9CA3AF" }}>No batches found — add stock in Stock Purchases</div>
+                              ) : (batchOptions[i] ?? []).map(b => (
+                                <button key={b.id} type="button" onClick={() => applyBatch(i, b)}
+                                  style={{ display:"flex", flexDirection:"column", width:"100%", padding:"8px 12px", border:"none", background: b.id===item.purchase_batch_id?"#F0FFF4":"#fff", textAlign:"left", cursor:"pointer", borderBottom:"1px solid #F9FAFB" }}
+                                  onMouseEnter={e=>{e.currentTarget.style.background="#F9FAFB"}}
+                                  onMouseLeave={e=>{e.currentTarget.style.background=b.id===item.purchase_batch_id?"#F0FFF4":"#fff"}}>
+                                  <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, fontWeight:700, color:"#111827" }}>
+                                    <span>Batch #{b.id} · {b.batch_date}</span>
+                                    <span style={{ color: b.remaining_qty<100?"#EF4444":"#16A34A", fontWeight:900 }}>
+                                      {b.remaining_qty.toLocaleString()} left
+                                    </span>
+                                  </div>
+                                  <div style={{ fontSize:10, color:"#6B7280", marginTop:2, fontFamily:"monospace" }}>
+                                    Next start: <strong style={{ color:"#2563EB" }}>{b.next_start_barcode}</strong>
+                                    {b.sold_from_invoices > 0 && <span style={{ marginLeft:8, color:"#CF291D" }}>Sold: {b.sold_from_invoices.toLocaleString()}</span>}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span style={{ fontSize:10, color:"#D1D5DB" }}>pick ticket first</span>
+                      )}
+                    </td>
+
                     <td className="px-2 py-1.5" id={`row-${i}-bc-start`}>
                       <input
                         type="text"

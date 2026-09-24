@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Plus, Trash2, X, Save, RefreshCw, ShoppingCart,
   Home, ChevronRight, Package,
@@ -8,6 +8,7 @@ import {
   getPurchaseInvoices, savePurchaseInvoice, deletePurchaseInvoice,
   getPurchasePayments, savePurchasePayment, deletePurchasePayment,
   getNextPurchaseNumber, getSupplierOutstanding, getLotteryGames,
+  getBatchesForGame, getBatchSalesDetail,
 } from "../services/database";
 import type {
   PurchaseInvoice, PurchaseInvoiceItem, PurchasePayment, PurchasePaymentType,
@@ -41,6 +42,131 @@ const PAYMENT_TYPE_COLORS: Record<PurchasePaymentType, { bg: string; color: stri
 };
 
 // resolveLogoUrl is imported from TicketLogoPicker
+
+// ── Batch Sales Tracker sub-component ────────────────────────────────────────
+function BatchSalesTracker({ items }: { items: import("../types").PurchaseInvoiceItem[] }) {
+  const [open, setOpen] = React.useState<Record<number,boolean>>({});
+// fmt used in BatchDetailView
+
+  return (
+    <div style={{ padding:"0 20px 14px" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+        <div style={{ width:3, height:16, borderRadius:2, background:"#2563EB" }}/>
+        <span style={{ fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:"0.06em" }}>
+          📊 Sales Tracking — Invoices Issued From This Purchase
+        </span>
+      </div>
+      {items.map((item, idx) => (
+        <div key={idx} style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:10, marginBottom:8, overflow:"hidden" }}>
+          <button type="button" onClick={() => {
+            setOpen(p=>({...p,[idx]:!p[idx]}));
+          }} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", padding:"10px 14px", border:"none", background:"#F8FAFC", cursor:"pointer", textAlign:"left" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <img src={resolveLogoUrl(item.game_name)} alt="" style={{ width:32, height:32, objectFit:"contain", borderRadius:5, background:"#F3F4F6" }}
+                onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none"}}/>
+              <div>
+                <div style={{ fontSize:12, fontWeight:700, color:"#111827" }}>{item.game_name}</div>
+                <div style={{ fontSize:10, color:"#6B7280", fontFamily:"monospace" }}>
+                  {item.barcode_start} → {item.barcode_end} · {item.qty.toLocaleString()} tickets
+                  {item.draw_number && <span style={{ marginLeft:8, color:"#D97706" }}>Draw #{item.draw_number}</span>}
+                </div>
+              </div>
+            </div>
+            <span style={{ fontSize:18, color:"#9CA3AF" }}>{open[idx]?"▲":"▼"}</span>
+          </button>
+          {open[idx] && (
+            <BatchDetailView gameName={item.game_name} barcodeStart={item.barcode_start} totalQty={item.qty}/>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BatchDetailView({ gameName, barcodeStart, totalQty }: {
+  gameName: string; barcodeStart: string; totalQty: number;
+}) {
+  const [batches, setBatches] = React.useState<Awaited<ReturnType<typeof getBatchesForGame>>>([]);
+  const [salesRows, setSalesRows] = React.useState<any[]>([]);
+  const [loaded, setLoaded] = React.useState(false);
+
+  React.useEffect(() => {
+    getBatchesForGame(gameName).then(b => {
+      setBatches(b);
+      // Find the matching batch by barcode range
+      const match = b.find(x => x.barcode_start === barcodeStart);
+      if (match) {
+        getBatchSalesDetail(match.id).then(rows => { setSalesRows(rows); setLoaded(true); });
+      } else setLoaded(true);
+    });
+  }, [gameName, barcodeStart]);
+
+  const batch = batches.find(x => x.barcode_start === barcodeStart);
+  const soldQty = salesRows.reduce((s,r) => s+r.qty, 0);
+  const remaining = totalQty - soldQty;
+
+  if (!loaded) return <div style={{ padding:"12px 14px", fontSize:11, color:"#9CA3AF" }}>Loading…</div>;
+
+  return (
+    <div style={{ padding:"10px 14px" }}>
+      {/* Mini progress bar */}
+      <div style={{ display:"flex", gap:12, marginBottom:10 }}>
+        {[
+          { label:"Total", val:totalQty, color:"#374151" },
+          { label:"Sold to Agents", val:soldQty, color:"#CF291D" },
+          { label:"Remaining", val:remaining, color:"#16A34A" },
+          { label:"Next Start", val:batch?.next_start_barcode ?? barcodeStart, color:"#2563EB", isStr:true },
+        ].map(c => (
+          <div key={c.label} style={{ flex:1, padding:"8px 10px", background:"#F9FAFB", borderRadius:8, border:"1px solid #E5E7EB" }}>
+            <div style={{ fontSize:9, color:"#9CA3AF", fontWeight:700, textTransform:"uppercase", marginBottom:3 }}>{c.label}</div>
+            <div style={{ fontSize:(c as any).isStr?11:15, fontWeight:900, color:c.color, fontFamily:(c as any).isStr?"monospace":"inherit" }}>
+              {(c as any).isStr ? c.val : (c.val as number).toLocaleString()}
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* Progress bar */}
+      <div style={{ background:"#F3F4F6", borderRadius:999, height:6, overflow:"hidden", marginBottom:8 }}>
+        <div style={{ height:"100%", width:`${totalQty>0?(soldQty/totalQty*100):0}%`, background:"linear-gradient(90deg,#CF291D,#B50717)", borderRadius:999, transition:"width 0.3s" }}/>
+      </div>
+      <div style={{ fontSize:10, color:"#6B7280", marginBottom:salesRows.length?10:0 }}>
+        {soldQty.toLocaleString()} / {totalQty.toLocaleString()} tickets issued ({totalQty>0?Math.round(soldQty/totalQty*100):0}%)
+      </div>
+      {/* Sales rows */}
+      {salesRows.length > 0 && (
+        <table style={{ width:"100%", fontSize:11, borderCollapse:"collapse" }}>
+          <thead>
+            <tr style={{ background:"#F9FAFB" }}>
+              {["Invoice #","Agent","Date","Barcode Start","Barcode End","Qty","Status"].map(h => (
+                <th key={h} style={{ padding:"5px 8px", textAlign:"left", fontWeight:700, color:"#6B7280", fontSize:9, textTransform:"uppercase", borderBottom:"1px solid #E5E7EB" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {salesRows.map((r,i) => (
+              <tr key={i} style={{ borderBottom:"1px solid #F9FAFB" }}>
+                <td style={{ padding:"5px 8px", fontFamily:"monospace", fontWeight:700, color:"#CF291D" }}>#{r.invoice_number}</td>
+                <td style={{ padding:"5px 8px", color:"#111827", fontWeight:600 }}>{r.agent_name}</td>
+                <td style={{ padding:"5px 8px", color:"#6B7280" }}>{r.invoice_date}</td>
+                <td style={{ padding:"5px 8px", fontFamily:"monospace", color:"#2563EB" }}>{r.barcode_start}</td>
+                <td style={{ padding:"5px 8px", fontFamily:"monospace", color:"#7C3AED" }}>{r.barcode_end}</td>
+                <td style={{ padding:"5px 8px", textAlign:"right", fontWeight:700, color:"#16A34A" }}>{r.qty.toLocaleString()}</td>
+                <td style={{ padding:"5px 8px" }}>
+                  <span style={{ padding:"1px 7px", borderRadius:20, fontSize:9, fontWeight:700,
+                    background: r.invoice_status==="paid"?"#DCFCE7":r.invoice_status==="confirmed"?"#DBEAFE":"#F3F4F6",
+                    color: r.invoice_status==="paid"?"#16A34A":r.invoice_status==="confirmed"?"#2563EB":"#6B7280" }}>
+                    {r.invoice_status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {salesRows.length === 0 && <div style={{ fontSize:11, color:"#9CA3AF", textAlign:"center", padding:"8px 0" }}>No invoices issued from this batch yet</div>}
+    </div>
+  );
+}
 
 // ── Empty state helpers ───────────────────────────────────────────────────────
 
@@ -885,6 +1011,11 @@ export default function Purchases() {
                               );
                             })}
                           </div>
+                        )}
+
+                        {/* ── Sales Tracking per batch ── */}
+                        {pur.items && pur.items.length > 0 && (
+                          <BatchSalesTracker items={pur.items} />
                         )}
 
                         {/* ── Payment/Settlement history ── */}

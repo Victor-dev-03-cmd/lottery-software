@@ -74,9 +74,10 @@ export interface InvoiceItem {
   // ERP fields
   books_qty?: number;
   tickets_per_book?: number;
-  discount_pct?: number;    // percentage discount 0–100
-  discount_amt?: number;    // fixed Rs. discount
-  net_value?: number;       // value - discount (computed)
+  discount_pct?: number;      // percentage discount 0–100
+  discount_amt?: number;      // fixed Rs. discount
+  net_value?: number;         // value - discount (computed)
+  purchase_batch_id?: number; // links this line to the source inventory batch
 }
 
 export interface AgentSummary {
