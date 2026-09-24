@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Save, Printer, Calculator, Home, ChevronRight, Eye, EyeOff, Building2 } from "lucide-react";
+import { Plus, Trash2, Save, Printer, Calculator, Home, ChevronRight, Eye, EyeOff, Building2, Image } from "lucide-react";
+import TicketLogoPicker, { resolveLogoUrl } from "./TicketLogoPicker";
 import { getCompanySettings } from "../services/database";
 import type { CompanySettings } from "../types";
 import {
@@ -33,6 +34,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [games, setGames] = useState<LotteryGame[]>([]);
   const [stockMap, setStockMap] = useState<Record<string, number>>({}); // game_name → available qty
+  const [pickerRow, setPickerRow] = useState<number | null>(null); // which row is picking a ticket
   const [items, setItems] = useState<InvoiceItem[]>([EMPTY_ITEM()]);
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -532,9 +534,9 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                   </th>
                   <th
                     className="px-4 py-3 text-left"
-                    style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", minWidth: 180 }}
+                    style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", minWidth: 200 }}
                   >
-                    Ticket Name
+                    🎫 Ticket (click to pick)
                   </th>
                   <th
                     className="px-4 py-3 text-left"
@@ -599,18 +601,41 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                     style={{ borderBottom: "1px solid #F9F9F9" }}
                   >
                     <td className="px-4 py-2 text-xs" style={{ color: "#9CA3AF" }}>{i + 1}</td>
+                    {/* Ticket picker — click to open logo popup */}
                     <td className="px-2 py-1.5">
-                      <input
-                        list="games-list"
-                        value={item.ticket_name}
-                        onChange={(e) => updateItem(i, "ticket_name", e.target.value)}
-                        placeholder="Ticket name…"
-                        className="w-full rounded px-2 py-1 text-sm focus:outline-none"
-                        style={{ border: "1px solid transparent", background: "transparent", color: "#1D1D1D" }}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = "#CF291D")}
-                        onBlur={(e) => (e.currentTarget.style.borderColor = "transparent")}
-                      />
+                      <button type="button" onClick={() => setPickerRow(i)}
+                        style={{
+                          display:"flex", alignItems:"center", gap:8, width:"100%",
+                          padding:"5px 8px", border:`1px solid ${item.ticket_name?"#E5E7EB":"#CF291D"}`,
+                          borderRadius:8, background: item.ticket_name?"transparent":"#FEF2F2",
+                          cursor:"pointer", textAlign:"left", minWidth:180,
+                        }}>
+                        {item.ticket_name ? (
+                          <>
+                            <img src={resolveLogoUrl(item.ticket_name)} alt=""
+                              style={{ width:52, height:52, objectFit:"contain", borderRadius:7, flexShrink:0, background:"#F3F4F6" }}
+                              onError={e=>{(e.currentTarget as HTMLImageElement).src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='52'%3E%3Crect width='52' height='52' rx='7' fill='%23F3F4F6'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='24'%3E🎫%3C/text%3E%3C/svg%3E"}}/>
+                            <div>
+                              <div style={{ fontSize:12, fontWeight:700, color:"#111827" }}>{item.ticket_name}</div>
+                              <div style={{ fontSize:10, color:"#9CA3AF" }}>tap to change</div>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <Image size={16} style={{ color:"#CF291D", flexShrink:0 }}/>
+                            <span style={{ fontSize:12, fontWeight:600, color:"#CF291D" }}>Select Ticket…</span>
+                          </>
+                        )}
+                      </button>
                     </td>
+                    {/* Logo picker modal for this row */}
+                    {pickerRow === i && (
+                      <TicketLogoPicker
+                        currentValue={item.ticket_name}
+                        onSelect={name => { updateItem(i, "ticket_name", name); setPickerRow(null); }}
+                        onClose={() => setPickerRow(null)}
+                      />
+                    )}
                     <td className="px-2 py-1.5">
                       <input
                         type="text"
