@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import {
   Plus, Trash2, X, Save, RefreshCw, Home, ChevronRight,
-  RotateCcw, CheckCircle, AlertTriangle, ShoppingCart,
+  RotateCcw, CheckCircle, AlertTriangle, ShoppingCart, Image,
 } from "lucide-react";
+import TicketLogoPicker from "./TicketLogoPicker";
+import { resolveLogoUrl } from "./TicketLogoPicker";
 import {
   getDb, getLotteryGames, getPurchaseInvoices,
 } from "../services/database";
@@ -143,6 +145,7 @@ export default function SupplierReturns() {
 
   const [returns, setReturns]         = useState<SupplierReturn[]>([]);
   const [games, setGames]             = useState<LotteryGame[]>([]);
+  const [showLogoPicker, setLogoPicker] = useState(false);
   const [invoices, setInvoices]       = useState<PurchaseInvoice[]>([]);
   const [loading, setLoading]         = useState(true);
   const [authError, setAuthError]     = useState<string | null>(null);
@@ -584,18 +587,38 @@ export default function SupplierReturns() {
             />
           </div>
 
-          {/* Game */}
+          {/* Game — logo picker */}
           <div>
             <FieldLabel>Game / Ticket Name *</FieldLabel>
-            <FocusSelect
-              value={form.game_name}
-              onChange={(e) => setField("game_name", e.target.value)}
-            >
-              <option value="">— Select Game —</option>
-              {games.map((g) => (
-                <option key={g.id} value={g.name}>{g.name}</option>
-              ))}
-            </FocusSelect>
+            <button type="button" onClick={() => setLogoPicker(true)}
+              style={{
+                display:"flex", alignItems:"center", gap:10, width:"100%",
+                padding:"8px 12px", border:`1px solid ${form.game_name?"#E5E7EB":"#CF291D"}`,
+                borderRadius:8, background: form.game_name?"#F9FAFB":"#FEF2F2",
+                cursor:"pointer", textAlign:"left",
+              }}>
+              {form.game_name ? (
+                <>
+                  <img src={resolveLogoUrl(form.game_name)} alt=""
+                    style={{ width:32, height:32, objectFit:"contain", borderRadius:5, flexShrink:0 }}
+                    onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none"}}/>
+                  <span style={{ fontSize:13, fontWeight:700, color:"#111827", flex:1 }}>{form.game_name}</span>
+                  <span style={{ fontSize:11, color:"#9CA3AF" }}>click to change</span>
+                </>
+              ) : (
+                <>
+                  <Image size={18} style={{ color:"#CF291D", flexShrink:0 }}/>
+                  <span style={{ fontSize:13, fontWeight:600, color:"#CF291D" }}>Click to select ticket…</span>
+                </>
+              )}
+            </button>
+            {showLogoPicker && (
+              <TicketLogoPicker
+                currentValue={form.game_name}
+                onSelect={name => { setField("game_name", name); setLogoPicker(false); }}
+                onClose={() => setLogoPicker(false)}
+              />
+            )}
           </div>
 
           {/* Barcode row */}

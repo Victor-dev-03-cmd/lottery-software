@@ -14,7 +14,7 @@ import type {
 } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 import { cleanBarcode, calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, lastTicketBarcode } from "../utils/barcode";
-import TicketLogoPicker from "./TicketLogoPicker";
+import TicketLogoPicker, { resolveLogoUrl } from "./TicketLogoPicker";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -40,33 +40,7 @@ const PAYMENT_TYPE_COLORS: Record<PurchasePaymentType, { bg: string; color: stri
   return_credit: { bg: "#F3E8FF", color: "#7c3aed" },
 };
 
-// ── Logo URL resolver ─────────────────────────────────────────────────────────
-
-const LOGO_MAP: Record<string, [string, string]> = {
-  "ada sampatha":        ["Ada Sampatha.png", "nlb_logos"],
-  "dhana nidhanaya":     ["Dhana Nidhanaya.png", "nlb_logos"],
-  "govi setha":          ["Govi Setha.png", "nlb_logos"],
-  "hada hana":           ["Hada Hana.png", "nlb_logos"],
-  "mahajana sampatha":   ["MAHAJANA SAMPATHA.png", "nlb_logos"],
-  "mega power":          ["mega power.png", "nlb_logos"],
-  "nlb jaya":            ["Nlb Jaya.png", "nlb_logos"],
-  "suba dasawak":        ["Suba Dasawak.png", "nlb_logos"],
-  "ada kotipathi":       ["ada-kotipathi.png", "dlb_logos"],
-  "jaya sampatha":       ["Jaya Sampatha.png", "dlb_logos"],
-  "kapruka":             ["Kapruka.png", "dlb_logos"],
-  "lagna wasanawa":      ["LAGNA WASANAWA.png", "dlb_logos"],
-  "sasiri":              ["Sasiri.png", "dlb_logos"],
-  "shanida wasanawa":    ["Shanida Wasanawa.png", "dlb_logos"],
-  "super ball":          ["Super Ball.png", "dlb_logos"],
-  "supiri dana sampatha":["Supiri Dana Sampatha.png", "dlb_logos"],
-};
-
-function resolveLogoUrl(name: string): string {
-  const key = name.toLowerCase().trim();
-  const found = LOGO_MAP[key];
-  if (found) return `/${found[1]}/${found[0]}`;
-  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Crect width='28' height='28' rx='4' fill='%23F3F4F6'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='14'%3E🎫%3C/text%3E%3C/svg%3E`;
-}
+// resolveLogoUrl is imported from TicketLogoPicker
 
 // ── Empty state helpers ───────────────────────────────────────────────────────
 
