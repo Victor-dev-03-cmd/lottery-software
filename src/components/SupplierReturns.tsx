@@ -420,9 +420,15 @@ export default function SupplierReturns() {
                         <td className="px-4 py-3 text-sm whitespace-nowrap" style={{ color: "#6B7280" }}>
                           {fmtDate(r.return_date)}
                         </td>
-                        {/* Game */}
-                        <td className="px-4 py-3 text-sm font-semibold" style={{ color: "#1D1D1D" }}>
-                          {r.game_name}
+                        {/* Game — logo + name */}
+                        <td className="px-4 py-3">
+                          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                            <img src={resolveLogoUrl(r.game_name)} alt=""
+                              style={{ width:36, height:36, objectFit:"contain", borderRadius:6, flexShrink:0, background:"#F3F4F6" }}
+                              onError={e => { (e.currentTarget as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Crect width='36' height='36' rx='6' fill='%23F3F4F6'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='18'%3E🎫%3C/text%3E%3C/svg%3E"; }}
+                            />
+                            <span style={{ fontSize:13, fontWeight:700, color:"#111827" }}>{r.game_name}</span>
+                          </div>
                         </td>
                         {/* Barcode range */}
                         <td className="px-4 py-3 text-xs font-mono whitespace-nowrap" style={{ color: "#6B7280" }}>
