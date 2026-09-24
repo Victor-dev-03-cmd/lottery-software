@@ -4,7 +4,7 @@ import {
   Save, Plus, Trash2, RefreshCw, Database, Shield, Printer,
   DollarSign, Gamepad2, Building2, CheckCircle, AlertTriangle,
   ToggleLeft, ToggleRight, Eye, EyeOff, HardDrive, RotateCcw,
-  Pencil, X, Home, ChevronRight, Cloud, FlaskConical, Lock, ShieldCheck,
+  Pencil, X, Home, ChevronRight, Cloud, Lock, ShieldCheck,
 } from "lucide-react";
 import { testSupabaseConnection } from "../services/supabase";
 import {
@@ -13,13 +13,13 @@ import {
   getAgentsWithCreditLimit, updateAgentCreditLimit,
   getAppSettings, saveSettings,
 } from "../services/database";
-import { seedDemoData, clearDemoData } from "../services/seedData";
+
 import ImportDataTab from "./ImportDataTab";
 import SoftwareUpdateTab from "./SoftwareUpdateTab";
 import type { CompanySettings, LotteryGame } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 
-type Tab = "general" | "games" | "financial" | "printing" | "security" | "ai" | "updates" | "import" | "demo";
+type Tab = "general" | "games" | "financial" | "printing" | "security" | "ai" | "updates" | "import";
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "general",   label: "General",           icon: <Building2 size={15} /> },
@@ -30,7 +30,6 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "ai",        label: "AI Configuration",  icon: <span style={{ fontSize: 13 }}>🧠</span> },
   { key: "updates",   label: "Software Updates",  icon: <span style={{ fontSize: 13 }}>🔄</span> },
   { key: "import",    label: "Import Data",       icon: <span style={{ fontSize: 13 }}>📥</span> },
-  { key: "demo",      label: "Demo Data",         icon: <FlaskConical size={15} /> },
 ];
 
 export default function Settings() {
@@ -99,7 +98,6 @@ export default function Settings() {
             {activeTab === "ai"        && <AIConfigTab />}
             {activeTab === "updates"   && <SoftwareUpdateTab />}
             {activeTab === "import"    && <ImportDataTab />}
-            {activeTab === "demo"      && <DemoDataTab />}
           </div>
         </div>
       </div>
@@ -1357,132 +1355,6 @@ function AIConfigTab() {
               ))}
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Demo Data Tab ─────────────────────────────────────────────────────────────
-
-function DemoDataTab() {
-  const [status, setStatus] = useState<string>("");
-  const [loading, setLoading] = useState(false);
-
-  async function handleSeed() {
-    if (!confirm("Load demo data? This adds 5 agents, 13 invoices, 8 inventory batches, 7 payments, 6 returns, 14 collections, 3 purchases and 8 live results.\n\nSkips automatically if agents already exist.")) return;
-    setLoading(true);
-    setStatus("Seeding demo data…");
-    try {
-      const result = await seedDemoData();
-      if (result.skipped) {
-        setStatus("ℹ Demo data skipped — agents already exist. Clear first if you want to re-seed.");
-      } else {
-        setStatus(
-          `✓ Demo data loaded successfully!\n` +
-          `• ${result.agents} agents\n` +
-          `• ${result.invoices} invoices\n` +
-          `• ${result.inventory} inventory batches\n` +
-          `• ${result.payments} payments\n` +
-          `• ${result.returns} returns\n` +
-          `• ${result.collections} daily collections\n` +
-          `• ${result.purchases} purchase invoices\n` +
-          `• ${result.results} live results\n\n` +
-          `Navigate to any page to see the data.`
-        );
-      }
-    } catch (e) {
-      setStatus(`✗ Error: ${String(e)}`);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleClear() {
-    if (!confirm("⚠ This will DELETE ALL data in the database (agents, invoices, inventory, payments, returns, collections, purchases, results). This cannot be undone. Continue?")) return;
-    setLoading(true);
-    setStatus("Clearing all data…");
-    try {
-      await clearDemoData();
-      setStatus("✓ All data cleared. You can now re-seed demo data or enter real data.");
-    } catch (e) {
-      setStatus(`✗ Error: ${String(e)}`);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const isSuccess = status.startsWith("✓");
-  const isError   = status.startsWith("✗");
-
-  return (
-    <div className="space-y-5">
-      {/* Header card */}
-      <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-3.5 flex items-center gap-2"
-          style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #7c3aed" }}>
-          <FlaskConical size={15} style={{ color: "#7c3aed" }}/>
-          <span className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Demo Data</span>
-        </div>
-        <div className="p-5 space-y-4">
-          <p className="text-sm" style={{ color: "#6B7280" }}>
-            Populate the database with realistic Sri Lankan lottery distribution data to preview all pages.
-            Safe to run on an empty database. Skip-safe — will not duplicate data if agents already exist.
-          </p>
-
-          {/* What's included */}
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { icon: "👥", label: "5 agents",              sub: "Suresh, Nimal, Chaminda, Kumari, Prasad" },
-              { icon: "📋", label: "13 invoices",           sub: "Mix of settled, partial, outstanding" },
-              { icon: "📦", label: "8 inventory batches",   sub: "NLB + DLB with ERP fields" },
-              { icon: "💰", label: "7 payments",            sub: "Cash, cheque, NLB winning types" },
-              { icon: "↩",  label: "6 ticket returns",      sub: "Unsold, damaged, expired, exchange" },
-              { icon: "📝", label: "14 collections",        sub: "5 routes, 3 days, with cheque details" },
-              { icon: "🛒", label: "3 purchases",           sub: "Nimalsiri invoices with payments" },
-              { icon: "🎯", label: "8 live results",        sub: "NLB & DLB draw results" },
-            ].map(item => (
-              <div key={item.label} className="flex items-start gap-2.5 p-3 rounded-xl"
-                style={{ background: "#F9F9F9", border: "1px solid #F0F0F0" }}>
-                <span className="text-base shrink-0">{item.icon}</span>
-                <div>
-                  <p className="text-xs font-bold" style={{ color: "#1D1D1D" }}>{item.label}</p>
-                  <p className="text-[10px] mt-0.5" style={{ color: "#9CA3AF" }}>{item.sub}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Status message */}
-          {status && (
-            <div className="rounded-xl px-4 py-3 whitespace-pre-line text-xs font-medium"
-              style={{
-                background: isSuccess ? "#F0FFF4" : isError ? "#FEF2F2" : "#EFF6FF",
-                border: `1px solid ${isSuccess ? "#BBF7D0" : isError ? "#FECACA" : "#BFDBFE"}`,
-                color: isSuccess ? "#16a34a" : isError ? "#CF291D" : "#1e40af",
-              }}>
-              {status}
-            </div>
-          )}
-
-          {/* Action buttons */}
-          <div className="flex gap-3 pt-1">
-            <button onClick={handleSeed} disabled={loading}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 disabled:opacity-50"
-              style={{ background: "linear-gradient(135deg,#7c3aed,#6d28d9)", boxShadow: "0 4px 14px rgba(124,58,237,0.3)" }}>
-              {loading ? <RefreshCw size={14} className="animate-spin"/> : <FlaskConical size={14}/>}
-              {loading ? "Loading…" : "Load Demo Data"}
-            </button>
-            <button onClick={handleClear} disabled={loading}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
-              style={{ background: "#FFFFFF", border: "1px solid #FECACA", color: "#CF291D" }}>
-              <Trash2 size={14}/> Clear All Data
-            </button>
-          </div>
-
-          <p className="text-[10px]" style={{ color: "#BFBFBF" }}>
-            ⚠ "Clear All Data" permanently deletes all records including real business data. Use only on a test database.
-          </p>
         </div>
       </div>
     </div>
