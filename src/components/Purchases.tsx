@@ -666,7 +666,12 @@ export default function Purchases() {
               {purchases.map(pur => {
                 const isExpanded = expandedId === pur.id;
                 const pmts = paymentsMap[pur.id!] ?? [];
-                const paidAfter = pmts.reduce((s, p) => s + p.amount, 0);
+                const paidAfter    = pmts.reduce((s, p) => s + p.amount, 0);
+                // Return credits are already baked into pur.outstanding_balance by getPurchaseInvoices
+                // Compute them for display purposes
+                const returnCredit = Math.max(0,
+                  pur.invoice_total - pur.initial_payment - paidAfter - pur.outstanding_balance
+                );
                 const live = Math.max(0, pur.outstanding_balance);
                 const isSettled = live < 0.005;
 
@@ -796,11 +801,12 @@ export default function Purchases() {
                         {/* ── Financial summary strip ── */}
                         <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:12, padding:"14px 20px" }}>
                           {[
-                            { label:"Invoice Total",    val:pur.invoice_total,   color:"#111827", bg:"#fff",     border:"#E5E7EB" },
-                            { label:"Cash at Delivery", val:pur.initial_payment, color:"#16A34A", bg:"#F0FFF4",  border:"#BBF7D0" },
-                            { label:"Later Payments",   val:paidAfter,           color:"#2563EB", bg:"#EFF6FF",  border:"#BFDBFE" },
-                            { label:"Total Paid",       val:pur.initial_payment+paidAfter, color:"#7C3AED", bg:"#F5F3FF", border:"#DDD6FE" },
-                            { label:"Balance Owed",     val:live,                color: live>0?"#CF291D":"#16A34A", bg: live>0?"#FEF2F2":"#F0FFF4", border: live>0?"#FECACA":"#BBF7D0" },
+                            { label:"Invoice Total",      val:pur.invoice_total,                          color:"#111827", bg:"#fff",     border:"#E5E7EB" },
+                            { label:"Cash at Delivery",   val:pur.initial_payment,                         color:"#16A34A", bg:"#F0FFF4",  border:"#BBF7D0" },
+                            { label:"Later Payments",     val:paidAfter,                                   color:"#2563EB", bg:"#EFF6FF",  border:"#BFDBFE" },
+                            ...(returnCredit > 0 ? [{ label:"Return Credits", val:returnCredit, color:"#7C3AED", bg:"#F5F3FF", border:"#DDD6FE" }] : []),
+                            { label:"Total Settled",      val:pur.initial_payment+paidAfter+returnCredit,  color:"#059669", bg:"#F0FDF4",  border:"#A7F3D0" },
+                            { label:"Balance Owed",       val:live,                                         color: live>0?"#CF291D":"#16A34A", bg: live>0?"#FEF2F2":"#F0FFF4", border: live>0?"#FECACA":"#BBF7D0" },
                           ].map(c => (
                             <div key={c.label} style={{ padding:"10px 14px", borderRadius:10, background:c.bg, border:`1px solid ${c.border}` }}>
                               <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4 }}>{c.label}</div>
@@ -950,12 +956,29 @@ export default function Purchases() {
                                 })}
 
                                 {/* Total row */}
+                                {/* Return credits row — shown if any credited supplier returns */}
+                                {returnCredit > 0 && (
+                                  <tr style={{ background:"#F5F3FF", borderTop:"1px solid #DDD6FE" }}>
+                                    <td style={{ padding:"10px 14px", color:"#7C3AED", fontWeight:700 }}>R</td>
+                                    <td style={{ padding:"10px 14px" }}>
+                                      <div style={{ fontWeight:700, color:"#111827" }}>Supplier Returns</div>
+                                      <div style={{ fontSize:10, color:"#6B7280" }}>Tickets returned & credited</div>
+                                    </td>
+                                    <td style={{ padding:"10px 14px" }}>
+                                      <span style={{ padding:"2px 10px", borderRadius:20, fontSize:11, fontWeight:700, background:"#EDE9FE", color:"#7C3AED" }}>Return Credit</span>
+                                    </td>
+                                    <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:900, fontSize:14, color:"#7C3AED" }}>Rs. {fmt(returnCredit)}</td>
+                                    <td colSpan={2} style={{ padding:"10px 14px", fontSize:11, color:"#6B7280" }}>
+                                      See Return to Supplier page for details
+                                    </td>
+                                  </tr>
+                                )}
                                 <tr style={{ background:"#374151", borderTop:"2px solid #CF291D" }}>
                                   <td colSpan={3} style={{ padding:"10px 14px", color:"#9CA3AF", fontSize:11, fontWeight:700 }}>
-                                    TOTAL PAID ({1 + pmts.length} entries)
+                                    TOTAL SETTLED ({1 + pmts.length + (returnCredit>0?1:0)} entries)
                                   </td>
                                   <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:900, fontSize:15, color:"#fff" }}>
-                                    Rs. {fmt(pur.initial_payment + paidAfter)}
+                                    Rs. {fmt(pur.initial_payment + paidAfter + returnCredit)}
                                   </td>
                                   <td colSpan={2} style={{ padding:"10px 14px", textAlign:"right", fontWeight:900, fontSize:13, color: live>0?"#FCA5A5":"#86EFAC" }}>
                                     {live > 0 ? `Balance: Rs. ${fmt(live)} remaining` : "✅ Fully Settled"}

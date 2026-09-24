@@ -1773,20 +1773,31 @@ export async function getPurchaseInvoices(): Promise<import("../types").Purchase
     ORDER BY pi.purchase_date DESC, pi.id DESC
   `);
 
-  // Load items (including draw_number) for every purchase
+  // Load items + credited return credits for every purchase
   const withItems = await Promise.all(invoices.map(async inv => {
-    const items = await d.select<import("../types").PurchaseInvoiceItem[]>(
-      `SELECT id, purchase_id, game_name, barcode_start, barcode_end, qty, unit_price, value,
-              draw_number, batch_number, ticket_start_no, ticket_end_no, books_qty, tickets_per_book
-       FROM purchase_invoice_items WHERE purchase_id=? ORDER BY id ASC`,
-      [inv.id]
-    );
-    const postPmts = (inv as any).post_payments ?? 0;
+    const [items, returnCredits] = await Promise.all([
+      d.select<import("../types").PurchaseInvoiceItem[]>(
+        `SELECT id, purchase_id, game_name, barcode_start, barcode_end, qty, unit_price, value,
+                draw_number, batch_number, ticket_start_no, ticket_end_no, books_qty, tickets_per_book
+         FROM purchase_invoice_items WHERE purchase_id=? ORDER BY id ASC`,
+        [inv.id]
+      ),
+      // Sum of supplier returns that were credited against this purchase
+      d.select<{ credited: number }[]>(
+        `SELECT COALESCE(SUM(total_value), 0) as credited
+         FROM supplier_returns WHERE purchase_id=? AND status='credited'`,
+        [inv.id]
+      ),
+    ]);
+    const postPmts    = (inv as any).post_payments ?? 0;
+    const returnCredit = returnCredits[0]?.credited ?? 0;
+    // Live balance = invoice − cash paid − later payments − credited supplier returns
+    const liveBalance  = Math.max(0, inv.invoice_total - inv.initial_payment - postPmts - returnCredit);
     return {
       ...inv,
       items,
-      outstanding_balance: Math.max(0, inv.invoice_total - inv.initial_payment - postPmts),
-      status: ((inv.invoice_total - inv.initial_payment - postPmts) <= 0.005 ? "settled" : "pending") as "settled" | "pending",
+      outstanding_balance: liveBalance,
+      status: (liveBalance <= 0.005 ? "settled" : "pending") as "settled" | "pending",
     };
   }));
 
