@@ -812,23 +812,29 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                   <span className="text-sm font-semibold" style={{ color: "#1D1D1D" }}>{fmt(invoiceTotal)}</span>
                 </div>
 
-                {/* Previous Outstanding */}
+                {/* Previous Outstanding — READ-ONLY, auto-filled when agent is selected */}
                 <div>
                   <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>
                     Previous Outstanding
+                    <span style={{ marginLeft:6, fontSize:9, color:"#16A34A", fontWeight:600 }}>AUTO</span>
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    // toFixed(2) prevents raw floats like "13486.920000000013" in the input
-                    value={Number(prevOutstanding.toFixed(2)) || ""}
-                    placeholder="0"
-                    onChange={(e) => setPrevOutstanding(Number((parseFloat(e.target.value) || 0).toFixed(2)))}
-                    className="w-full rounded-lg px-3 py-2 text-sm text-right focus:outline-none"
-                    style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#1D1D1D" }}
-                    onFocus={(e) => { e.target.select(); e.currentTarget.style.borderColor = "#CF291D"; }}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = "#E8E8E8")}
-                  />
+                  <div style={{
+                    display:"flex", alignItems:"center", justifyContent:"flex-end",
+                    padding:"8px 12px", border:"1px solid #E5E7EB", borderRadius:8,
+                    background: prevOutstanding > 0 ? "#FEF9C3" : "#F9FAFB",
+                    fontSize:14, fontWeight:700,
+                    color: prevOutstanding > 0 ? "#92400E" : "#9CA3AF",
+                  }}>
+                    {prevOutstanding > 0 ? `Rs. ${fmt(prevOutstanding)}` : "Rs. 0.00"}
+                  </div>
+                  {prevOutstanding > 0 && (
+                    <div style={{ fontSize:10, color:"#D97706", marginTop:3, fontWeight:600 }}>
+                      ⚠ Agent has a previous debt of Rs. {fmt(prevOutstanding)}
+                    </div>
+                  )}
+                  <div style={{ fontSize:9, color:"#9CA3AF", marginTop:2 }}>
+                    Auto-filled when agent is selected · cannot be edited manually
+                  </div>
                 </div>
 
                 {/* Total Payable (read-only) */}
