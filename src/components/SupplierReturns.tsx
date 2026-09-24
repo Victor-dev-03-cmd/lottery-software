@@ -6,7 +6,7 @@ import {
 import TicketLogoPicker from "./TicketLogoPicker";
 import { resolveLogoUrl } from "./TicketLogoPicker";
 import {
-  getDb, getLotteryGames, getPurchaseInvoices,
+  getDb, getLotteryGames, getPurchaseInvoices, getBatchesForGame,
 } from "../services/database";
 import { useAuth } from "../contexts/AuthContext";
 import type { PurchaseInvoice, LotteryGame } from "../types";
@@ -146,6 +146,8 @@ export default function SupplierReturns() {
   const [returns, setReturns]         = useState<SupplierReturn[]>([]);
   const [games, setGames]             = useState<LotteryGame[]>([]);
   const [showLogoPicker, setLogoPicker] = useState(false);
+  const [batchOptions, setBatchOptions] = useState<Awaited<ReturnType<typeof getBatchesForGame>>>([]);
+  const [selectedBatchId, setSelectedBatchId] = useState<number | null>(null);
   const [invoices, setInvoices]       = useState<PurchaseInvoice[]>([]);
   const [loading, setLoading]         = useState(true);
   const [authError, setAuthError]     = useState<string | null>(null);
@@ -184,6 +186,8 @@ export default function SupplierReturns() {
 
   function closePanel() {
     setPanelOpen(false);
+    setSelectedBatchId(null);
+    setBatchOptions([]);
   }
 
   function setField(field: keyof SupplierReturn, value: string | number | null) {
@@ -621,16 +625,72 @@ export default function SupplierReturns() {
             {showLogoPicker && (
               <TicketLogoPicker
                 currentValue={form.game_name}
-                onSelect={name => { setField("game_name", name); setLogoPicker(false); }}
+                onSelect={name => {
+                  setField("game_name", name);
+                  setLogoPicker(false);
+                  setSelectedBatchId(null);
+                  getBatchesForGame(name).then(setBatchOptions).catch(() => setBatchOptions([]));
+                }}
                 onClose={() => setLogoPicker(false)}
               />
             )}
           </div>
 
+          {/* Batch selector — shown after ticket is selected */}
+          {form.game_name && (
+            <div>
+              <FieldLabel>📦 Select Batch to Return From</FieldLabel>
+              {batchOptions.length === 0 ? (
+                <div style={{ padding:"10px 12px", background:"#FEF9C3", borderRadius:8, fontSize:11, color:"#92400E", border:"1px solid #FDE68A" }}>
+                  ⚠ No batches found for {form.game_name}. Add stock in Stock Purchases first.
+                </div>
+              ) : (
+                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                  {batchOptions.map(b => {
+                    const isSelected = selectedBatchId === b.id;
+                    return (
+                      <button key={b.id} type="button"
+                        onClick={() => {
+                          setSelectedBatchId(b.id);
+                          setField("barcode_start", b.barcode_start);
+                          setField("unit_price", b.unit_price);
+                          if (form.qty > 0) setField("barcode_end", String(Number(b.barcode_start) + form.qty));
+                        }}
+                        style={{
+                          display:"flex", alignItems:"center", justifyContent:"space-between",
+                          padding:"10px 14px", border:`2px solid ${isSelected?"#CF291D":"#E5E7EB"}`,
+                          borderRadius:10, background: isSelected?"#FEF2F2":"#F9FAFB",
+                          cursor:"pointer", textAlign:"left", transition:"all 0.12s",
+                        }}>
+                        <div>
+                          <div style={{ fontSize:12, fontWeight:700, color:"#111827", marginBottom:3 }}>
+                            {isSelected && <span style={{ marginRight:5, color:"#CF291D" }}>✓</span>}
+                            Batch #{b.id} · {b.batch_date}
+                          </div>
+                          <div style={{ fontSize:10, fontFamily:"monospace", color:"#6B7280" }}>
+                            <span style={{ color:"#2563EB" }}>{b.barcode_start}</span>
+                            <span style={{ margin:"0 4px", color:"#9CA3AF" }}>→</span>
+                            <span style={{ color:"#7C3AED" }}>{b.barcode_end}</span>
+                          </div>
+                        </div>
+                        <div style={{ textAlign:"right" }}>
+                          <div style={{ fontSize:14, fontWeight:900, color: b.remaining_qty < 100?"#CF291D":"#16A34A" }}>
+                            {b.remaining_qty.toLocaleString()}
+                          </div>
+                          <div style={{ fontSize:9, color:"#9CA3AF" }}>available</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Barcode row */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <FieldLabel>Barcode Start</FieldLabel>
+              <FieldLabel>Barcode Start {selectedBatchId ? <span style={{ color:"#16A34A", fontWeight:600 }}>✓ auto-filled</span> : ""}</FieldLabel>
               <FocusInput
                 type="text"
                 value={form.barcode_start}

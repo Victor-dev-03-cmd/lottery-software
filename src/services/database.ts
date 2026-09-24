@@ -1020,17 +1020,17 @@ export async function getBatchesForGame(gameName: string): Promise<{
   barcode_start: string; barcode_end: string;
   total_qty: number; distributed_qty: number; remaining_qty: number;
   sold_from_invoices: number; next_start_barcode: string;
-  batch_number: string; nlb_dlb_category: string;
+  batch_number: string; nlb_dlb_category: string; unit_price: number;
 }[]> {
   const d = await getDb();
   const batches = await d.select<{
     id: number; game_name: string; batch_date: string;
     barcode_start: string; barcode_end: string;
-    total_qty: number; distributed_qty: number;
+    total_qty: number; distributed_qty: number; unit_price: number;
     batch_number: string; nlb_dlb_category: string;
   }[]>(
     `SELECT id, game_name, batch_date, barcode_start, barcode_end,
-            total_qty, distributed_qty,
+            total_qty, distributed_qty, unit_price,
             COALESCE(batch_number,'') as batch_number,
             COALESCE(nlb_dlb_category,'') as nlb_dlb_category
      FROM inventory_batches WHERE game_name=? ORDER BY batch_date ASC`,
