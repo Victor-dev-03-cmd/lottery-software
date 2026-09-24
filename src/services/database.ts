@@ -1786,7 +1786,7 @@ export async function getPurchaseInvoices(): Promise<import("../types").Purchase
       ...inv,
       items,
       outstanding_balance: Math.max(0, inv.invoice_total - inv.initial_payment - postPmts),
-      status: (inv.invoice_total - inv.initial_payment - postPmts) <= 0.005 ? "settled" : "pending",
+      status: ((inv.invoice_total - inv.initial_payment - postPmts) <= 0.005 ? "settled" : "pending") as "settled" | "pending",
     };
   }));
 
