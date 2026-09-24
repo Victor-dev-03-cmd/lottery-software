@@ -570,7 +570,7 @@ export default function Inventory() {
                         <td className="px-3 py-2.5">
                           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                             <img src={resolveLogoUrl(b.game_name)} alt=""
-                              style={{ width:38, height:38, objectFit:"contain", borderRadius:7, flexShrink:0, background:"#F3F4F6" }}
+                              style={{ width:52, height:52, objectFit:"contain", borderRadius:7, flexShrink:0, background:"#F3F4F6" }}
                               onError={e=>{(e.currentTarget as HTMLImageElement).src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='38' height='38'%3E%3Crect width='38' height='38' rx='7' fill='%23F3F4F6'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='18'%3E🎫%3C/text%3E%3C/svg%3E"}}/>
                             <div>
                               <div style={{ fontSize:13, fontWeight:700, color:"#111827", display:"flex", alignItems:"center", gap:5 }}>

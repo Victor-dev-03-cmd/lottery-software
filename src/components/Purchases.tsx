@@ -417,7 +417,7 @@ export default function Purchases() {
                                 {it.game_name ? (
                                   <>
                                     <img src={resolveLogoUrl(it.game_name)}
-                                      alt="" style={{ width:28, height:28, objectFit:"contain", borderRadius:4 }}
+                                      alt="" style={{ width:52, height:52, objectFit:"contain", borderRadius:7 }}
                                       onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none"}}/>
                                     <span style={{ fontSize:11, fontWeight:600, color:"#111827" }}>{it.game_name}</span>
                                   </>
@@ -835,7 +835,7 @@ export default function Purchases() {
                                   {/* Ticket logo + name */}
                                   <div style={{ width:130, flexShrink:0, background:"#F8FAFC", borderRight:"1px solid #E5E7EB", padding:"12px 14px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:6 }}>
                                     <img src={resolveLogoUrl(item.game_name)} alt=""
-                                      style={{ width:44, height:44, objectFit:"contain", borderRadius:6 }}
+                                      style={{ width:56, height:56, objectFit:"contain", borderRadius:6 }}
                                       onError={e=>{(e.currentTarget as HTMLImageElement).src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Crect width='44' height='44' rx='6' fill='%23F3F4F6'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='20'%3E🎫%3C/text%3E%3C/svg%3E"}}/>
                                     <span style={{ fontSize:11, fontWeight:700, color:"#111827", textAlign:"center", lineHeight:1.3 }}>{item.game_name}</span>
                                     {item.draw_number && (

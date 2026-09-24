@@ -424,7 +424,7 @@ export default function SupplierReturns() {
                         <td className="px-4 py-3">
                           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                             <img src={resolveLogoUrl(r.game_name)} alt=""
-                              style={{ width:36, height:36, objectFit:"contain", borderRadius:6, flexShrink:0, background:"#F3F4F6" }}
+                              style={{ width:52, height:52, objectFit:"contain", borderRadius:6, flexShrink:0, background:"#F3F4F6" }}
                               onError={e => { (e.currentTarget as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Crect width='36' height='36' rx='6' fill='%23F3F4F6'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='18'%3E🎫%3C/text%3E%3C/svg%3E"; }}
                             />
                             <span style={{ fontSize:13, fontWeight:700, color:"#111827" }}>{r.game_name}</span>
@@ -606,7 +606,7 @@ export default function SupplierReturns() {
               {form.game_name ? (
                 <>
                   <img src={resolveLogoUrl(form.game_name)} alt=""
-                    style={{ width:32, height:32, objectFit:"contain", borderRadius:5, flexShrink:0 }}
+                    style={{ width:52, height:52, objectFit:"contain", borderRadius:5, flexShrink:0 }}
                     onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none"}}/>
                   <span style={{ fontSize:13, fontWeight:700, color:"#111827", flex:1 }}>{form.game_name}</span>
                   <span style={{ fontSize:11, color:"#9CA3AF" }}>click to change</span>
