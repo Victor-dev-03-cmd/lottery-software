@@ -706,10 +706,19 @@ export default function Purchases() {
                         <p className="text-[10px]" style={{ color:"#9CA3AF" }}>{fmtDate(pur.purchase_date)}</p>
                       </div>
 
-                      {/* Supplier */}
+                      {/* Supplier + ticket summary */}
                       <div className="flex-1">
                         <p className="text-xs font-semibold" style={{ color:"#1D1D1D" }}>{pur.supplier_name}</p>
-                        <p className="text-[10px]" style={{ color:"#9CA3AF" }}>Stock for: {fmtDate(pur.stock_date)}</p>
+                        <p className="text-[10px]" style={{ color:"#9CA3AF" }}>
+                          Stock date: {fmtDate(pur.stock_date)}
+                          {pur.items && pur.items.length > 0 && (
+                            <span style={{ marginLeft:8, color:"#CF291D", fontWeight:600 }}>
+                              · {pur.items.reduce((s,it)=>s+it.qty,0).toLocaleString()} tickets
+                              · {pur.items.length} game{pur.items.length!==1?"s":""}
+                              {pur.items.some(it=>it.draw_number) && ` · Draw #${[...new Set(pur.items.map(it=>it.draw_number).filter(Boolean))].join(", ")}`}
+                            </span>
+                          )}
+                        </p>
                       </div>
 
                       {/* Financials */}

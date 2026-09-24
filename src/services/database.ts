@@ -1772,15 +1772,25 @@ export async function getPurchaseInvoices(): Promise<import("../types").Purchase
     FROM purchase_invoices pi
     ORDER BY pi.purchase_date DESC, pi.id DESC
   `);
-  // Compute live outstanding for each
-  return invoices.map(inv => ({
-    ...inv,
-    outstanding_balance: Math.max(0,
-      inv.invoice_total - inv.initial_payment - ((inv as any).post_payments ?? 0)
-    ),
-    status: (inv.invoice_total - inv.initial_payment - ((inv as any).post_payments ?? 0)) <= 0.005
-      ? "settled" : "pending",
+
+  // Load items (including draw_number) for every purchase
+  const withItems = await Promise.all(invoices.map(async inv => {
+    const items = await d.select<import("../types").PurchaseInvoiceItem[]>(
+      `SELECT id, purchase_id, game_name, barcode_start, barcode_end, qty, unit_price, value,
+              draw_number, batch_number, ticket_start_no, ticket_end_no, books_qty, tickets_per_book
+       FROM purchase_invoice_items WHERE purchase_id=? ORDER BY id ASC`,
+      [inv.id]
+    );
+    const postPmts = (inv as any).post_payments ?? 0;
+    return {
+      ...inv,
+      items,
+      outstanding_balance: Math.max(0, inv.invoice_total - inv.initial_payment - postPmts),
+      status: (inv.invoice_total - inv.initial_payment - postPmts) <= 0.005 ? "settled" : "pending",
+    };
   }));
+
+  return withItems;
 }
 
 export async function savePurchaseInvoice(
