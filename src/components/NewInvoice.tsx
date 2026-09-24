@@ -322,6 +322,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
           </button>
           {/* Save as Draft (gray) */}
           <button
+            data-save-draft
             onClick={() => handleSave("draft")}
             disabled={saving}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
@@ -387,6 +388,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                   type="text"
                   value={invoiceNumber}
                   onChange={(e) => setInvoiceNumber(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); (e.currentTarget.closest(".grid")?.querySelectorAll("input,select")[1] as HTMLElement)?.focus(); }}}
                   className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
                   style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#1D1D1D" }}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "#CF291D")}
@@ -636,31 +638,33 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                         onClose={() => setPickerRow(null)}
                       />
                     )}
-                    <td className="px-2 py-1.5">
+                    <td className="px-2 py-1.5" id={`row-${i}-bc-start`}>
                       <input
                         type="text"
                         value={item.barcode_start}
                         onChange={(e) => updateItem(i, "barcode_start", e.target.value)}
-                        placeholder="62900474690"
+                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); document.getElementById(`row-${i}-bc-end`)?.querySelector("input")?.focus(); }}}
+                        placeholder="Scan start barcode"
                         className="w-full rounded px-2 py-1 text-sm font-mono focus:outline-none"
                         style={{ border: "1px solid transparent", background: "transparent", color: "#1D1D1D" }}
                         onFocus={(e) => (e.currentTarget.style.borderColor = "#CF291D")}
                         onBlur={(e) => (e.currentTarget.style.borderColor = "transparent")}
                       />
                     </td>
-                    <td className="px-2 py-1.5">
+                    <td className="px-2 py-1.5" id={`row-${i}-bc-end`}>
                       <input
                         type="text"
                         value={item.barcode_end}
                         onChange={(e) => updateItem(i, "barcode_end", e.target.value)}
-                        placeholder="62900476939"
+                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); document.getElementById(`row-${i}-qty`)?.querySelector("input")?.focus(); }}}
+                        placeholder="Auto-filled"
                         className="w-full rounded px-2 py-1 text-sm font-mono focus:outline-none"
-                        style={{ border: "1px solid transparent", background: "transparent", color: "#1D1D1D" }}
+                        style={{ border: "1px solid transparent", background: "#F0FFF4", color: "#1D1D1D" }}
                         onFocus={(e) => (e.currentTarget.style.borderColor = "#CF291D")}
                         onBlur={(e) => (e.currentTarget.style.borderColor = "transparent")}
                       />
                     </td>
-                    <td className="px-2 py-1.5">
+                    <td className="px-2 py-1.5" id={`row-${i}-qty`}>
                       {(() => {
                         const avail = item.ticket_name ? (stockMap[item.ticket_name] ?? null) : null;
                         const overStock = avail !== null && item.qty > avail;
@@ -673,6 +677,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                               value={item.qty || ""}
                               placeholder="0"
                               onChange={(e) => updateItem(i, "qty", parseInt(e.target.value) || 0)}
+                              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); document.getElementById(`row-${i}-price`)?.querySelector("input")?.focus(); }}}
                               className="w-full rounded px-2 py-1 text-sm text-right focus:outline-none"
                               style={{
                                 border: `1px solid ${overStock ? "#EF4444" : "transparent"}`,
@@ -707,7 +712,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                         onBlur={(e) => (e.currentTarget.style.borderColor = "transparent")}
                       />
                     </td>
-                    <td className="px-2 py-1.5">
+                    <td className="px-2 py-1.5" id={`row-${i}-price`}>
                       <input
                         type="number"
                         min="0"
@@ -715,6 +720,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                         value={item.unit_price || ""}
                         placeholder="0"
                         onChange={(e) => updateItem(i, "unit_price", parseFloat(e.target.value) || 0)}
+                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); document.getElementById(`row-${i}-disc`)?.querySelector("input")?.focus(); }}}
                         className="w-full rounded px-2 py-1 text-sm text-right focus:outline-none"
                         style={{ border: "1px solid transparent", background: "transparent", color: "#1D1D1D" }}
                         onFocus={(e) => { e.target.select(); e.currentTarget.style.borderColor = "#CF291D"; }}
@@ -724,12 +730,13 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                     <td className="px-4 py-2 text-right text-sm font-semibold" style={{ color: "#1D1D1D" }}>
                       {fmt(item.value)}
                     </td>
-                    {/* Discount % input */}
-                    <td className="px-2 py-1.5">
+                    {/* Discount % — Enter adds new row */}
+                    <td className="px-2 py-1.5" id={`row-${i}-disc`}>
                       <input type="number" min="0" max="100" step="0.1"
                         value={item.discount_pct || ""}
                         placeholder="0"
                         onChange={e => updateItem(i, "discount_pct", parseFloat(e.target.value) || 0)}
+                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addItem(); setTimeout(() => document.getElementById(`row-${i+1}-bc-start`)?.querySelector("input")?.focus(), 50); }}}
                         className="w-full rounded px-2 py-1 text-sm text-right focus:outline-none"
                         style={{ border:"1px solid transparent", background:"transparent", color:"#d97706" }}
                         onFocus={e => { e.target.select(); e.currentTarget.style.borderColor = "#CF291D"; }}
@@ -767,6 +774,20 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                 </tr>
               </tfoot>
             </table>
+          </div>
+          {/* Keyboard shortcut hint */}
+          <div style={{ padding:"8px 20px 10px", borderTop:"1px solid #F3F4F6", display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
+            <span style={{ fontSize:11, color:"#9CA3AF" }}>⌨️ Keyboard shortcuts:</span>
+            {[
+              ["Scan barcode", "→ auto-fills End + Qty"],
+              ["Enter in barcode", "→ moves to next field"],
+              ["Enter in Disc %", "→ adds new ticket row"],
+              ["Enter in Cash", "→ focuses Save button"],
+            ].map(([key, desc]) => (
+              <span key={key} style={{ fontSize:11, color:"#6B7280" }}>
+                <span style={{ fontWeight:700, color:"#CF291D" }}>{key}</span> {desc}
+              </span>
+            ))}
           </div>
         </div>
 
@@ -827,6 +848,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                     value={cashReceived || ""}
                     placeholder="0"
                     onChange={(e) => setCashReceived(parseFloat(e.target.value) || 0)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); (document.querySelector("[data-save-draft]") as HTMLElement)?.focus(); }}}
                     className="w-full rounded-lg px-3 py-2 text-sm text-right focus:outline-none"
                     style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#1D1D1D" }}
                     onFocus={(e) => { e.target.select(); e.currentTarget.style.borderColor = "#CF291D"; }}
