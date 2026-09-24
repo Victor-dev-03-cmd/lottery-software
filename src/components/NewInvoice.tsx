@@ -211,9 +211,12 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
   // net_value != null covers 0 (100% discount) — avoids falling back to gross price (H-16)
   const invoiceTotal      = Number(items.reduce((s, it) => s + (it.net_value != null ? it.net_value : it.value), 0).toFixed(2));
   const discountTotal     = Number(items.reduce((s, it) => s + (it.discount_amt ?? 0), 0).toFixed(2));
-  const totalPayable      = Number((invoiceTotal + prevOutstanding).toFixed(2));
-  const totalPaid         = Number((cashReceived + dlbWinning + nlbWinning).toFixed(2));
-  const outstandingBalance = Number((totalPayable - totalPaid).toFixed(2));
+  const totalPayable       = Number((invoiceTotal + prevOutstanding).toFixed(2));
+  const totalPaid          = Number((cashReceived + dlbWinning + nlbWinning).toFixed(2));
+  const rawBalance         = Number((totalPayable - totalPaid).toFixed(2));
+  // Always clamp to 0 — negative means overpayment, not a debt
+  const outstandingBalance = Math.max(0, rawBalance);
+  const overpaidAmount     = rawBalance < 0 ? Math.abs(rawBalance) : 0;
   const totalTickets = items.reduce((s, it) => s + Number(it.qty), 0);
 
   // status = "draft" saves without confirming; "waiting" = confirm immediately
@@ -941,12 +944,20 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                     >
                       {fmt(outstandingBalance)}
                     </p>
-                    {outstandingBalance <= 0 && (
+                    {outstandingBalance === 0 && overpaidAmount === 0 && (
                       <span
                         className="mt-2 inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-white"
                         style={{ background: "#16a34a" }}
                       >
                         Settled
+                      </span>
+                    )}
+                    {overpaidAmount > 0 && (
+                      <span
+                        className="mt-2 inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
+                        style={{ background: "#FEF9C3", color: "#92400E", border:"1px solid #FDE68A" }}
+                      >
+                        ⚠ Over by Rs. {fmt(overpaidAmount)}
                       </span>
                     )}
                     {outstandingBalance > 0 && (
@@ -1135,6 +1146,23 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                 ))}
               </div>
 
+              {/* Overpaid warning */}
+              {overpaidAmount > 0 && (
+                <div style={{ margin:"0 24px 8px", padding:"10px 14px", borderRadius:8,
+                  background:"#FEF9C3", border:"1px solid #FDE68A",
+                  display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ fontSize:16 }}>⚠️</span>
+                  <div>
+                    <span style={{ fontSize:12, fontWeight:700, color:"#92400E" }}>
+                      Amount entered exceeds invoice total by Rs. {fmt(overpaidAmount)}
+                    </span>
+                    <div style={{ fontSize:11, color:"#78350F", marginTop:2 }}>
+                      Check Cash / DLB Winning / NLB Winning fields — reduce the amount by Rs. {fmt(overpaidAmount)}.
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Outstanding balance highlight */}
               <div style={{ margin: "8px 24px 20px", padding: "14px 16px", borderRadius: 10,
                 background: outstandingBalance > 0 ? "#FEF2F2" : "#F0FDF4",
@@ -1149,7 +1177,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                     Rs. {fmt(outstandingBalance)}
                   </span>
                 </div>
-                {outstandingBalance <= 0 && (
+                {outstandingBalance === 0 && (
                   <p style={{ fontSize: 11, color: "#16a34a", margin: "4px 0 0", fontWeight: 600 }}>
                     ✓ Fully Settled
                   </p>
