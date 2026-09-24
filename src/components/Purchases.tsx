@@ -13,7 +13,7 @@ import type {
   PurchaseInvoice, PurchaseInvoiceItem, PurchasePayment, PurchasePaymentType,
 } from "../types";
 import { useAuth } from "../contexts/AuthContext";
-import { cleanBarcode, calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode } from "../utils/barcode";
+import { cleanBarcode, calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, lastTicketBarcode } from "../utils/barcode";
 import TicketLogoPicker from "./TicketLogoPicker";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -223,7 +223,7 @@ export default function Purchases() {
       // Barcode cleaning + auto-calc
       if (field === "barcode_start") {
         let cleaned = cleanBarcode(String(val));
-        // Apply scanner offset correction (+1 to start if scanner reads one before)
+        // Apply scanner offset correction (+1 to start if scanner reads one before actual start)
         if (barcodeOffset && cleaned && !isNaN(Number(cleaned))) {
           cleaned = String(Number(cleaned) + 1);
         }
@@ -241,6 +241,7 @@ export default function Purchases() {
       if (field === "barcode_end") {
         const cleaned = cleanBarcode(String(val));
         next.barcode_end = cleaned;
+        // Clear qty mismatch — will be recalculated below
         // Auto-calculate qty from start + end
         if (next.barcode_start && isNumericBarcode(next.barcode_start) && isNumericBarcode(cleaned)) {
           next.qty = calcQtyFromBarcodes(next.barcode_start, cleaned);
@@ -548,6 +549,43 @@ export default function Purchases() {
                     </tfoot>
                   </table>
                 </div>
+
+                {/* ── Live barcode verification panel ── */}
+                {formItems.some(it => it.barcode_start && it.barcode_end && it.qty > 0) && (
+                  <div style={{ marginTop:8, padding:"10px 14px", background:"#F0FFF4", border:"1px solid #BBF7D0", borderRadius:8 }}>
+                    <p style={{ fontSize:10, fontWeight:700, color:"#15803D", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:6 }}>
+                      ✅ Barcode Verification
+                    </p>
+                    {formItems.filter(it => it.barcode_start && it.barcode_end && it.qty > 0).map((it, i) => {
+                      const calcQty = calcQtyFromBarcodes(it.barcode_start, it.barcode_end);
+                      const match = calcQty === it.qty;
+                      const lastTicket = lastTicketBarcode(it.barcode_end);
+                      return (
+                        <div key={i} style={{
+                          display:"flex", alignItems:"center", gap:10, marginBottom:4,
+                          padding:"5px 8px", borderRadius:6,
+                          background: match ? "rgba(22,163,74,0.06)" : "#FEF2F2",
+                          border: `1px solid ${match ? "#BBF7D0" : "#FECACA"}`,
+                        }}>
+                          <span style={{ fontSize:12 }}>{match ? "✅" : "❌"}</span>
+                          <span style={{ fontSize:11, fontWeight:700, color:"#111827", minWidth:120 }}>{it.game_name || "—"}</span>
+                          <span style={{ fontSize:11, fontFamily:"monospace", color:"#374151" }}>{it.barcode_start}</span>
+                          <span style={{ fontSize:11, color:"#6B7280" }}>→</span>
+                          <span style={{ fontSize:11, fontFamily:"monospace", color:"#374151" }}>{it.barcode_end}</span>
+                          <span style={{ fontSize:11, color:"#6B7280" }}>·</span>
+                          <span style={{ fontSize:11, color:"#6B7280" }}>Last ticket: <strong style={{ fontFamily:"monospace", color:"#111827" }}>{lastTicket}</strong></span>
+                          <span style={{ fontSize:11, color:"#6B7280" }}>·</span>
+                          <span style={{ fontSize:11, fontWeight:700, color: match?"#16A34A":"#DC2626" }}>
+                            {it.barcode_end} − {it.barcode_start} = {calcQty} {match ? "✓" : `≠ ${it.qty} ✗`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    <p style={{ fontSize:10, color:"#6B7280", marginTop:4 }}>
+                      Convention: End barcode is the <strong>first barcode of the next batch</strong> (not included). QTY = End − Start.
+                    </p>
+                  </div>
+                )}
 
                 <div className="flex gap-2 mt-2">
                   <button onClick={() => setFormItems([...formItems, EMPTY_ITEM()])}
