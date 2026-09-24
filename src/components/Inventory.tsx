@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Plus, Trash2, X, Save, AlertTriangle, Package, RefreshCw, Calculator, Home, ChevronRight, Pencil } from "lucide-react";
+import { resolveLogoUrl } from "./TicketLogoPicker";
 import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode } from "../utils/barcode";
 import {
   getInventoryBatches,
@@ -182,8 +183,9 @@ export default function Inventory() {
             </button>
             <button
               onClick={() => setForm(EMPTY())}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-all"
-              style={{ background: "#CF291D" }}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-all"
+              style={{ background:"#F9FAFB", border:"1px solid #E5E7EB", color:"#6B7280" }}
+              title="Manually add a batch — stock normally comes automatically from Stock Purchases"
             >
               <Plus size={14} /> Add Batch
             </button>
@@ -249,7 +251,14 @@ export default function Inventory() {
                     value={form.game_name}
                     onChange={(e) => {
                       const g = games.find((x) => x.name === e.target.value);
-                      setForm({ ...form, game_name: e.target.value, unit_price: g?.unit_price ?? form.unit_price });
+                      const isNLB = ["ada sampatha","dhana nidhanaya","govi setha","hada hana","mahajana sampatha","mega power","nlb jaya","suba dasawak"]
+                        .some(n => e.target.value.toLowerCase().includes(n));
+                      setForm({
+                        ...form,
+                        game_name: e.target.value,
+                        unit_price: g?.unit_price ?? form.unit_price,
+                        nlb_dlb_category: form.nlb_dlb_category || (isNLB ? "NLB — Daily Draw" : "DLB — Daily Draw"),
+                      });
                     }}
                     placeholder="e.g. Mega Power"
                     autoFocus
@@ -558,10 +567,22 @@ export default function Inventory() {
                           background: isLow ? "#FFF8F8" : undefined,
                         }}
                       >
-                        <td className="px-4 py-3 text-sm font-semibold" style={{ color: "#1D1D1D" }}>
-                          <div className="flex items-center gap-2">
-                            {isLow && <AlertTriangle size={12} style={{ color: "#CF291D", flexShrink: 0 }}/>}
-                            {b.game_name}
+                        <td className="px-3 py-2.5">
+                          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                            <img src={resolveLogoUrl(b.game_name)} alt=""
+                              style={{ width:38, height:38, objectFit:"contain", borderRadius:7, flexShrink:0, background:"#F3F4F6" }}
+                              onError={e=>{(e.currentTarget as HTMLImageElement).src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='38' height='38'%3E%3Crect width='38' height='38' rx='7' fill='%23F3F4F6'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='18'%3E🎫%3C/text%3E%3C/svg%3E"}}/>
+                            <div>
+                              <div style={{ fontSize:13, fontWeight:700, color:"#111827", display:"flex", alignItems:"center", gap:5 }}>
+                                {isLow && <AlertTriangle size={11} style={{ color:"#CF291D", flexShrink:0 }}/>}
+                                {b.game_name}
+                              </div>
+                              <div style={{ fontSize:10, color:"#9CA3AF", marginTop:1 }}>
+                                {b.game_name.toLowerCase().includes("nlb") || ["ada sampatha","dhana nidhanaya","govi setha","hada hana","mahajana sampatha","mega power","nlb jaya","suba dasawak"].some(n => b.game_name.toLowerCase().includes(n))
+                                  ? <span style={{ color:"#1d4ed8", fontWeight:600 }}>📘 NLB</span>
+                                  : <span style={{ color:"#c2410c", fontWeight:600 }}>📙 DLB</span>}
+                              </div>
+                            </div>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-xs font-mono" style={{ color: "#2563eb" }}>
@@ -582,10 +603,16 @@ export default function Inventory() {
                         <td className="px-4 py-3 text-xs font-mono" style={{ color: "#9CA3AF" }}>
                           {b.ticket_start_no && b.ticket_end_no
                             ? `${b.ticket_start_no} → ${b.ticket_end_no}`
+                            : b.barcode_start && b.barcode_end
+                            ? <span style={{ color:"#6B7280" }}>{b.barcode_start} → {b.barcode_end}</span>
                             : "—"}
                         </td>
                         <td className="px-4 py-3 text-xs text-right" style={{ color: "#6B7280" }}>
-                          {b.books_qty ? `${b.books_qty} × ${b.tickets_per_book ?? 100}` : "—"}
+                          {b.books_qty ? `${b.books_qty} × ${b.tickets_per_book ?? 100}` : (
+                            b.total_qty > 0 && (b.tickets_per_book ?? 100) > 0
+                              ? <span style={{ color:"#9CA3AF" }}>{Math.ceil(b.total_qty / (b.tickets_per_book ?? 100))} est.</span>
+                              : "—"
+                          )}
                         </td>
                         <td className="px-4 py-3 text-sm text-right" style={{ color: "#1D1D1D" }}>
                           {b.total_qty.toLocaleString()}
