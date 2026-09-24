@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   Plus, Trash2, X, Save, RefreshCw, ShoppingCart,
   Home, ChevronRight, Package, CheckCircle, AlertTriangle,
-  CreditCard, ChevronDown, ChevronUp, ShieldAlert,
+  CreditCard, ChevronDown, ChevronUp, ShieldAlert, Image,
 } from "lucide-react";
 import {
   getPurchaseInvoices, savePurchaseInvoice, deletePurchaseInvoice,
@@ -13,6 +13,8 @@ import type {
   PurchaseInvoice, PurchaseInvoiceItem, PurchasePayment, PurchasePaymentType,
 } from "../types";
 import { useAuth } from "../contexts/AuthContext";
+import { cleanBarcode, calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode } from "../utils/barcode";
+import TicketLogoPicker from "./TicketLogoPicker";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -38,10 +40,38 @@ const PAYMENT_TYPE_COLORS: Record<PurchasePaymentType, { bg: string; color: stri
   return_credit: { bg: "#F3E8FF", color: "#7c3aed" },
 };
 
+// ── Logo URL resolver ─────────────────────────────────────────────────────────
+
+const LOGO_MAP: Record<string, [string, string]> = {
+  "ada sampatha":        ["Ada Sampatha.png", "nlb_logos"],
+  "dhana nidhanaya":     ["Dhana Nidhanaya.png", "nlb_logos"],
+  "govi setha":          ["Govi Setha.png", "nlb_logos"],
+  "hada hana":           ["Hada Hana.png", "nlb_logos"],
+  "mahajana sampatha":   ["MAHAJANA SAMPATHA.png", "nlb_logos"],
+  "mega power":          ["mega power.png", "nlb_logos"],
+  "nlb jaya":            ["Nlb Jaya.png", "nlb_logos"],
+  "suba dasawak":        ["Suba Dasawak.png", "nlb_logos"],
+  "ada kotipathi":       ["ada-kotipathi.png", "dlb_logos"],
+  "jaya sampatha":       ["Jaya Sampatha.png", "dlb_logos"],
+  "kapruka":             ["Kapruka.png", "dlb_logos"],
+  "lagna wasanawa":      ["LAGNA WASANAWA.png", "dlb_logos"],
+  "sasiri":              ["Sasiri.png", "dlb_logos"],
+  "shanida wasanawa":    ["Shanida Wasanawa.png", "dlb_logos"],
+  "super ball":          ["Super Ball.png", "dlb_logos"],
+  "supiri dana sampatha":["Supiri Dana Sampatha.png", "dlb_logos"],
+};
+
+function resolveLogoUrl(name: string): string {
+  const key = name.toLowerCase().trim();
+  const found = LOGO_MAP[key];
+  if (found) return `/${found[1]}/${found[0]}`;
+  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Crect width='28' height='28' rx='4' fill='%23F3F4F6'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='14'%3E🎫%3C/text%3E%3C/svg%3E`;
+}
+
 // ── Empty state helpers ───────────────────────────────────────────────────────
 
 const EMPTY_ITEM = (): PurchaseInvoiceItem => ({
-  game_name: "", barcode_start: "", barcode_end: "", qty: 0, unit_price: 0, value: 0,
+  game_name: "", barcode_start: "", barcode_end: "", qty: 0, unit_price: 0, value: 0, draw_number: "",
 });
 
 const EMPTY_PURCHASE = (num: string): PurchaseInvoice => ({
@@ -71,7 +101,7 @@ export default function Purchases() {
   const { withAdminToken } = useAuth();
   const [purchases, setPurchases]     = useState<PurchaseInvoice[]>([]);
   const [totalOwed, setTotalOwed]     = useState(0);
-  const [games, setGames]             = useState<string[]>([]);
+  const [_games, setGames]            = useState<string[]>([]);
   const [gameCostMap, setGameCostMap] = useState<Record<string, number>>({});
   const [loading, setLoading]         = useState(false);
   const [showForm, setShowForm]       = useState(false);
@@ -82,6 +112,10 @@ export default function Purchases() {
   const [paymentsMap, setPaymentsMap] = useState<Record<number, PurchasePayment[]>>({});
   const [paymentForm, setPaymentForm] = useState<PurchasePayment | null>(null);
   const [authError, setAuthError]     = useState<string | null>(null);
+  // Logo picker state: which row is currently picking a ticket logo
+  const [pickerRow, setPickerRow]     = useState<number | null>(null);
+  // Barcode correction: scanner reads one barcode before the actual start
+  const [barcodeOffset, setBarcodeOffset] = useState(false);
 
   useEffect(() => {
     load();
@@ -179,14 +213,51 @@ export default function Purchases() {
   function updateItem(index: number, field: keyof PurchaseInvoiceItem, val: string | number) {
     const updated = formItems.map((it, i) => {
       if (i !== index) return it;
-      const next = { ...it, [field]: val };
-      // Auto-fill cost price (Nimalsiri → Ajith) when game is selected
+      let next = { ...it, [field]: val };
+
+      // Auto-fill cost price when game is selected
       if (field === "game_name" && gameCostMap[val as string]) {
         next.unit_price = gameCostMap[val as string];
       }
-      if (field === "qty" || field === "unit_price" || field === "game_name") {
-        next.value = Number(next.qty) * Number(next.unit_price);
+
+      // Barcode cleaning + auto-calc
+      if (field === "barcode_start") {
+        let cleaned = cleanBarcode(String(val));
+        // Apply scanner offset correction (+1 to start if scanner reads one before)
+        if (barcodeOffset && cleaned && !isNaN(Number(cleaned))) {
+          cleaned = String(Number(cleaned) + 1);
+        }
+        next.barcode_start = cleaned;
+        // Auto-calculate end from start + qty
+        if (next.qty > 0 && isNumericBarcode(cleaned)) {
+          next.barcode_end = calcEndBarcode(cleaned, next.qty);
+        }
+        // Auto-calculate qty from start + end
+        if (next.barcode_end && isNumericBarcode(next.barcode_end)) {
+          next.qty = calcQtyFromBarcodes(cleaned, next.barcode_end);
+        }
       }
+
+      if (field === "barcode_end") {
+        const cleaned = cleanBarcode(String(val));
+        next.barcode_end = cleaned;
+        // Auto-calculate qty from start + end
+        if (next.barcode_start && isNumericBarcode(next.barcode_start) && isNumericBarcode(cleaned)) {
+          next.qty = calcQtyFromBarcodes(next.barcode_start, cleaned);
+        }
+      }
+
+      if (field === "qty") {
+        const q = Number(val);
+        next.qty = q;
+        // Auto-calculate end from start + qty
+        if (next.barcode_start && isNumericBarcode(next.barcode_start) && q > 0) {
+          next.barcode_end = calcEndBarcode(next.barcode_start, q);
+        }
+      }
+
+      // Recalculate value
+      next.value = Number(next.qty) * Number(next.unit_price);
       return next;
     });
     setFormItems(updated);
@@ -319,88 +390,184 @@ export default function Purchases() {
               {/* Line items */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-[11px] font-semibold uppercase tracking-wide" style={{ color:"#9CA3AF" }}>Stock Items</label>
+                  <div className="flex items-center gap-4">
+                    <label className="text-[11px] font-semibold uppercase tracking-wide" style={{ color:"#9CA3AF" }}>Stock Items</label>
+                    {/* Scanner offset toggle */}
+                    <label className="flex items-center gap-2 cursor-pointer" title="Enable if your barcode scanner reads one ticket before the actual starting barcode">
+                      <div onClick={() => setBarcodeOffset(v => !v)}
+                        style={{ width:28, height:16, borderRadius:8, background: barcodeOffset?"#CF291D":"#D1D5DB", position:"relative", cursor:"pointer", transition:"background 0.2s" }}>
+                        <div style={{ width:12, height:12, borderRadius:"50%", background:"#fff", position:"absolute", top:2, left: barcodeOffset?14:2, transition:"left 0.2s" }}/>
+                      </div>
+                      <span style={{ fontSize:10, color:"#6B7280" }}>Scanner +1 fix</span>
+                    </label>
+                  </div>
                   <button onClick={() => setFormItems([...formItems, EMPTY_ITEM()])}
                     className="text-xs font-semibold hover:underline" style={{ color:"#CF291D" }}>
-                    + Add Row
+                    + Add Row (Enter)
                   </button>
                 </div>
+
+                {barcodeOffset && (
+                  <div style={{ padding:"6px 12px", background:"#FEF9C3", borderRadius:8, fontSize:11, color:"#92400E", marginBottom:8, border:"1px solid #FDE68A" }}>
+                    ⚡ Scanner +1 correction ON — start barcode automatically incremented by 1
+                  </div>
+                )}
+
                 <div className="rounded-xl overflow-hidden" style={{ border:"1px solid #E8E8E8" }}>
                   <table className="w-full">
                     <thead>
-                      <tr style={{ background:"#F9F9F9" }}>
-                        {["Game / Ticket Name","Barcode Start","Barcode End","Qty","Unit Price","Value",""].map(h => (
-                          <th key={h} className="px-3 py-2.5 text-left"
+                      <tr style={{ background:"#1D1D1D" }}>
+                        {["🎫 Ticket (click to pick)","Draw No.","Barcode Start","Barcode End","Qty","Unit Price (Rs.)","Total (Rs.)",""].map((h,i) => (
+                          <th key={i} className="px-3 py-2 text-left"
                             style={{ fontSize:10, color:"#9CA3AF", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em" }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {formItems.map((it, idx) => (
-                        <tr key={idx} style={{ borderTop:"1px solid #F3F4F6" }}>
-                          <td className="px-2 py-2" style={{ minWidth:180 }}>
-                            <select value={it.game_name}
-                              onChange={e => updateItem(idx, "game_name", e.target.value)}
-                              className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none"
-                              style={{ border:"1px solid #E8E8E8", background:"#FAFAFA" }}>
-                              <option value="">— Select Game —</option>
-                              {games.map(g => <option key={g} value={g}>{g}</option>)}
-                              <option value="__other__">Other…</option>
-                            </select>
-                            {it.game_name === "__other__" && (
-                              <input placeholder="Type game name…" value=""
-                                onChange={e => updateItem(idx, "game_name", e.target.value)}
-                                className="w-full rounded-lg px-2 py-1.5 text-xs mt-1 focus:outline-none"
-                                style={{ border:"1px solid #E8E8E8", background:"#FAFAFA" }}/>
-                            )}
-                          </td>
-                          <td className="px-2 py-2">
-                            <input value={it.barcode_start}
-                              onChange={e => updateItem(idx, "barcode_start", e.target.value)}
-                              placeholder="e.g. 100001"
-                              className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none font-mono"
-                              style={{ border:"1px solid #E8E8E8", background:"#FAFAFA" }}/>
-                          </td>
-                          <td className="px-2 py-2">
-                            <input value={it.barcode_end}
-                              onChange={e => updateItem(idx, "barcode_end", e.target.value)}
-                              placeholder="e.g. 101000"
-                              className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none font-mono"
-                              style={{ border:"1px solid #E8E8E8", background:"#FAFAFA" }}/>
-                          </td>
-                          <td className="px-2 py-2" style={{ width:90 }}>
-                            <input type="number" value={it.qty || ""}
-                              placeholder="0"
-                              onChange={e => updateItem(idx, "qty", parseInt(e.target.value) || 0)}
-                              className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none text-right"
-                              style={{ border:"1px solid #E8E8E8", background:"#FAFAFA" }}
-                              onFocus={(e) => e.target.select()}/>
-                          </td>
-                          <td className="px-2 py-2" style={{ width:100 }}>
-                            <input type="number" step="0.01" value={it.unit_price || ""}
-                              placeholder="0"
-                              onChange={e => updateItem(idx, "unit_price", parseFloat(e.target.value) || 0)}
-                              className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none text-right"
-                              style={{ border:"1px solid #E8E8E8", background:"#FAFAFA" }}
-                              onFocus={(e) => e.target.select()}/>
-                          </td>
-                          <td className="px-3 py-2 text-xs text-right font-semibold" style={{ color:"#1D1D1D", minWidth:100 }}>
-                            Rs. {fmt(it.value)}
-                          </td>
-                          <td className="px-2 py-2">
-                            {formItems.length > 1 && (
-                              <button onClick={() => setFormItems(formItems.filter((_,i) => i !== idx))}
-                                className="p-1 rounded" style={{ color:"#CF291D" }}>
-                                <X size={12}/>
+                      {formItems.map((it, idx) => {
+                        const barcodeWarn = it.barcode_start && it.barcode_start.length !== 11;
+                        const qtyOk = it.qty > 0;
+                        return (
+                          <tr key={idx} style={{ borderTop:"1px solid #F3F4F6", background: idx % 2 === 0 ? "#fff" : "#FAFAFA" }}>
+
+                            {/* Ticket logo picker */}
+                            <td className="px-2 py-2" style={{ minWidth:170 }}>
+                              <button type="button" onClick={() => setPickerRow(idx)}
+                                style={{
+                                  display:"flex", alignItems:"center", gap:8, width:"100%",
+                                  padding:"6px 8px", border:`1px solid ${it.game_name?"#E5E7EB":"#CF291D"}`,
+                                  borderRadius:8, background: it.game_name?"#F9FAFB":"#FEF2F2",
+                                  cursor:"pointer", textAlign:"left",
+                                }}>
+                                {it.game_name ? (
+                                  <>
+                                    <img src={resolveLogoUrl(it.game_name)}
+                                      alt="" style={{ width:28, height:28, objectFit:"contain", borderRadius:4 }}
+                                      onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none"}}/>
+                                    <span style={{ fontSize:11, fontWeight:600, color:"#111827" }}>{it.game_name}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Image size={16} style={{ color:"#CF291D" }}/>
+                                    <span style={{ fontSize:11, color:"#CF291D", fontWeight:600 }}>Select Ticket…</span>
+                                  </>
+                                )}
                               </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+
+                            {/* Draw number */}
+                            <td className="px-2 py-2" style={{ width:90 }}>
+                              <input value={it.draw_number ?? ""}
+                                onChange={e => updateItem(idx, "draw_number", e.target.value)}
+                                onKeyDown={e => { if (e.key==="Enter") { e.preventDefault(); setFormItems(p=>[...p,EMPTY_ITEM()]); }}}
+                                placeholder="e.g. 4521"
+                                className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none text-center font-mono"
+                                style={{ border:"1px solid #E8E8E8", background:"#FAFAFA" }}/>
+                            </td>
+
+                            {/* Barcode Start */}
+                            <td className="px-2 py-2" style={{ width:130 }}>
+                              <input value={it.barcode_start}
+                                onChange={e => updateItem(idx, "barcode_start", e.target.value)}
+                                onKeyDown={e => { if (e.key==="Enter") { e.preventDefault(); (e.currentTarget.parentElement?.parentElement?.nextElementSibling?.querySelector("input") as HTMLElement)?.focus(); }}}
+                                placeholder="Scan barcode"
+                                className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none font-mono"
+                                style={{ border:`1px solid ${barcodeWarn&&it.barcode_start?"#F59E0B":"#E8E8E8"}`, background: barcodeWarn&&it.barcode_start?"#FFFBEB":"#FAFAFA" }}
+                                onFocus={e => e.target.select()}/>
+                              {barcodeWarn && it.barcode_start && (
+                                <div style={{ fontSize:9, color:"#D97706", marginTop:1 }}>⚠ {it.barcode_start.length} digits (expect 11)</div>
+                              )}
+                            </td>
+
+                            {/* Barcode End — auto-filled, also editable */}
+                            <td className="px-2 py-2" style={{ width:130 }}>
+                              <input value={it.barcode_end}
+                                onChange={e => updateItem(idx, "barcode_end", e.target.value)}
+                                onKeyDown={e => { if (e.key==="Enter") { e.preventDefault(); (e.currentTarget.parentElement?.parentElement?.nextElementSibling?.querySelector("input") as HTMLElement)?.focus(); }}}
+                                placeholder="Auto-filled"
+                                className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none font-mono"
+                                style={{ border:"1px solid #E8E8E8", background:"#F0FFF4" }}
+                                onFocus={e => e.target.select()}/>
+                            </td>
+
+                            {/* Qty */}
+                            <td className="px-2 py-2" style={{ width:80 }}>
+                              <input type="number" value={it.qty || ""}
+                                placeholder="0"
+                                onChange={e => updateItem(idx, "qty", parseInt(e.target.value) || 0)}
+                                onKeyDown={e => { if (e.key==="Enter") { e.preventDefault(); (e.currentTarget.parentElement?.parentElement?.nextElementSibling?.querySelector("input") as HTMLElement)?.focus(); }}}
+                                className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none text-right font-bold"
+                                style={{ border:`1px solid ${qtyOk?"#BBF7D0":"#E8E8E8"}`, background: qtyOk?"#F0FFF4":"#FAFAFA", color: qtyOk?"#16A34A":"#111827" }}
+                                onFocus={e => e.target.select()}/>
+                            </td>
+
+                            {/* Unit price */}
+                            <td className="px-2 py-2" style={{ width:100 }}>
+                              <input type="number" step="0.01" value={it.unit_price || ""}
+                                placeholder="0.00"
+                                onChange={e => updateItem(idx, "unit_price", parseFloat(e.target.value) || 0)}
+                                onKeyDown={e => { if (e.key==="Enter") { e.preventDefault(); setFormItems(p=>[...p,EMPTY_ITEM()]); }}}
+                                className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none text-right"
+                                style={{ border:"1px solid #E8E8E8", background:"#FAFAFA" }}
+                                onFocus={e => e.target.select()}/>
+                              {gameCostMap[it.game_name] && (
+                                <div style={{ fontSize:9, color:"#6B7280", marginTop:1, textAlign:"right" }}>
+                                  Nimalsiri: Rs.{gameCostMap[it.game_name]}
+                                </div>
+                              )}
+                            </td>
+
+                            {/* Value */}
+                            <td className="px-3 py-2 text-xs text-right font-bold" style={{ color:"#1D1D1D", minWidth:100 }}>
+                              Rs. {fmt(it.value)}
+                            </td>
+
+                            {/* Remove */}
+                            <td className="px-2 py-2">
+                              {formItems.length > 1 && (
+                                <button onClick={() => setFormItems(formItems.filter((_,i) => i !== idx))}
+                                  className="p-1 rounded hover:bg-red-50" style={{ color:"#CF291D" }}>
+                                  <X size={12}/>
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
+                    <tfoot>
+                      <tr style={{ background:"#F9FAFB", borderTop:"2px solid #CF291D" }}>
+                        <td colSpan={6} className="px-3 py-2 text-right text-xs font-bold" style={{ color:"#6B7280" }}>
+                          {formItems.reduce((s,it)=>s+it.qty,0).toLocaleString()} tickets · {formItems.filter(it=>it.game_name).length} lines
+                        </td>
+                        <td className="px-3 py-2 text-right text-sm font-black" style={{ color:"#CF291D" }}>
+                          Rs. {fmt(formItems.reduce((s,it)=>s+it.value,0))}
+                        </td>
+                        <td/>
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
+
+                <div className="flex gap-2 mt-2">
+                  <button onClick={() => setFormItems([...formItems, EMPTY_ITEM()])}
+                    style={{ padding:"5px 14px", border:"1px dashed #CF291D", borderRadius:8, background:"#FEF2F2", color:"#CF291D", fontSize:12, fontWeight:600, cursor:"pointer" }}>
+                    + Add Another Ticket
+                  </button>
+                  <span style={{ fontSize:11, color:"#9CA3AF", alignSelf:"center" }}>
+                    Press Enter in the last field to add a row automatically
+                  </span>
+                </div>
               </div>
+
+              {/* Logo picker modal */}
+              {pickerRow !== null && (
+                <TicketLogoPicker
+                  currentValue={formItems[pickerRow]?.game_name}
+                  onSelect={name => { updateItem(pickerRow, "game_name", name); setPickerRow(null); }}
+                  onClose={() => setPickerRow(null)}
+                />
+              )}
 
               {/* Payment summary */}
               <div className="grid grid-cols-3 gap-4 p-4 rounded-xl" style={{ background:"#F9F9F9", border:"1px solid #E8E8E8" }}>
@@ -413,6 +580,7 @@ export default function Purchases() {
                   <input type="number" step="0.01"
                     value={editPurchase.initial_payment || ""}
                     onChange={e => setEdit({ ...editPurchase, initial_payment: parseFloat(e.target.value) || 0 })}
+                    onKeyDown={e => { if (e.key === "Enter") handleSave(); }}
                     className="w-full rounded-lg px-3 py-2 text-sm font-bold focus:outline-none"
                     style={{ border:`1px solid ${focusedField==="ip" ? "#CF291D" : "#E8E8E8"}`, background:"#FFFFFF", color:"#16a34a" }}
                     onFocus={(e) => { e.target.select(); setFocused("ip"); }} onBlur={() => setFocused(null)}
@@ -561,6 +729,37 @@ export default function Purchases() {
                     {isExpanded && (
                       <div className="px-5 pb-5 space-y-4" style={{ borderTop:"1px solid #F3F4F6", background:"#FAFAFA" }}>
 
+                        {/* Items in this purchase */}
+                        {pur.items && pur.items.length > 0 && (
+                          <div className="pt-4">
+                            <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color:"#9CA3AF" }}>🎫 Ticket Details</p>
+                            <div className="rounded-lg overflow-hidden" style={{ border:"1px solid #E5E7EB" }}>
+                              <table className="w-full" style={{ fontSize:11 }}>
+                                <thead style={{ background:"#374151" }}>
+                                  <tr>
+                                    {["Ticket","Draw No.","Barcode Start","Barcode End","Qty","Unit Price","Total"].map(h => (
+                                      <th key={h} className="px-3 py-2 text-left" style={{ color:"#9CA3AF", fontWeight:600, fontSize:10, textTransform:"uppercase" }}>{h}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {pur.items.map((item, ii) => (
+                                    <tr key={ii} style={{ borderBottom:"1px solid #F3F4F6", background: ii%2===0?"#fff":"#FAFAFA" }}>
+                                      <td className="px-3 py-2 font-semibold" style={{ color:"#111827" }}>{item.game_name}</td>
+                                      <td className="px-3 py-2" style={{ color:"#6B7280", fontFamily:"monospace" }}>{item.draw_number || "—"}</td>
+                                      <td className="px-3 py-2" style={{ fontFamily:"monospace", color:"#374151" }}>{item.barcode_start}</td>
+                                      <td className="px-3 py-2" style={{ fontFamily:"monospace", color:"#374151" }}>{item.barcode_end}</td>
+                                      <td className="px-3 py-2 font-bold" style={{ color:"#16A34A" }}>{item.qty.toLocaleString()}</td>
+                                      <td className="px-3 py-2" style={{ color:"#374151" }}>Rs. {fmt(item.unit_price)}</td>
+                                      <td className="px-3 py-2 font-bold" style={{ color:"#111827" }}>Rs. {fmt(item.value)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Settlement breakdown */}
                         <div className="grid grid-cols-4 gap-3 pt-4">
                           {[
@@ -616,6 +815,7 @@ export default function Purchases() {
                                 <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Amount (Rs.)</label>
                                 <input type="number" step="0.01" value={paymentForm.amount || ""}
                                   onChange={e => setPaymentForm({ ...paymentForm, amount: parseFloat(e.target.value) || 0 })}
+                                  onKeyDown={e => { if (e.key==="Enter") handleAddPayment(); }}
                                   placeholder={`Max: ${fmt(live)}`}
                                   className={inputCls} style={{ ...inputStyle("pp-amt"), color:"#16a34a", fontWeight:700 }}
                                   onFocus={(e) => { e.target.select(); setFocused("pp-amt"); }} onBlur={() => setFocused(null)}/>
