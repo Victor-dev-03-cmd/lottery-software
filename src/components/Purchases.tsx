@@ -241,10 +241,10 @@ export default function Purchases() {
       if (field === "barcode_end") {
         const cleaned = cleanBarcode(String(val));
         next.barcode_end = cleaned;
-        // Clear qty mismatch — will be recalculated below
-        // Auto-calculate qty from start + end
+        // Auto-calculate qty from start + end (exclusive convention: qty = end - start)
         if (next.barcode_start && isNumericBarcode(next.barcode_start) && isNumericBarcode(cleaned)) {
-          next.qty = calcQtyFromBarcodes(next.barcode_start, cleaned);
+          const calculatedQty = calcQtyFromBarcodes(next.barcode_start, cleaned);
+          if (calculatedQty > 0) next.qty = calculatedQty;
         }
       }
 
@@ -418,7 +418,7 @@ export default function Purchases() {
                   <table className="w-full">
                     <thead>
                       <tr style={{ background:"#1D1D1D" }}>
-                        {["🎫 Ticket (click to pick)","Draw No.","Barcode Start","Barcode End","Qty","Unit Price (Rs.)","Total (Rs.)",""].map((h,i) => (
+                        {["🎫 Ticket (click to pick)","Draw No.","▶ First Ticket Barcode","▷ Next Batch Starts","Qty","Unit Price (Rs.)","Total (Rs.)",""].map((h,i) => (
                           <th key={i} className="px-3 py-2 text-left"
                             style={{ fontSize:10, color:"#9CA3AF", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em" }}>{h}</th>
                         ))}
@@ -466,29 +466,34 @@ export default function Purchases() {
                                 style={{ border:"1px solid #E8E8E8", background:"#FAFAFA" }}/>
                             </td>
 
-                            {/* Barcode Start */}
+                            {/* Barcode Start — first physical ticket */}
                             <td className="px-2 py-2" style={{ width:130 }}>
                               <input value={it.barcode_start}
                                 onChange={e => updateItem(idx, "barcode_start", e.target.value)}
                                 onKeyDown={e => { if (e.key==="Enter") { e.preventDefault(); (e.currentTarget.parentElement?.parentElement?.nextElementSibling?.querySelector("input") as HTMLElement)?.focus(); }}}
-                                placeholder="Scan barcode"
+                                placeholder="First ticket barcode"
                                 className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none font-mono"
-                                style={{ border:`1px solid ${barcodeWarn&&it.barcode_start?"#F59E0B":"#E8E8E8"}`, background: barcodeWarn&&it.barcode_start?"#FFFBEB":"#FAFAFA" }}
+                                style={{ border:`1px solid ${barcodeWarn&&it.barcode_start?"#F59E0B":"#2563EB"}`, background:"#EFF6FF", color:"#1d4ed8" }}
                                 onFocus={e => e.target.select()}/>
                               {barcodeWarn && it.barcode_start && (
                                 <div style={{ fontSize:9, color:"#D97706", marginTop:1 }}>⚠ {it.barcode_start.length} digits (expect 11)</div>
                               )}
                             </td>
 
-                            {/* Barcode End — auto-filled, also editable */}
-                            <td className="px-2 py-2" style={{ width:130 }}>
+                            {/* Barcode End — EXCLUSIVE: first ticket of NEXT batch */}
+                            <td className="px-2 py-2" style={{ width:140 }}>
                               <input value={it.barcode_end}
                                 onChange={e => updateItem(idx, "barcode_end", e.target.value)}
                                 onKeyDown={e => { if (e.key==="Enter") { e.preventDefault(); (e.currentTarget.parentElement?.parentElement?.nextElementSibling?.querySelector("input") as HTMLElement)?.focus(); }}}
-                                placeholder="Auto-filled"
+                                placeholder="Next batch start"
                                 className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none font-mono"
-                                style={{ border:"1px solid #E8E8E8", background:"#F0FFF4" }}
+                                style={{ border:"1px solid #7C3AED", background:"#F5F3FF", color:"#6d28d9" }}
                                 onFocus={e => e.target.select()}/>
+                              {it.barcode_end && it.barcode_start && (
+                                <div style={{ fontSize:9, color:"#6B7280", marginTop:1 }}>
+                                  Last ticket: <span style={{ fontFamily:"monospace", fontWeight:700, color:"#7C3AED" }}>{lastTicketBarcode(it.barcode_end)}</span>
+                                </div>
+                              )}
                             </td>
 
                             {/* Qty */}
@@ -861,29 +866,39 @@ export default function Purchases() {
                                   </div>
 
                                   {/* Barcode details */}
-                                  <div style={{ flex:1, padding:"12px 16px", display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr 1fr", gap:12, alignItems:"center" }}>
-                                    <div>
-                                      <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", marginBottom:3 }}>First Ticket</div>
-                                      <div style={{ fontSize:12, fontWeight:700, fontFamily:"monospace", color:"#2563EB" }}>{item.barcode_start}</div>
-                                    </div>
-                                    <div>
-                                      <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", marginBottom:3 }}>Last Ticket</div>
-                                      <div style={{ fontSize:12, fontWeight:700, fontFamily:"monospace", color:"#7C3AED" }}>{lastTk}</div>
-                                    </div>
-                                    <div>
-                                      <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", marginBottom:3 }}>Next Batch Starts</div>
-                                      <div style={{ fontSize:11, fontFamily:"monospace", color:"#6B7280" }}>{item.barcode_end}</div>
-                                    </div>
-                                    <div>
-                                      <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", marginBottom:3 }}>Quantity</div>
-                                      <div style={{ fontSize:16, fontWeight:900, color:"#16A34A" }}>{item.qty.toLocaleString()}</div>
-                                      <div style={{ fontSize:9, color:"#9CA3AF" }}>tickets</div>
-                                    </div>
-                                    <div style={{ textAlign:"right" }}>
-                                      <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", marginBottom:3 }}>
-                                        @ Rs. {fmt(item.unit_price)} each
+                                  <div style={{ flex:1, padding:"12px 16px" }}>
+                                    {/* Barcode visual strip */}
+                                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10, padding:"8px 12px", background:"#F8FAFC", borderRadius:8, border:"1px solid #E5E7EB" }}>
+                                      <div style={{ textAlign:"center" }}>
+                                        <div style={{ fontSize:8, fontWeight:700, color:"#2563EB", textTransform:"uppercase", marginBottom:2 }}>▶ FIRST TICKET</div>
+                                        <div style={{ fontSize:13, fontWeight:900, fontFamily:"monospace", color:"#2563EB", letterSpacing:"0.02em" }}>{item.barcode_start}</div>
                                       </div>
-                                      <div style={{ fontSize:15, fontWeight:900, color:"#CF291D" }}>Rs. {fmt(item.value)}</div>
+                                      <div style={{ flex:1, height:2, background:"linear-gradient(90deg,#2563EB,#7C3AED)", borderRadius:1, position:"relative" }}>
+                                        <div style={{ position:"absolute", top:-10, left:"50%", transform:"translateX(-50%)", background:"#16A34A", color:"#fff", borderRadius:20, padding:"2px 10px", fontSize:11, fontWeight:900, whiteSpace:"nowrap" }}>
+                                          {item.qty.toLocaleString()} tickets
+                                        </div>
+                                      </div>
+                                      <div style={{ textAlign:"center" }}>
+                                        <div style={{ fontSize:8, fontWeight:700, color:"#7C3AED", textTransform:"uppercase", marginBottom:2 }}>LAST TICKET ▶</div>
+                                        <div style={{ fontSize:13, fontWeight:900, fontFamily:"monospace", color:"#7C3AED", letterSpacing:"0.02em" }}>{lastTk}</div>
+                                      </div>
+                                    </div>
+
+                                    {/* Calculation proof */}
+                                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                                      <div style={{ fontSize:10, color:"#6B7280", fontFamily:"monospace" }}>
+                                        <span style={{ color:"#9CA3AF" }}>Verify: </span>
+                                        <span style={{ color:"#7C3AED" }}>{item.barcode_end}</span>
+                                        <span style={{ color:"#9CA3AF" }}> − </span>
+                                        <span style={{ color:"#2563EB" }}>{item.barcode_start}</span>
+                                        <span style={{ color:"#9CA3AF" }}> = </span>
+                                        <span style={{ fontWeight:800, color:"#16A34A" }}>{item.qty.toLocaleString()} ✓</span>
+                                        <span style={{ marginLeft:8, color:"#9CA3AF" }}>(end barcode = first ticket of NEXT batch = {item.barcode_end})</span>
+                                      </div>
+                                      <div style={{ textAlign:"right" }}>
+                                        <div style={{ fontSize:9, color:"#9CA3AF", marginBottom:2 }}>@ Rs. {fmt(item.unit_price)} each</div>
+                                        <div style={{ fontSize:15, fontWeight:900, color:"#CF291D" }}>Rs. {fmt(item.value)}</div>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
