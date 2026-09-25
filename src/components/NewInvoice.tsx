@@ -150,13 +150,15 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
           }
           updated.purchase_batch_id = undefined;
         }
-        // Stock validation: cap qty at available stock
+        // Stock validation: cap qty at the selected batch's available stock (or total if no batch)
         if (field === "qty" || field === "barcode_end" || field === "barcode_start") {
-          const available = stockMap[updated.ticket_name] ?? Infinity;
-          if (updated.qty > available && updated.ticket_name) {
-            updated.qty = available;
-            if (isNumericBarcode(updated.barcode_start) && available > 0) {
-              updated.barcode_end = calcEndBarcode(updated.barcode_start, available);
+          const batchAvail = updated.purchase_batch_id
+            ? (batchOptions[index] ?? []).find(b => b.id === updated.purchase_batch_id)?.remaining_qty ?? Infinity
+            : (stockMap[updated.ticket_name] ?? Infinity);
+          if (updated.qty > batchAvail && updated.ticket_name) {
+            updated.qty = batchAvail;
+            if (isNumericBarcode(updated.barcode_start) && batchAvail > 0) {
+              updated.barcode_end = calcEndBarcode(updated.barcode_start, batchAvail);
             }
           }
         }
@@ -253,14 +255,23 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
     if (!invoiceNumber.trim()) { alert("Invoice number is required."); return; }
     if (items.every((it) => !it.ticket_name)) { alert("Add at least one ticket line."); return; }
     // Stock validation — block save if any named line exceeds available stock
-    for (const it of items.filter(x => x.ticket_name)) {
-      const avail = stockMap[it.ticket_name];
+    for (let idx = 0; idx < items.length; idx++) {
+      const it = items[idx];
+      if (!it.ticket_name) continue;
+      // Use selected batch's remaining_qty when available; fall back to total stockMap
+      const batchAvail = it.purchase_batch_id
+        ? (batchOptions[idx] ?? []).find(b => b.id === it.purchase_batch_id)?.remaining_qty
+        : undefined;
+      const avail = batchAvail ?? stockMap[it.ticket_name];
+      const label = it.purchase_batch_id
+        ? `Batch #${it.purchase_batch_id} for "${it.ticket_name}"`
+        : `"${it.ticket_name}"`;
       if (avail !== undefined && it.qty > avail) {
-        alert(`Not enough stock for "${it.ticket_name}": you entered ${it.qty.toLocaleString()} but only ${avail.toLocaleString()} available.`);
+        alert(`Not enough stock for ${label}: you entered ${it.qty.toLocaleString()} but only ${avail.toLocaleString()} available.`);
         return;
       }
       if (avail === 0) {
-        alert(`"${it.ticket_name}" is out of stock. Remove this line or adjust quantity.`);
+        alert(`${label} is out of stock. Remove this line or adjust quantity.`);
         return;
       }
     }
@@ -765,7 +776,12 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                     </td>
                     <td className="px-2 py-1.5" id={`row-${i}-qty`}>
                       {(() => {
-                        const avail = item.ticket_name ? (stockMap[item.ticket_name] ?? null) : null;
+                        // Prefer selected batch's remaining over total stockMap
+                        const batchRemaining = item.purchase_batch_id
+                          ? (batchOptions[i] ?? []).find(b => b.id === item.purchase_batch_id)?.remaining_qty ?? null
+                          : null;
+                        const avail = batchRemaining ?? (item.ticket_name ? (stockMap[item.ticket_name] ?? null) : null);
+                        const isBatchAvail = batchRemaining !== null;
                         const overStock = avail !== null && item.qty > avail;
                         return (
                           <>
@@ -792,7 +808,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                                 color: avail === 0 ? "#EF4444" : overStock ? "#EF4444" : avail < 100 ? "#D97706" : "#16A34A",
                                 fontWeight: 600,
                               }}>
-                                {avail === 0 ? "No stock" : `${avail.toLocaleString()} avail`}
+                                {avail === 0 ? "No stock" : `${avail.toLocaleString()} ${isBatchAvail ? "in batch" : "total"}`}
                               </div>
                             )}
                           </>
