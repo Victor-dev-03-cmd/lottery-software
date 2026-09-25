@@ -674,9 +674,11 @@ export default function SupplierReturns() {
                       <button key={b.id} type="button"
                         onClick={() => {
                           setSelectedBatchId(b.id);
-                          setField("barcode_start", b.barcode_start);
+                          // Use next_start_barcode (after already-sold tickets), not the original start
+                          const nextStart = b.next_start_barcode || b.barcode_start;
+                          setField("barcode_start", nextStart);
                           setField("unit_price", b.unit_price);
-                          if (form.qty > 0) setField("barcode_end", String(Number(b.barcode_start) + form.qty));
+                          if (form.qty > 0) setField("barcode_end", String(Number(nextStart) + form.qty));
                         }}
                         style={{
                           display:"flex", alignItems:"center", justifyContent:"space-between",
