@@ -1932,26 +1932,35 @@ export async function savePurchaseInvoice(
   );
   const newId = r.lastInsertId as number;
   for (const item of items) await insertItem(newId, item);
-  // Auto-increase inventory: purchasing stock from Nimalsiri → total_qty increases
-  // If a batch for this game already exists, add to it; otherwise create a new batch entry
+  // Each purchase item = its own inventory batch (never merge into existing).
+  // This allows exact per-batch tracking: which invoices and returns came from which purchase.
   for (const item of items.filter(it => it.game_name && it.qty > 0)) {
-    const existing = await d.select<{ id: number }[]>(
-      "SELECT id FROM inventory_batches WHERE game_name=? ORDER BY batch_date ASC LIMIT 1",
-      [item.game_name]
+    // Check if an identical batch already exists for this purchase (same game + same barcode start)
+    // to avoid duplicates when re-saving the same purchase
+    const duplicate = await d.select<{ id: number }[]>(
+      "SELECT id FROM inventory_batches WHERE game_name=? AND barcode_start=?",
+      [item.game_name, item.barcode_start ?? ""]
     );
-    if (existing.length) {
+    if (duplicate.length) {
+      // Update the existing matching batch (re-save scenario)
       await d.execute(
-        "UPDATE inventory_batches SET total_qty = total_qty + ? WHERE id=?",
-        [item.qty, existing[0].id]
+        "UPDATE inventory_batches SET total_qty=?, barcode_end=?, unit_price=?, batch_date=? WHERE id=?",
+        [item.qty, item.barcode_end ?? "", item.unit_price, inv.purchase_date, duplicate[0].id]
       );
+      await enqueueBatchSync(d, duplicate[0].id);
     } else {
-      await d.execute(
+      // New purchase = new separate batch with its own barcode range
+      const ins = await d.execute(
         `INSERT INTO inventory_batches
-         (game_name, batch_date, barcode_start, barcode_end, total_qty, distributed_qty, unit_price, low_stock_threshold, notes)
-         VALUES (?, ?, ?, ?, ?, 0, ?, 100, 'Auto-created from purchase')`,
-        [item.game_name, inv.purchase_date, item.barcode_start ?? "", item.barcode_end ?? "",
-         item.qty, item.unit_price]
+         (game_name, batch_date, barcode_start, barcode_end, total_qty, distributed_qty,
+          unit_price, low_stock_threshold, notes)
+         VALUES (?, ?, ?, ?, ?, 0, ?, 100, ?)`,
+        [item.game_name, inv.purchase_date,
+         item.barcode_start ?? "", item.barcode_end ?? "",
+         item.qty, item.unit_price,
+         `From purchase ${inv.purchase_number}`]
       );
+      await enqueueBatchSync(d, ins.lastInsertId as number);
     }
   }
   return newId;
