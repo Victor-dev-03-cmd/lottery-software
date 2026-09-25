@@ -90,34 +90,74 @@ async function initSchema() {
     )
   `);
 
-  // Seed default NLB/DLB games only when table is empty
-  const existing = await d.select<{ cnt: number }[]>(
-    "SELECT COUNT(*) as cnt FROM lottery_games"
+  // Canonical 16 NLB/DLB games with correct board assignments and prices
+  const CANONICAL_GAMES: { name: string; unit_price: number; cost_price: number; board: string }[] = [
+    // ── NLB — National Lottery Board ──────────────────────────────────────────
+    { name: "Ada Sampatha",        unit_price: 650.00, cost_price: 650.00, board: "NLB" },
+    { name: "Dhana Nidhanaya",     unit_price:  32.50, cost_price:  32.50, board: "NLB" },
+    { name: "Govi Setha",          unit_price:  32.50, cost_price:  32.50, board: "NLB" },
+    { name: "Hada Hana",           unit_price: 325.00, cost_price: 325.00, board: "NLB" },
+    { name: "Mahajana Sampatha",   unit_price:  32.50, cost_price:  32.50, board: "NLB" },
+    { name: "Mega Power",          unit_price:  32.50, cost_price:  32.50, board: "NLB" },
+    { name: "NLB Jaya",            unit_price:  32.50, cost_price:  32.50, board: "NLB" },
+    { name: "Suba Dasawak",        unit_price:  32.50, cost_price:  32.50, board: "NLB" },
+    // ── DLB — Development Lottery Board ──────────────────────────────────────
+    { name: "Ada Kotipathi",       unit_price: 325.00, cost_price: 325.00, board: "DLB" },
+    { name: "Jaya Sampatha",       unit_price:  32.50, cost_price:  32.50, board: "DLB" },
+    { name: "Kapruka",             unit_price: 325.00, cost_price: 325.00, board: "DLB" },
+    { name: "Lagna Wasanawa",      unit_price:  32.50, cost_price:  32.50, board: "DLB" },
+    { name: "Sasiri",              unit_price: 325.00, cost_price: 325.00, board: "DLB" },
+    { name: "Shanida Wasanawa",    unit_price: 325.00, cost_price: 325.00, board: "DLB" },
+    { name: "Super Ball",          unit_price: 325.00, cost_price: 325.00, board: "DLB" },
+    { name: "Supiri Dana Sampatha",unit_price: 520.00, cost_price: 520.00, board: "DLB" },
+  ];
+
+  // Name aliases — old/incorrect names that exist in the DB → canonical name
+  const NAME_ALIASES: Record<string, string> = {
+    "mahajana sampatha":      "Mahajana Sampatha",
+    "lagna wasanawa":         "Lagna Wasanawa",
+    "nlb jaya":               "NLB Jaya",
+    "kotipathi kapruka":      "Kapruka",
+    "supiri dana sampatha spc":"Supiri Dana Sampatha",
+  };
+
+  // Step 1: Normalise names and correct board assignments on existing rows
+  const allRows = await d.select<{ id: number; name: string; board: string }[]>(
+    "SELECT id, name, board FROM lottery_games"
   );
-  if (!existing[0]?.cnt) {
-    const games = [
-      ["MAHAJANA SAMPATHA", 32.50, "NLB"],
-      ["Govi Setha", 32.50, "NLB"],
-      ["LAGNA WASANAWA", 32.50, "NLB"],
-      ["Ada Kotipathi", 325.00, "NLB"],
-      ["Shanida Wasanawa", 325.00, "NLB"],
-      ["Super Ball", 325.00, "NLB"],
-      ["Dhana Nidhanaya", 32.50, "NLB"],
-      ["Mega Power", 32.50, "NLB"],
-      ["Kotipathi Kapruka", 325.00, "NLB"],
-      ["Supiri Dana Sampatha SPC", 520.00, "NLB"],
-      ["Supiri Dana Sampatha", 520.00, "NLB"],
-      ["Sasiri", 325.00, "NLB"],
-      ["Hada Hana", 325.00, "NLB"],
-      ["Jaya Sampatha", 32.50, "NLB"],
-      ["Ada Sampatha", 650.00, "NLB"],
-      ["Nlb Jaya", 32.50, "NLB"],
-      ["Suba Dasawak", 32.50, "NLB"],
-    ];
-    for (const [name, price, board] of games) {
+  for (const row of allRows) {
+    const lc = row.name.toLowerCase().trim();
+    // Resolve alias → canonical name
+    const canonicalName = NAME_ALIASES[lc] ?? CANONICAL_GAMES.find(g => g.name.toLowerCase() === lc)?.name ?? null;
+    const canonicalGame = CANONICAL_GAMES.find(g =>
+      g.name.toLowerCase() === (canonicalName ?? row.name).toLowerCase()
+    );
+    if (canonicalGame) {
+      // Update name (normalise casing) and correct board
+      if (row.name !== canonicalGame.name || row.board !== canonicalGame.board) {
+        await d.execute(
+          "UPDATE lottery_games SET name=?, board=?, unit_price=?, cost_price=? WHERE id=?",
+          [canonicalGame.name, canonicalGame.board, canonicalGame.unit_price, canonicalGame.cost_price, row.id]
+        );
+      }
+    }
+  }
+
+  // Step 2: Remove duplicates again after name normalisation
+  await d.execute(`
+    DELETE FROM lottery_games WHERE id NOT IN (
+      SELECT MIN(id) FROM lottery_games GROUP BY LOWER(name)
+    )
+  `);
+
+  // Step 3: Insert any canonical games that are still missing
+  const afterNorm = await d.select<{ name: string }[]>("SELECT name FROM lottery_games");
+  const existingNames = new Set(afterNorm.map(r => r.name.toLowerCase()));
+  for (const g of CANONICAL_GAMES) {
+    if (!existingNames.has(g.name.toLowerCase())) {
       await d.execute(
-        "INSERT INTO lottery_games (name, unit_price, board) VALUES (?, ?, ?)",
-        [name, price, board]
+        "INSERT INTO lottery_games (name, unit_price, cost_price, board) VALUES (?, ?, ?, ?)",
+        [g.name, g.unit_price, g.cost_price, g.board]
       );
     }
   }
