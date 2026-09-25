@@ -6,11 +6,12 @@ import {
 } from "../services/database";
 import type { Agent, LotteryGame } from "../types";
 
+// discount_pct column is repurposed to store Rs. discount amount
 type DiscountKey = `${number}|${string}`;
-type DiscountMap = Map<DiscountKey, { discount_pct: number; custom_price: number | null }>;
+type DiscountMap = Map<DiscountKey, number>; // value = Rs. discount amount
 
-const KEY  = (agentId: number, gameName: string): DiscountKey => `${agentId}|${gameName}`;
-const fmt  = (n: number) => n.toLocaleString("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const KEY = (agentId: number, gameName: string): DiscountKey => `${agentId}|${gameName}`;
+const fmt = (n: number) => n.toLocaleString("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function AgentDiscounts() {
   const [agents,    setAgents]    = useState<Agent[]>([]);
@@ -19,7 +20,6 @@ export default function AgentDiscounts() {
   const [dirty,     setDirty]     = useState<Set<DiscountKey>>(new Set());
   const [saving,    setSaving]    = useState(false);
   const [toast,     setToast]     = useState("");
-  const [mode,      setMode]      = useState<"discount" | "price">("discount");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -27,43 +27,49 @@ export default function AgentDiscounts() {
       setAgents(a);
       setGames(g);
       const map: DiscountMap = new Map();
-      for (const row of d) map.set(KEY(row.agent_id, row.game_name), { discount_pct: row.discount_pct, custom_price: row.custom_price });
+      // discount_pct stores the Rs. discount amount (e.g. 5.00 = Rs. 5 off per ticket)
+      for (const row of d) {
+        const amt = row.custom_price !== null ? row.custom_price : row.discount_pct;
+        if (amt > 0) map.set(KEY(row.agent_id, row.game_name), amt);
+      }
       setDiscounts(map);
     });
   }, []);
 
-  function getCell(agentId: number, gameName: string) {
-    return discounts.get(KEY(agentId, gameName)) ?? { discount_pct: 0, custom_price: null };
+  function getDiscount(agentId: number, gameName: string): number {
+    return discounts.get(KEY(agentId, gameName)) ?? 0;
   }
 
-  function setCell(agentId: number, gameName: string, partial: Partial<{ discount_pct: number; custom_price: number | null }>) {
-    const key  = KEY(agentId, gameName);
-    const prev = discounts.get(key) ?? { discount_pct: 0, custom_price: null };
-    const next = { ...prev, ...partial };
-    setDiscounts(m => new Map(m).set(key, next));
+  function setDiscount(agentId: number, gameName: string, amount: number) {
+    const key = KEY(agentId, gameName);
+    setDiscounts(m => { const n = new Map(m); if (amount > 0) n.set(key, amount); else n.delete(key); return n; });
     setDirty(s => new Set(s).add(key));
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => autoSave(key, agentId, gameName, next), 800);
+    saveTimer.current = setTimeout(() => autoSave(key, agentId, gameName, amount), 800);
   }
 
-  async function autoSave(key: DiscountKey, agentId: number, gameName: string, val: { discount_pct: number; custom_price: number | null }) {
-    if (val.discount_pct === 0 && val.custom_price === null) {
+  async function autoSave(key: DiscountKey, agentId: number, gameName: string, amount: number) {
+    if (amount <= 0) {
       await deleteAgentGameDiscount(agentId, gameName).catch(() => {});
     } else {
-      await saveAgentGameDiscount(agentId, gameName, val.discount_pct, val.custom_price).catch(() => {});
+      // Store as custom_price = null, discount_pct = Rs. amount (reused field)
+      await saveAgentGameDiscount(agentId, gameName, amount, null).catch(() => {});
     }
     setDirty(s => { const n = new Set(s); n.delete(key); return n; });
   }
 
   async function saveAll() {
     setSaving(true);
-    for (const [key, val] of discounts) {
+    for (const [key, amount] of discounts) {
       const [agentId, ...rest] = key.split("|");
       const gameName = rest.join("|");
-      if (val.discount_pct === 0 && val.custom_price === null) {
-        await deleteAgentGameDiscount(Number(agentId), gameName).catch(() => {});
-      } else {
-        await saveAgentGameDiscount(Number(agentId), gameName, val.discount_pct, val.custom_price).catch(() => {});
+      await saveAgentGameDiscount(Number(agentId), gameName, amount, null).catch(() => {});
+    }
+    // Also delete entries that were cleared (in dirty but not in discounts)
+    for (const key of dirty) {
+      if (!discounts.has(key)) {
+        const [agentId, ...rest] = key.split("|");
+        await deleteAgentGameDiscount(Number(agentId), rest.join("|")).catch(() => {});
       }
     }
     setDirty(new Set());
@@ -74,20 +80,27 @@ export default function AgentDiscounts() {
 
   async function resetAll() {
     if (!confirm("Reset all discounts to zero?")) return;
-    const cleared: DiscountMap = new Map();
-    for (const [key] of discounts) cleared.set(key, { discount_pct: 0, custom_price: null });
-    setDiscounts(cleared);
-    setDirty(new Set([...cleared.keys()]));
+    setDiscounts(new Map());
+    // Mark all previous keys as dirty so they get deleted on next save
+    const allKeys = new Set(discounts.keys());
+    setDirty(allKeys);
+    // Immediately delete all
+    for (const key of allKeys) {
+      const [agentId, ...rest] = key.split("|");
+      await deleteAgentGameDiscount(Number(agentId), rest.join("|")).catch(() => {});
+    }
+    setDirty(new Set());
+    setToast("All discounts cleared");
+    setTimeout(() => setToast(""), 2000);
   }
 
   const nlb  = games.filter(g => g.board === "NLB");
   const dlb  = games.filter(g => g.board === "DLB");
-  const cols = [...nlb, ...dlb]; // games = columns
+  const cols  = [...nlb, ...dlb]; // games = columns
 
-  // Layout constants
-  const AGENT_W = 180;   // left frozen column
-  const COL_W   = 105;   // per-game column
-  const ROW_H   = 50;    // per-agent row
+  const AGENT_W = 185;
+  const COL_W   = 108;
+  const ROW_H   = 52;
 
   return (
     <div style={{ background:"#F5F5F5", minHeight:"100%" }}>
@@ -108,19 +121,10 @@ export default function AgentDiscounts() {
               Sub-agent wise Discount
             </h1>
             <p className="text-xs mt-0.5" style={{ color:"#9CA3AF" }}>
-              Rows = Agents · Columns = Games · auto-applied on invoices · auto-saves 0.8s after edit
+              Enter LKR (Rs.) discount per ticket · auto-applied on invoices · auto-saves 0.8s after edit
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <div style={{ display:"flex", background:"#F3F4F6", borderRadius:8, padding:3, gap:2 }}>
-              {(["discount","price"] as const).map(m => (
-                <button key={m} onClick={() => setMode(m)}
-                  style={{ padding:"5px 14px", borderRadius:6, fontSize:12, fontWeight:700, border:"none", cursor:"pointer",
-                    background: mode===m?"#CF291D":"transparent", color: mode===m?"#fff":"#6B7280" }}>
-                  {m === "discount" ? "Discount %" : "Custom Price"}
-                </button>
-              ))}
-            </div>
             <button onClick={resetAll}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold"
               style={{ background:"#fff", border:"1px solid #E5E7EB", color:"#6B7280" }}>
@@ -145,7 +149,7 @@ export default function AgentDiscounts() {
           {[
             { bg:"#DCFCE7", bd:"#4ADE80", label:"Discount set" },
             { bg:"#FEF9C3", bd:"#FDE047", label:"Unsaved change" },
-            { bg:"#fff",    bd:"#CBD5E1", label:"No override (default)" },
+            { bg:"#fff",    bd:"#CBD5E1", label:"No discount (default price)" },
           ].map(l => (
             <span key={l.label} style={{ display:"flex", alignItems:"center", gap:5 }}>
               <span style={{ width:13, height:13, borderRadius:3, background:l.bg, border:`1px solid ${l.bd}`, display:"inline-block" }}/>
@@ -159,7 +163,7 @@ export default function AgentDiscounts() {
           )}
         </div>
 
-        {/* ── SPREADSHEET ──────────────────────────────────────────────────── */}
+        {/* ── SPREADSHEET ──────────────────────────────────────────────────────── */}
         {agents.length === 0 ? (
           <div className="text-center py-16 rounded-2xl"
             style={{ background:"#fff", border:"1px solid #E5E7EB", color:"#9CA3AF", fontSize:13 }}>
@@ -182,11 +186,10 @@ export default function AgentDiscounts() {
                 {cols.map(g => <col key={g.id} style={{ width:COL_W }}/>)}
               </colgroup>
 
-              {/* ── HEADER: top-left corner + one column per GAME ── */}
+              {/* ── HEADER ── */}
               <thead>
-                {/* Board-group sub-header (NLB / DLB spans) */}
+                {/* Board group row */}
                 <tr>
-                  {/* Corner */}
                   <th rowSpan={2} style={{
                     position:"sticky", left:0, top:0, zIndex:40,
                     background:"#0F172A", color:"#94A3B8",
@@ -196,50 +199,49 @@ export default function AgentDiscounts() {
                   }}>
                     👤 AGENT NAME
                   </th>
-                  {/* NLB span */}
                   <th colSpan={nlb.length} style={{
                     position:"sticky", top:0, zIndex:30,
                     background:"#1d4ed8", color:"#fff",
                     padding:"5px 8px", textAlign:"center",
                     fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.06em",
-                    borderRight:"2px solid #1e40af", borderBottom:"1px solid #1e40af",
+                    borderRight:"2px solid #1e40af", borderBottom:"1px solid rgba(255,255,255,0.3)",
                   }}>
                     📘 NLB — National Lottery Board
                   </th>
-                  {/* DLB span */}
                   <th colSpan={dlb.length} style={{
                     position:"sticky", top:0, zIndex:30,
                     background:"#c2410c", color:"#fff",
                     padding:"5px 8px", textAlign:"center",
                     fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.06em",
-                    borderBottom:"1px solid #9a3412",
+                    borderBottom:"1px solid rgba(255,255,255,0.3)",
                   }}>
                     📙 DLB — Development Lottery Board
                   </th>
                 </tr>
-                {/* Game name row */}
+                {/* Game names row */}
                 <tr>
                   {cols.map((game, gi) => {
-                    const isNLB = game.board === "NLB";
+                    const isNLB    = game.board === "NLB";
                     const isLastNLB = isNLB && gi === nlb.length - 1;
                     return (
                       <th key={game.id} style={{
                         position:"sticky", top:26, zIndex:29,
                         background: isNLB ? "#1E40AF" : "#9A3412",
                         color:"#fff",
-                        padding:"6px 4px", textAlign:"center",
-                        fontSize:10, fontWeight:700,
+                        padding:"5px 3px", textAlign:"center",
+                        fontSize:9, fontWeight:700,
                         borderRight: isLastNLB ? "2px solid #93C5FD" : "1px solid rgba(255,255,255,0.15)",
                         borderBottom:"2px solid #1E293B",
                         lineHeight:1.2,
-                        overflow:"hidden",
                       }}>
-                        <div style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
-                          fontSize:10, maxWidth:COL_W-8 }}>
+                        <div title={game.name} style={{
+                          overflow:"hidden", textOverflow:"ellipsis",
+                          whiteSpace:"nowrap", maxWidth:COL_W-8, fontSize:9,
+                        }}>
                           {game.name}
                         </div>
-                        <div style={{ fontSize:9, color:"rgba(255,255,255,0.6)", marginTop:2, fontWeight:400 }}>
-                          Rs. {fmt(game.unit_price)}
+                        <div style={{ fontSize:8, color:"rgba(255,255,255,0.65)", marginTop:2, fontWeight:500 }}>
+                          Rs.{fmt(game.unit_price)}
                         </div>
                       </th>
                     );
@@ -247,22 +249,22 @@ export default function AgentDiscounts() {
                 </tr>
               </thead>
 
-              {/* ── BODY: one row per AGENT ── */}
+              {/* ── BODY ── */}
               <tbody>
                 {agents.map((agent, ai) => (
                   <tr key={agent.id} style={{ height:ROW_H }}>
-                    {/* Frozen agent name cell */}
+                    {/* Frozen agent name */}
                     <td style={{
                       position:"sticky", left:0, zIndex:10,
                       background: ai % 2 === 0 ? "#F1F5F9" : "#E2E8F0",
-                      padding:"0 14px",
+                      padding:"0 12px",
                       borderRight:"2px solid #CBD5E1",
                       borderBottom:"1px solid #E2E8F0",
                       verticalAlign:"middle",
                     }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:9 }}>
                         <div style={{
-                          width:32, height:32, borderRadius:"50%",
+                          width:30, height:30, borderRadius:"50%",
                           background:"#CF291D", color:"#fff",
                           display:"flex", alignItems:"center", justifyContent:"center",
                           fontSize:13, fontWeight:900, flexShrink:0,
@@ -282,18 +284,14 @@ export default function AgentDiscounts() {
                       </div>
                     </td>
 
-                    {/* One cell per game */}
+                    {/* One discount cell per game */}
                     {cols.map((game, gi) => {
-                      const cell    = getCell(agent.id!, game.name);
-                      const key     = KEY(agent.id!, game.name);
-                      const isSet   = cell.discount_pct > 0 || cell.custom_price !== null;
-                      const isDirty = dirty.has(key);
+                      const discAmt   = getDiscount(agent.id!, game.name);
+                      const key       = KEY(agent.id!, game.name);
+                      const isSet     = discAmt > 0;
+                      const isDirty   = dirty.has(key);
                       const isLastNLB = game.board === "NLB" && gi === nlb.length - 1;
-
-                      const effPrice   = cell.custom_price !== null
-                        ? cell.custom_price
-                        : game.unit_price * (1 - cell.discount_pct / 100);
-                      const savingAmt  = game.unit_price - effPrice;
+                      const effPrice  = Math.max(0, game.unit_price - discAmt);
 
                       return (
                         <td key={game.id} style={{
@@ -301,64 +299,37 @@ export default function AgentDiscounts() {
                           borderRight: isLastNLB ? "2px solid #93C5FD" : "1px solid #E2E8F0",
                           borderBottom:"1px solid #E2E8F0",
                           background: isDirty ? "#FEFCE8"
-                            : isSet ? (ai % 2 === 0 ? "#F0FDF4" : "#ECFDF5")
-                            : (ai % 2 === 0 ? "#fff" : "#F8FAFC"),
+                            : isSet ? (ai%2===0 ? "#F0FDF4" : "#ECFDF5")
+                            : (ai%2===0 ? "#fff" : "#F8FAFC"),
                           transition:"background 0.15s",
                         }}>
                           <div style={{ display:"flex", flexDirection:"column", alignItems:"center",
                             justifyContent:"center", height:ROW_H, gap:2 }}>
 
-                            {mode === "discount" ? (
-                              <>
-                                <div style={{ display:"flex", alignItems:"center", gap:3 }}>
-                                  <input
-                                    type="number" min="0" max="100" step="0.5"
-                                    value={cell.discount_pct || ""}
-                                    placeholder="0"
-                                    onChange={e => setCell(agent.id!, game.name, { discount_pct: parseFloat(e.target.value) || 0 })}
-                                    style={{
-                                      width:50, height:26, textAlign:"center", padding:0,
-                                      border:`2px solid ${isDirty?"#FDE047":isSet?"#4ADE80":"#CBD5E1"}`,
-                                      borderRadius:5, fontSize:13, fontWeight:800,
-                                      background:"transparent", color:"#111827", outline:"none",
-                                    }}
-                                    onFocus={e => { e.target.select(); e.currentTarget.style.borderColor="#CF291D"; }}
-                                    onBlur={e => { e.currentTarget.style.borderColor = isDirty?"#FDE047":isSet?"#4ADE80":"#CBD5E1"; }}
-                                  />
-                                  <span style={{ fontSize:11, color:"#64748B", fontWeight:700 }}>%</span>
-                                </div>
-                                {isSet && (
-                                  <div style={{ fontSize:9, fontWeight:700,
-                                    color: savingAmt >= 0 ? "#16A34A" : "#DC2626" }}>
-                                    Rs. {fmt(effPrice)}
-                                  </div>
-                                )}
-                              </>
-                            ) : (
-                              <>
-                                <input
-                                  type="number" min="0" step="0.5"
-                                  value={cell.custom_price ?? ""}
-                                  placeholder={fmt(game.unit_price)}
-                                  onChange={e => {
-                                    const v = e.target.value === "" ? null : parseFloat(e.target.value);
-                                    setCell(agent.id!, game.name, { custom_price: v });
-                                  }}
-                                  style={{
-                                    width:76, height:26, textAlign:"right", padding:"0 4px",
-                                    border:`2px solid ${isDirty?"#FDE047":isSet?"#4ADE80":"#CBD5E1"}`,
-                                    borderRadius:5, fontSize:12, fontWeight:800,
-                                    background:"transparent", color:"#111827", outline:"none",
-                                  }}
-                                  onFocus={e => { e.target.select(); e.currentTarget.style.borderColor="#CF291D"; }}
-                                  onBlur={e => { e.currentTarget.style.borderColor = isDirty?"#FDE047":isSet?"#4ADE80":"#CBD5E1"; }}
-                                />
-                                {isSet && savingAmt > 0 && (
-                                  <div style={{ fontSize:9, fontWeight:700, color:"#16A34A" }}>
-                                    -{fmt(savingAmt)}
-                                  </div>
-                                )}
-                              </>
+                            {/* Rs. discount input */}
+                            <div style={{ display:"flex", alignItems:"center", gap:3 }}>
+                              <span style={{ fontSize:9, color:"#64748B", fontWeight:700, flexShrink:0 }}>Rs.</span>
+                              <input
+                                type="number" min="0" step="0.5"
+                                value={discAmt || ""}
+                                placeholder="0.00"
+                                onChange={e => setDiscount(agent.id!, game.name, parseFloat(e.target.value) || 0)}
+                                style={{
+                                  width:58, height:26, textAlign:"center", padding:0,
+                                  border:`2px solid ${isDirty?"#FDE047":isSet?"#4ADE80":"#CBD5E1"}`,
+                                  borderRadius:5, fontSize:12, fontWeight:800,
+                                  background:"transparent", color:"#111827", outline:"none",
+                                }}
+                                onFocus={e => { e.target.select(); e.currentTarget.style.borderColor="#CF291D"; }}
+                                onBlur={e => { e.currentTarget.style.borderColor = isDirty?"#FDE047":isSet?"#4ADE80":"#CBD5E1"; }}
+                              />
+                            </div>
+
+                            {/* Effective price preview */}
+                            {isSet && (
+                              <div style={{ fontSize:9, fontWeight:700, color:"#16A34A" }}>
+                                → Rs. {fmt(effPrice)}
+                              </div>
                             )}
                           </div>
                         </td>
@@ -372,7 +343,7 @@ export default function AgentDiscounts() {
         )}
 
         <p style={{ fontSize:11, color:"#9CA3AF", textAlign:"center" }}>
-          💡 Auto-saves 0.8s after you stop typing · Tab moves between cells · Save All to force-flush all pending changes
+          💡 Enter the Rs. discount per ticket · auto-saves 0.8s after edit · Tab moves between cells
         </p>
       </div>
     </div>

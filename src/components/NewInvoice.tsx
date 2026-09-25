@@ -126,18 +126,13 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
       prev.forEach((item, i) => {
         if (!item.ticket_name) return;
         getAgentGameDiscount(id, item.ticket_name).then(discount => {
-          if (!discount) return;
+          if (!discount || discount.discount_pct <= 0) return;
           setItems(cur => cur.map((row, ri) => {
             if (ri !== i) return row;
-            const game = games.find(g => g.name === row.ticket_name);
-            const basePrice = game?.unit_price ?? row.unit_price;
-            const effectivePrice = discount.custom_price !== null
-              ? discount.custom_price
-              : Math.round(basePrice * (1 - discount.discount_pct / 100) * 100) / 100;
-            const discPct = discount.custom_price !== null
-              ? Math.round((1 - discount.custom_price / basePrice) * 100 * 10) / 10
-              : discount.discount_pct;
-            return { ...row, unit_price: effectivePrice, discount_pct: discPct, value: Math.round(row.qty * effectivePrice * 100) / 100 };
+            // discount_pct stores Rs. discount amount (e.g. 5.00 = Rs. 5 off per ticket)
+            const discAmt = discount.discount_pct;
+            const effectivePrice = Math.max(0, Math.round((row.unit_price - discAmt) * 100) / 100);
+            return { ...row, unit_price: effectivePrice, discount_amt: discAmt, value: Math.round(row.qty * effectivePrice * 100) / 100 };
           }));
         }).catch(() => {});
       });
@@ -155,21 +150,21 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
       // Auto-apply agent discount when ticket is selected (if agent already chosen)
       if (agentId) {
         getAgentGameDiscount(agentId, String(value)).then(discount => {
-          if (!discount) return;
+          if (!discount || discount.discount_pct <= 0) return;
           setItems(prev => prev.map((item, i) => {
             if (i !== index) return item;
-            const game = games.find(g => g.name === String(value));
-            const basePrice = game?.unit_price ?? item.unit_price;
-            const effectivePrice = discount.custom_price !== null
-              ? discount.custom_price
-              : Math.round(basePrice * (1 - discount.discount_pct / 100) * 100) / 100;
-            const discPct = discount.custom_price !== null
-              ? Math.round((1 - discount.custom_price / basePrice) * 100 * 10) / 10
+            // discount_pct stores Rs. discount amount
+            const discAmt = discount.discount_pct;
+            const basePrice = item.unit_price;
+            const effectivePrice = Math.max(0, Math.round((basePrice - discAmt) * 100) / 100);
+            const discPct = basePrice > 0
+              ? Math.round((discAmt / basePrice) * 100 * 10) / 10
               : discount.discount_pct;
             return {
               ...item,
               unit_price: effectivePrice,
               discount_pct: discPct,
+              discount_amt: discAmt,
               value: Math.round(item.qty * effectivePrice * 100) / 100,
             };
           }));
