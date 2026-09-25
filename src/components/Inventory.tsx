@@ -1,15 +1,37 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Trash2, X, Save, AlertTriangle, Package, RefreshCw, Calculator, Home, ChevronRight, Pencil } from "lucide-react";
+import { Plus, Trash2, X, Save, AlertTriangle, Package, RefreshCw, Calculator, Home, ChevronRight, Pencil, Grid, List } from "lucide-react";
 import { resolveLogoUrl } from "./TicketLogoPicker";
-import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode } from "../utils/barcode";
+import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, lastTicketBarcode } from "../utils/barcode";
 import {
   getInventoryBatches,
   saveInventoryBatch,
   deleteInventoryBatch,
   getLotteryGames,
   syncInventoryFromTransactions,
+  getBatchesForGame,
+  getBatchSalesDetail,
 } from "../services/database";
 import type { InventoryBatch, LotteryGame } from "../types";
+
+// ── All 16 known NLB/DLB games ────────────────────────────────────────────────
+const ALL_GAMES: { name: string; board: "NLB" | "DLB" }[] = [
+  { name: "Ada Sampatha",         board: "NLB" },
+  { name: "Dhana Nidhanaya",      board: "NLB" },
+  { name: "Govi Setha",           board: "NLB" },
+  { name: "Hada Hana",            board: "NLB" },
+  { name: "Mahajana Sampatha",    board: "NLB" },
+  { name: "Mega Power",           board: "NLB" },
+  { name: "NLB Jaya",             board: "NLB" },
+  { name: "Suba Dasawak",         board: "NLB" },
+  { name: "Ada Kotipathi",        board: "DLB" },
+  { name: "Jaya Sampatha",        board: "DLB" },
+  { name: "Kapruka",              board: "DLB" },
+  { name: "Lagna Wasanawa",       board: "DLB" },
+  { name: "Sasiri",               board: "DLB" },
+  { name: "Shanida Wasanawa",     board: "DLB" },
+  { name: "Super Ball",           board: "DLB" },
+  { name: "Supiri Dana Sampatha", board: "DLB" },
+];
 
 const NLB_DLB_CATEGORIES = [
   "NLB — Daily Draw", "NLB — Weekly Draw", "NLB — Special Draw",
@@ -45,6 +67,10 @@ export default function Inventory() {
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
   const [tabFilter, setTabFilter] = useState<"all" | "low" | "in">("all");
+  // View mode: grid (default) or list
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  // Batch detail popup for a specific game
+  const [detailGame, setDetailGame] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -163,31 +189,34 @@ export default function Inventory() {
               placeholder="Filter by game…"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              style={{ width: 160 }}
+              style={{ width: 150 }}
             />
-            <button
-              onClick={load} disabled={loading}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
-              title="Refresh">
-              <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+            {/* Grid / List toggle */}
+            <div style={{ display:"flex", borderRadius:8, border:"1px solid #E5E7EB", overflow:"hidden" }}>
+              <button onClick={() => setViewMode("grid")}
+                style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", border:"none", fontSize:12, fontWeight:600, cursor:"pointer", background: viewMode==="grid"?"#CF291D":"#fff", color: viewMode==="grid"?"#fff":"#6B7280" }}>
+                <Grid size={14}/> Grid
+              </button>
+              <button onClick={() => setViewMode("list")}
+                style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", border:"none", fontSize:12, fontWeight:600, cursor:"pointer", background: viewMode==="list"?"#CF291D":"#fff", color: viewMode==="list"?"#fff":"#6B7280" }}>
+                <List size={14}/> List
+              </button>
+            </div>
+            <button onClick={load} disabled={loading}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:bg-gray-50 disabled:opacity-50"
+              style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", color:"#1D1D1D" }}>
+              <RefreshCw size={13} className={loading ? "animate-spin" : ""}/>
             </button>
-            {/* Sync inventory from all transactions — fixes stale stock counts */}
-            <button
-              onClick={handleSync} disabled={syncing || loading}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", color: "#2563eb" }}
-              title="Recalculate stock from purchases, invoices & returns">
-              <RefreshCw size={13} className={syncing ? "animate-spin" : ""}/>
+            <button onClick={handleSync} disabled={syncing || loading}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50"
+              style={{ background:"#EFF6FF", border:"1px solid #BFDBFE", color:"#2563eb" }}>
+              <RefreshCw size={13} className={syncing?"animate-spin":""}/>
               Sync Stock
             </button>
-            <button
-              onClick={() => setForm(EMPTY())}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-all"
-              style={{ background:"#F9FAFB", border:"1px solid #E5E7EB", color:"#6B7280" }}
-              title="Manually add a batch — stock normally comes automatically from Stock Purchases"
-            >
-              <Plus size={14} /> Add Batch
+            <button onClick={() => setForm(EMPTY())}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all"
+              style={{ background:"#F9FAFB", border:"1px solid #E5E7EB", color:"#6B7280" }}>
+              <Plus size={14}/> Add Batch
             </button>
           </div>
         </div>
@@ -470,7 +499,25 @@ export default function Inventory() {
           </div>
         )}
 
-        {/* Table card */}
+        {/* ── GRID VIEW ── */}
+        {viewMode === "grid" && (
+          <InventoryGridView
+            batches={batches}
+            filter={filter}
+            onGameClick={name => setDetailGame(name)}
+          />
+        )}
+
+        {/* Batch detail popup */}
+        {detailGame && (
+            <BatchDetailPopup
+              gameName={detailGame}
+              onClose={() => setDetailGame(null)}
+            />
+        )}
+
+        {/* ── LIST VIEW ── */}
+        {viewMode === "list" && (
         <div
           className="rounded-2xl overflow-hidden shadow-sm"
           style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}
@@ -668,7 +715,311 @@ export default function Inventory() {
             </div>
           )}
         </div>
+        )} {/* end list view */}
       </div>
+    </div>
+  );
+}
+
+// ── Inventory Grid View ────────────────────────────────────────────────────────
+function InventoryGridView({
+  batches, filter, onGameClick
+}: {
+  batches: (InventoryBatch & { remaining_qty: number })[];
+  filter: string;
+  onGameClick: (name: string) => void;
+}) {
+  const fmt = (n: number) => n.toLocaleString();
+
+  // Aggregate by game name across all batches
+  const gameMap = new Map<string, { total: number; remaining: number; distributed: number; batches: number; unit_price: number }>();
+
+  // Start with all 16 known games at zero
+  for (const g of ALL_GAMES) {
+    gameMap.set(g.name, { total: 0, remaining: 0, distributed: 0, batches: 0, unit_price: 32.5 });
+  }
+  // Fill with actual batch data
+  for (const b of batches) {
+    const existing = gameMap.get(b.game_name) ?? { total: 0, remaining: 0, distributed: 0, batches: 0, unit_price: b.unit_price };
+    gameMap.set(b.game_name, {
+      total:       existing.total + b.total_qty,
+      remaining:   existing.remaining + b.remaining_qty,
+      distributed: existing.distributed + b.distributed_qty,
+      batches:     existing.batches + 1,
+      unit_price:  b.unit_price,
+    });
+  }
+
+  // Sort: in-stock first, then low-stock, then out-of-stock/no-stock
+  const sorted = [...ALL_GAMES]
+    .filter(g => !filter || g.name.toLowerCase().includes(filter.toLowerCase()))
+    .map(g => ({ ...g, ...gameMap.get(g.name)! }))
+    .sort((a, b) => {
+      const statusA = a.remaining === 0 ? 2 : a.remaining < 200 ? 1 : 0;
+      const statusB = b.remaining === 0 ? 2 : b.remaining < 200 ? 1 : 0;
+      if (statusA !== statusB) return statusA - statusB;
+      return b.remaining - a.remaining;
+    });
+
+  return (
+    <div>
+      {/* Board sections */}
+      {(["NLB", "DLB"] as const).map(board => {
+        const boardGames = sorted.filter(g => g.board === board);
+        if (boardGames.length === 0) return null;
+        return (
+          <div key={board} style={{ marginBottom: 20 }}>
+            <div style={{
+              display:"flex", alignItems:"center", gap:10, padding:"10px 16px",
+              background: board==="NLB"?"#EFF6FF":"#FFF7ED",
+              borderRadius:"12px 12px 0 0",
+              borderBottom: `2px solid ${board==="NLB"?"#2563EB":"#EA580C"}`,
+            }}>
+              <span style={{ fontSize:16 }}>{board==="NLB"?"📘":"📙"}</span>
+              <span style={{ fontSize:13, fontWeight:800, color: board==="NLB"?"#1d4ed8":"#c2410c" }}>
+                {board} — {board==="NLB"?"National Lottery Board":"Development Lottery Board"}
+              </span>
+              <span style={{ marginLeft:"auto", fontSize:11, color:"#6B7280" }}>
+                {boardGames.filter(g=>g.remaining>0).length}/{boardGames.length} in stock
+              </span>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:12, padding:14, background:"#fff", borderRadius:"0 0 12px 12px", border:"1px solid #E5E7EB", borderTop:"none" }}>
+              {boardGames.map(g => {
+                const hasStock  = g.remaining > 0;
+                const isLow     = g.remaining > 0 && g.remaining < 200;
+                const noStock   = g.remaining === 0 && g.batches === 0;
+                const soldOut   = g.remaining === 0 && g.batches > 0;
+                return (
+                  <button key={g.name} type="button"
+                    onClick={() => g.batches > 0 ? onGameClick(g.name) : undefined}
+                    style={{
+                      display:"flex", flexDirection:"column", alignItems:"center",
+                      padding:"16px 12px", borderRadius:12,
+                      border: `2px solid ${hasStock ? (isLow?"#FDE68A":"#BBF7D0") : noStock?"#E5E7EB":"#FECACA"}`,
+                      background: hasStock ? (isLow?"#FFFBEB":"#F0FFF4") : noStock?"#F9FAFB":"#FFF1F0",
+                      cursor: g.batches>0?"pointer":"default",
+                      transition:"all 0.15s",
+                      opacity: noStock ? 0.6 : 1,
+                      position:"relative",
+                    }}
+                    onMouseEnter={e => { if(g.batches>0) (e.currentTarget as HTMLElement).style.transform="translateY(-2px)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform="translateY(0)"; }}>
+
+                    {/* Status badge */}
+                    <span style={{
+                      position:"absolute", top:8, right:8,
+                      padding:"2px 6px", borderRadius:20, fontSize:9, fontWeight:700,
+                      background: hasStock?(isLow?"#FDE68A":"#DCFCE7"):noStock?"#F3F4F6":"#FEE2E2",
+                      color: hasStock?(isLow?"#92400E":"#16A34A"):noStock?"#9CA3AF":"#DC2626",
+                    }}>
+                      {noStock?"No Stock":isLow?"Low":soldOut?"Sold Out":"✓ In Stock"}
+                    </span>
+
+                    {/* Ticket logo */}
+                    <img src={resolveLogoUrl(g.name)} alt={g.name}
+                      style={{ width:72, height:72, objectFit:"contain", borderRadius:10, marginBottom:8,
+                               filter: (noStock||soldOut)?"grayscale(60%)":"none" }}
+                      onError={e=>{(e.currentTarget as HTMLImageElement).src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72'%3E%3Crect width='72' height='72' rx='10' fill='%23F3F4F6'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='32'%3E🎫%3C/text%3E%3C/svg%3E"}}/>
+
+                    {/* Name */}
+                    <div style={{ fontSize:11, fontWeight:700, color:"#111827", textAlign:"center", lineHeight:1.3, marginBottom:6 }}>
+                      {g.name}
+                    </div>
+
+                    {/* Stock numbers */}
+                    {g.batches > 0 ? (
+                      <>
+                        <div style={{ fontSize:20, fontWeight:900, color: hasStock?(isLow?"#D97706":"#16A34A"):"#CF291D" }}>
+                          {fmt(g.remaining)}
+                        </div>
+                        <div style={{ fontSize:9, color:"#9CA3AF", marginTop:1 }}>available</div>
+                        <div style={{ width:"100%", marginTop:6 }}>
+                          <div style={{ background:"#F3F4F6", borderRadius:999, height:4, overflow:"hidden" }}>
+                            <div style={{ height:"100%", borderRadius:999,
+                              width:`${g.total>0?Math.min(100,(g.remaining/g.total)*100):0}%`,
+                              background: isLow?"#F59E0B":"#16A34A", transition:"width 0.3s" }}/>
+                          </div>
+                          <div style={{ display:"flex", justifyContent:"space-between", fontSize:9, color:"#9CA3AF", marginTop:2 }}>
+                            <span>Sold: {fmt(g.distributed)}</span>
+                            <span>Total: {fmt(g.total)}</span>
+                          </div>
+                        </div>
+                        <div style={{ fontSize:9, color:"#6B7280", marginTop:4 }}>
+                          {g.batches} batch{g.batches!==1?"es":""}
+                          {g.batches>0 && <span style={{ color:"#2563EB", marginLeft:4 }}>click for details</span>}
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ fontSize:11, color:"#9CA3AF", textAlign:"center", marginTop:4 }}>
+                        No stock purchased yet
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Batch Detail Popup ────────────────────────────────────────────────────────
+function BatchDetailPopup({
+  gameName, onClose
+}: {
+  gameName: string;
+  onClose: () => void;
+}) {
+  const [batchData, setBatchData] = React.useState<Awaited<ReturnType<typeof getBatchesForGame>>>([]);
+  const [salesRows, setSalesRows] = React.useState<Record<number, any[]>>({});
+  const [expandedBatch, setExpandedBatch] = React.useState<number | null>(null);
+  const fmt = (n: number) => n.toLocaleString();
+
+  React.useEffect(() => {
+    getBatchesForGame(gameName).then(setBatchData).catch(() => {});
+  }, [gameName]);
+
+  async function loadSales(batchId: number) {
+    if (salesRows[batchId]) { setExpandedBatch(expandedBatch===batchId?null:batchId); return; }
+    const rows = await getBatchSalesDetail(batchId).catch(()=>[]);
+    setSalesRows(p=>({...p,[batchId]:rows}));
+    setExpandedBatch(batchId);
+  }
+
+  const totalStock = batchData.reduce((s,b)=>s+b.total_qty,0);
+  const totalSold  = batchData.reduce((s,b)=>s+b.sold_from_invoices,0);
+  const totalLeft  = batchData.reduce((s,b)=>s+b.remaining_qty,0);
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", backdropFilter:"blur(4px)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+      onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()}
+        style={{ background:"#fff", borderRadius:16, width:"min(860px, 100%)", maxHeight:"85vh", display:"flex", flexDirection:"column",
+          boxShadow:"0 20px 60px rgba(0,0,0,0.3)", animation:"modalIn 0.2s ease", overflow:"hidden" }}>
+
+        {/* Header */}
+        <div style={{ padding:"14px 20px", background:"linear-gradient(135deg,#0F172A,#1E293B)", display:"flex", alignItems:"center", gap:14, flexShrink:0 }}>
+          <img src={resolveLogoUrl(gameName)} alt="" style={{ width:52, height:52, objectFit:"contain", borderRadius:8, background:"#fff", padding:3 }}
+            onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none"}}/>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:16, fontWeight:800, color:"#F1F5F9" }}>{gameName}</div>
+            <div style={{ fontSize:11, color:"#64748B" }}>
+              {batchData.length} purchase batch{batchData.length!==1?"es":""} · click a batch for invoice details
+            </div>
+          </div>
+          {/* Summary pills */}
+          <div style={{ display:"flex", gap:8 }}>
+            {[
+              { label:"Total", val:totalStock, color:"#94A3B8" },
+              { label:"Sold",  val:totalSold,  color:"#F87171" },
+              { label:"Left",  val:totalLeft,  color:"#4ADE80" },
+            ].map(p => (
+              <div key={p.label} style={{ textAlign:"center", padding:"6px 12px", background:"rgba(255,255,255,0.07)", borderRadius:8 }}>
+                <div style={{ fontSize:9, color:"#64748B", fontWeight:600, textTransform:"uppercase" }}>{p.label}</div>
+                <div style={{ fontSize:15, fontWeight:900, color:p.color }}>{fmt(p.val)}</div>
+              </div>
+            ))}
+          </div>
+          <button onClick={onClose} style={{ border:"none", background:"rgba(255,255,255,0.1)", color:"#94A3B8", cursor:"pointer", borderRadius:6, width:28, height:28, fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
+        </div>
+
+        {/* Batches */}
+        <div style={{ flex:1, overflowY:"auto", padding:16 }}>
+          {batchData.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"40px", color:"#9CA3AF", fontSize:13 }}>No purchase batches found for {gameName}</div>
+          ) : batchData.map(b => (
+            <div key={b.id} style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:12, marginBottom:10, overflow:"hidden" }}>
+              {/* Batch row */}
+              <button type="button" onClick={() => loadSales(b.id)}
+                style={{ display:"flex", alignItems:"center", width:"100%", padding:"12px 16px", border:"none", background:"#F8FAFC", cursor:"pointer", textAlign:"left", gap:16 }}>
+                <div>
+                  <div style={{ fontSize:12, fontWeight:700, color:"#111827", marginBottom:2 }}>
+                    📦 Batch #{b.id} · {b.batch_date}
+                  </div>
+                  <div style={{ fontSize:11, fontFamily:"monospace", color:"#6B7280" }}>
+                    <span style={{ color:"#2563EB" }}>{b.barcode_start}</span>
+                    <span style={{ margin:"0 6px", color:"#9CA3AF" }}>→</span>
+                    <span style={{ color:"#7C3AED" }}>{b.barcode_end}</span>
+                    <span style={{ marginLeft:8, color:"#9CA3AF" }}>
+                      Last ticket: <strong style={{ color:"#374151" }}>{lastTicketBarcode(b.barcode_end)}</strong>
+                    </span>
+                  </div>
+                </div>
+                {/* Progress */}
+                <div style={{ flex:1 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, marginBottom:4 }}>
+                    <span style={{ color:"#6B7280" }}>Sold: <strong style={{ color:"#CF291D" }}>{fmt(b.sold_from_invoices)}</strong></span>
+                    <span style={{ color:"#6B7280" }}>Remaining: <strong style={{ color:"#16A34A" }}>{fmt(b.remaining_qty)}</strong></span>
+                    <span style={{ color:"#6B7280" }}>Total: <strong>{fmt(b.total_qty)}</strong></span>
+                  </div>
+                  <div style={{ background:"#F3F4F6", borderRadius:999, height:6, overflow:"hidden" }}>
+                    <div style={{ height:"100%", borderRadius:999,
+                      width:`${b.total_qty>0?(b.sold_from_invoices/b.total_qty*100):0}%`,
+                      background:"#CF291D", transition:"width 0.3s" }}/>
+                  </div>
+                </div>
+                <div style={{ fontSize:11, color:"#2563EB", fontWeight:600, flexShrink:0 }}>
+                  {expandedBatch===b.id?"▲ Hide":"▼ Sales"}
+                </div>
+              </button>
+
+              {/* Sales detail */}
+              {expandedBatch === b.id && (
+                <div style={{ padding:"0 16px 14px" }}>
+                  {!(b.id in salesRows) ? (
+                    <div style={{ fontSize:11, color:"#9CA3AF", padding:"8px 0" }}>Loading…</div>
+                  ) : (salesRows[b.id] ?? []).length === 0 ? (
+                    <div style={{ fontSize:11, color:"#9CA3AF", padding:"8px 0" }}>No invoices issued from this batch yet</div>
+                  ) : (
+                    <table style={{ width:"100%", fontSize:11, borderCollapse:"collapse" }}>
+                      <thead>
+                        <tr style={{ background:"#F9FAFB" }}>
+                          {["Invoice #","Agent","Date","Barcode Start","Barcode End","Qty","Status"].map(h => (
+                            <th key={h} style={{ padding:"5px 10px", textAlign:"left", fontWeight:700, color:"#6B7280", fontSize:10, textTransform:"uppercase", borderBottom:"1px solid #E5E7EB" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(salesRows[b.id]??[]).map((r:any,i:number) => (
+                          <tr key={i} style={{ borderBottom:"1px solid #F9FAFB" }}>
+                            <td style={{ padding:"6px 10px", fontFamily:"monospace", fontWeight:700, color:"#CF291D" }}>#{r.invoice_number}</td>
+                            <td style={{ padding:"6px 10px", fontWeight:600, color:"#111827" }}>{r.agent_name}</td>
+                            <td style={{ padding:"6px 10px", color:"#6B7280" }}>{r.invoice_date}</td>
+                            <td style={{ padding:"6px 10px", fontFamily:"monospace", color:"#2563EB" }}>{r.barcode_start}</td>
+                            <td style={{ padding:"6px 10px", fontFamily:"monospace", color:"#7C3AED" }}>{r.barcode_end}</td>
+                            <td style={{ padding:"6px 10px", fontWeight:700, color:"#16A34A" }}>{r.qty.toLocaleString()}</td>
+                            <td style={{ padding:"6px 10px" }}>
+                              <span style={{ padding:"1px 7px", borderRadius:20, fontSize:9, fontWeight:700,
+                                background:r.invoice_status==="paid"?"#DCFCE7":r.invoice_status==="confirmed"?"#DBEAFE":"#F3F4F6",
+                                color:r.invoice_status==="paid"?"#16A34A":r.invoice_status==="confirmed"?"#2563EB":"#6B7280" }}>
+                                {r.invoice_status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ background:"#F9FAFB", borderTop:"1px solid #E5E7EB" }}>
+                          <td colSpan={5} style={{ padding:"6px 10px", fontSize:10, color:"#6B7280", fontWeight:700 }}>
+                            TOTAL SOLD FROM THIS BATCH
+                          </td>
+                          <td style={{ padding:"6px 10px", fontWeight:900, color:"#CF291D" }}>
+                            {fmt((salesRows[b.id]??[]).reduce((s:number,r:any)=>s+r.qty,0))}
+                          </td>
+                          <td/>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+      <style>{`@keyframes modalIn{from{opacity:0;transform:scale(0.94)}to{opacity:1;transform:scale(1)}}`}</style>
     </div>
   );
 }
