@@ -123,6 +123,14 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
   }
 
   function updateItem(index: number, field: keyof InvoiceItem, value: string | number) {
+    // Load batches OUTSIDE setItems — must not call async inside state updater
+    if (field === "ticket_name" && String(value).trim()) {
+      setBatchOptions(prev => ({ ...prev, [index]: [] })); // clear while loading
+      getBatchesForGame(String(value))
+        .then(batches => setBatchOptions(prev => ({ ...prev, [index]: batches })))
+        .catch(() => setBatchOptions(prev => ({ ...prev, [index]: [] })));
+    }
+
     setItems((prev) => {
       const next = prev.map((item, i) => {
         if (i !== index) return item;
@@ -133,19 +141,14 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
           const price = field === "unit_price" ? Number(value) : item.unit_price;
           updated.value = Math.round(qty * price * 100) / 100;
         }
-        // Auto-fill unit price when game is selected + load available batches
+        // Auto-fill unit price when game is selected
         if (field === "ticket_name") {
           const game = games.find((g) => g.name === value);
           if (game) {
             updated.unit_price = game.unit_price;
             updated.value = Math.round(updated.qty * game.unit_price * 100) / 100;
           }
-          // Reset batch when ticket changes
           updated.purchase_batch_id = undefined;
-          // Load batches for this game asynchronously
-          getBatchesForGame(String(value)).then(batches => {
-            setBatchOptions(prev => ({ ...prev, [index]: batches }));
-          }).catch(() => {});
         }
         // Stock validation: cap qty at available stock
         if (field === "qty" || field === "barcode_end" || field === "barcode_start") {
@@ -700,8 +703,15 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                               <div style={{ padding:"8px 12px 6px", borderBottom:"1px solid #F3F4F6", fontSize:11, fontWeight:700, color:"#374151" }}>
                                 Available Batches for {item.ticket_name}
                               </div>
-                              {(batchOptions[i] ?? []).length === 0 ? (
-                                <div style={{ padding:"12px", fontSize:11, color:"#9CA3AF" }}>No batches found — add stock in Stock Purchases</div>
+                              {!(i in batchOptions) ? (
+                                <div style={{ padding:"12px", fontSize:11, color:"#9CA3AF" }}>
+                                  <span style={{ marginRight:6 }}>⏳</span>Loading batches…
+                                </div>
+                              ) : (batchOptions[i] ?? []).length === 0 ? (
+                                <div style={{ padding:"12px", fontSize:11, color:"#D97706" }}>
+                                  ⚠ No inventory batches found for this ticket.<br/>
+                                  <span style={{ color:"#9CA3AF" }}>Add stock in Stock Purchases first, or scan the barcode manually below.</span>
+                                </div>
                               ) : (batchOptions[i] ?? []).map(b => (
                                 <button key={b.id} type="button" onClick={() => applyBatch(i, b)}
                                   style={{ display:"flex", flexDirection:"column", width:"100%", padding:"8px 12px", border:"none", background: b.id===item.purchase_batch_id?"#F0FFF4":"#fff", textAlign:"left", cursor:"pointer", borderBottom:"1px solid #F9FAFB" }}

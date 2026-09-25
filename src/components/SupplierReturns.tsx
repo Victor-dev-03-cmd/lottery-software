@@ -597,6 +597,28 @@ export default function SupplierReturns() {
             />
           </div>
 
+          {/* Link to Purchase Invoice — TOP position so batch/credit is set first */}
+          <div style={{ background:"#F0FFF4", border:"1px solid #BBF7D0", borderRadius:10, padding:"12px 14px" }}>
+            <FieldLabel>
+              <span style={{ color:"#15803D", fontWeight:700 }}>🔗 Link to Purchase Invoice</span>
+              <span style={{ marginLeft:6, fontSize:10, color:"#9CA3AF", fontWeight:400 }}>(required for balance credit)</span>
+            </FieldLabel>
+            <FocusSelect
+              value={form.purchase_id ?? ""}
+              onChange={(e) => setField("purchase_id", e.target.value ? Number(e.target.value) : null)}
+            >
+              <option value="">— Select Purchase Invoice —</option>
+              {invoices.map((inv) => (
+                <option key={inv.id} value={inv.id}>
+                  #{inv.purchase_number} · {inv.purchase_date} · Outstanding: Rs. {fmt(inv.outstanding_balance)}
+                </option>
+              ))}
+            </FocusSelect>
+            <p className="text-[11px] mt-1.5" style={{ color: "#16A34A", fontWeight:500 }}>
+              ✓ When credited, the selected invoice's outstanding balance will be reduced by the return value.
+            </p>
+          </div>
+
           {/* Game — logo picker */}
           <div>
             <FieldLabel>Game / Ticket Name *</FieldLabel>
@@ -758,25 +780,6 @@ export default function SupplierReturns() {
                 <option key={r.value} value={r.value}>{r.label}</option>
               ))}
             </FocusSelect>
-          </div>
-
-          {/* Purchase invoice (optional) */}
-          <div>
-            <FieldLabel>Link to Purchase Invoice (optional)</FieldLabel>
-            <FocusSelect
-              value={form.purchase_id ?? ""}
-              onChange={(e) => setField("purchase_id", e.target.value ? Number(e.target.value) : null)}
-            >
-              <option value="">— None —</option>
-              {invoices.map((inv) => (
-                <option key={inv.id} value={inv.id}>
-                  #{inv.purchase_number} · Outstanding: Rs. {fmt(inv.outstanding_balance)}
-                </option>
-              ))}
-            </FocusSelect>
-            <p className="text-[11px] mt-1" style={{ color: "#9CA3AF" }}>
-              When credited, this reduces the invoice's outstanding balance.
-            </p>
           </div>
 
           {/* Notes */}
