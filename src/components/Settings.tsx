@@ -64,41 +64,38 @@ export default function Settings() {
           </div>
         )}
 
-        {/* ASROZ settings layout: left sidebar + right content */}
-        <div className="flex gap-5">
-          {/* Left settings nav */}
-          <div className="w-52 shrink-0">
-            <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-              <div className="p-4" style={{ borderBottom: "1px solid #F3F4F6" }}>
-                <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#9CA3AF" }}>SETTINGS</p>
-              </div>
-              <nav className="p-2">
-                {TABS.map((t) => (
-                  <button key={t.key} onClick={() => setActiveTab(t.key)}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all text-left"
-                    style={{
-                      background: activeTab === t.key ? "#FFF1F0" : "transparent",
-                      color: activeTab === t.key ? "#CF291D" : "#6B7280",
-                      fontWeight: activeTab === t.key ? 600 : 400,
-                    }}>
-                    {t.icon} {t.label}
-                  </button>
-                ))}
-              </nav>
-            </div>
+        {/* Top tab bar */}
+        <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#fff", border: "1px solid #E8E8E8" }}>
+          <div style={{ display: "flex", overflowX: "auto", borderBottom: "2px solid #F3F4F6", gap: 0, padding: "0 8px" }}>
+            {TABS.map((t) => (
+              <button key={t.key} onClick={() => setActiveTab(t.key)}
+                className="flex items-center gap-2 text-sm transition-all whitespace-nowrap"
+                style={{
+                  padding: "12px 18px",
+                  borderTop: "none", borderLeft: "none", borderRight: "none",
+                  borderBottom: activeTab === t.key ? "2px solid #CF291D" : "2px solid transparent",
+                  color: activeTab === t.key ? "#CF291D" : "#6B7280",
+                  fontWeight: activeTab === t.key ? 700 : 400,
+                  background: "transparent",
+                  cursor: "pointer",
+                  marginBottom: -2,
+                }}>
+                {t.icon} {t.label}
+              </button>
+            ))}
           </div>
+        </div>
 
-          {/* Right content */}
-          <div className="flex-1 min-w-0">
-            {activeTab === "general"   && <GeneralTab onSaved={showSaved} />}
-            {activeTab === "games"     && <GamesTab />}
-            {activeTab === "financial" && <FinancialTab onSaved={showSaved} />}
-            {activeTab === "printing"  && <PrintingTab onSaved={showSaved} />}
-            {activeTab === "security"  && <SecurityTab onSaved={showSaved} />}
-            {activeTab === "ai"        && <AIConfigTab />}
-            {activeTab === "updates"   && <SoftwareUpdateTab />}
-            {activeTab === "import"    && <ImportDataTab />}
-          </div>
+        {/* Tab content */}
+        <div>
+          {activeTab === "general"   && <GeneralTab onSaved={showSaved} />}
+          {activeTab === "games"     && <GamesTab />}
+          {activeTab === "financial" && <FinancialTab onSaved={showSaved} />}
+          {activeTab === "printing"  && <PrintingTab onSaved={showSaved} />}
+          {activeTab === "security"  && <SecurityTab onSaved={showSaved} />}
+          {activeTab === "ai"        && <AIConfigTab />}
+          {activeTab === "updates"   && <SoftwareUpdateTab />}
+          {activeTab === "import"    && <ImportDataTab />}
         </div>
       </div>
     </div>
@@ -200,15 +197,135 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
 
 // ── 2. GAMES TAB ──────────────────────────────────────────────────────────────
 
+// GameRow is extracted as a standalone component so React doesn't re-mount it
+// on every keystroke (previously defined inside GamesTab, causing focus loss on edit).
+function GameRow({
+  g, onToggle, onEdit, onDelete
+}: {
+  g: LotteryGame & { is_enabled?: number };
+  onToggle: (g: LotteryGame & { is_enabled?: number }) => void;
+  onEdit: (g: LotteryGame & { is_enabled?: number }) => void;
+  onDelete: (g: LotteryGame & { is_enabled?: number }) => void;
+}) {
+  const fmt = (n: number) => new Intl.NumberFormat("en-LK", { minimumFractionDigits: 2 }).format(n);
+  const margin = g.unit_price - (g.cost_price ?? 0);
+  const pct = g.unit_price > 0 ? ((margin / g.unit_price) * 100).toFixed(1) : "0.0";
+  return (
+    <tr className="hover:bg-gray-50/40 transition-colors"
+      style={{ borderBottom: "1px solid #F9F9F9", opacity: (g.is_enabled ?? 1) === 0 ? 0.5 : 1 }}>
+      <td className="px-3 py-2.5 text-sm font-medium" style={{ color: "#1D1D1D" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ padding: "1px 7px", borderRadius: 20, fontSize: 9, fontWeight: 700,
+            background: g.board === "NLB" ? "#dbeafe" : "#ffedd5",
+            color: g.board === "NLB" ? "#1d4ed8" : "#c2410c" }}>{g.board}</span>
+          {g.name}
+        </div>
+      </td>
+      <td className="px-3 py-2.5 text-sm text-right">
+        <span style={{ color: "#D97706", fontWeight: 600 }}>Rs. {fmt(g.cost_price ?? 0)}</span>
+      </td>
+      <td className="px-3 py-2.5 text-sm text-right">
+        <span style={{ color: "#16A34A", fontWeight: 600 }}>Rs. {fmt(g.unit_price)}</span>
+      </td>
+      <td className="px-3 py-2.5 text-sm text-right">
+        <span style={{ color: margin >= 0 ? "#16A34A" : "#DC2626", fontWeight: 600 }}>
+          Rs. {fmt(margin)} <span style={{ color: "#9CA3AF", fontWeight: 400 }}>({pct}%)</span>
+        </span>
+      </td>
+      <td className="px-3 py-2.5 text-center">
+        <button onClick={() => onToggle(g)}>
+          {(g.is_enabled ?? 1) === 1
+            ? <ToggleRight size={20} style={{ color: "#10b981" }} />
+            : <ToggleLeft size={20} style={{ color: "#9CA3AF" }} />}
+        </button>
+      </td>
+      <td className="px-2 py-2.5">
+        <div className="flex gap-1">
+          <button onClick={() => onEdit(g)} className="p-1.5 rounded hover:bg-blue-50" style={{ color: "#2563EB" }} title="Edit (Enter)"><Pencil size={13} /></button>
+          <button onClick={() => onDelete(g)} className="p-1.5 rounded hover:bg-red-50" style={{ color: "#CF291D" }} title="Delete"><Trash2 size={13} /></button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+// Edit modal for Games — stable component, no remount on keystroke
+function GameEditModal({
+  game, onSave, onClose
+}: {
+  game: LotteryGame & { is_enabled?: number };
+  onSave: (g: LotteryGame & { is_enabled?: number }) => void;
+  onClose: () => void;
+}) {
+  const [draft, setDraft] = useState<LotteryGame & { is_enabled?: number }>({ ...game });
+  const set = (k: keyof typeof draft, v: any) => setDraft(p => ({ ...p, [k]: v }));
+
+  function handleKey(e: React.KeyboardEvent, nextId?: string) {
+    if (e.key === "Enter") { e.preventDefault(); if (nextId) document.getElementById(nextId)?.focus(); else onSave(draft); }
+    if (e.key === "Escape") { e.preventDefault(); onClose(); }
+  }
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", backdropFilter:"blur(4px)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+      onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()}
+        style={{ background:"#fff", borderRadius:16, width:"min(480px,100%)", boxShadow:"0 20px 60px rgba(0,0,0,0.3)", overflow:"hidden" }}>
+        {/* Header */}
+        <div style={{ padding:"14px 20px", background:"linear-gradient(135deg,#0F172A,#1E293B)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <span style={{ fontSize:14, fontWeight:700, color:"#F1F5F9" }}>✏️ Edit Game</span>
+          <button onClick={onClose} style={{ border:"none", background:"rgba(255,255,255,0.1)", color:"#94A3B8", cursor:"pointer", borderRadius:6, width:28, height:28, fontSize:16 }}>×</button>
+        </div>
+        {/* Form */}
+        <div style={{ padding:20, display:"flex", flexDirection:"column", gap:14 }}>
+          <div>
+            <label style={{ fontSize:11, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>Game Name</label>
+            <input id="em-name" className="inp w-full" value={draft.name}
+              onChange={e=>set("name",e.target.value)}
+              onKeyDown={e=>handleKey(e,"em-cost")} autoFocus />
+            <span style={{ fontSize:10, color:"#9CA3AF" }}>Tab / Enter → next field</span>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+            <div>
+              <label style={{ fontSize:11, fontWeight:700, color:"#D97706", display:"block", marginBottom:4 }}>🟠 Cost Price (Nimalsiri→Ajith)</label>
+              <input id="em-cost" type="number" step="0.01" className="inp w-full" value={draft.cost_price ?? ""}
+                onChange={e=>set("cost_price",parseFloat(e.target.value)||0)}
+                onKeyDown={e=>handleKey(e,"em-sell")} />
+            </div>
+            <div>
+              <label style={{ fontSize:11, fontWeight:700, color:"#16A34A", display:"block", marginBottom:4 }}>🟢 Sell Price (Ajith→Agent)</label>
+              <input id="em-sell" type="number" step="0.01" className="inp w-full" value={draft.unit_price || ""}
+                onChange={e=>set("unit_price",parseFloat(e.target.value)||0)}
+                onKeyDown={e=>handleKey(e,"em-board")} />
+            </div>
+          </div>
+          <div>
+            <label style={{ fontSize:11, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>Board</label>
+            <select id="em-board" className="inp w-full" value={draft.board}
+              onChange={e=>set("board",e.target.value as "NLB"|"DLB")}
+              onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();onSave(draft);}if(e.key==="Escape"){e.preventDefault();onClose();}}}>
+              <option value="NLB">📘 NLB — National Lottery Board</option>
+              <option value="DLB">📙 DLB — Development Lottery Board</option>
+            </select>
+          </div>
+          <div style={{ display:"flex", gap:8, justifyContent:"flex-end", paddingTop:4, borderTop:"1px solid #F3F4F6" }}>
+            <button onClick={onClose} style={{ padding:"8px 18px", borderRadius:8, border:"1px solid #E5E7EB", background:"#fff", color:"#6B7280", fontSize:13, fontWeight:600, cursor:"pointer" }}>Cancel (Esc)</button>
+            <button onClick={()=>onSave(draft)} style={{ padding:"8px 18px", borderRadius:8, border:"none", background:"#CF291D", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+              <Save size={13} style={{ display:"inline", marginRight:4 }} /> Save (Enter)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function GamesTab() {
   const [games, setGames] = useState<(LotteryGame & { is_enabled?: number })[]>([]);
   const [newGame, setNewGame] = useState<LotteryGame>({ name: "", cost_price: 32.5, unit_price: 32.5, board: "NLB" });
-  const [editing, setEditing] = useState<(LotteryGame & { is_enabled?: number }) | null>(null);
+  const [editingGame, setEditingGame] = useState<(LotteryGame & { is_enabled?: number }) | null>(null);
   const [filter, setFilter] = useState<"all" | "NLB" | "DLB">("all");
   const [search, setSearch] = useState("");
   const [saved, setSaved] = useState(false);
-
-  const fmt = (n: number) => new Intl.NumberFormat("en-LK", { minimumFractionDigits: 2 }).format(n);
 
   async function load() { setGames(await getLotteryGames() as (LotteryGame & { is_enabled?: number })[]); }
   useEffect(() => { load(); }, []);
@@ -219,12 +336,13 @@ function GamesTab() {
     setNewGame({ name: "", cost_price: 32.5, unit_price: 32.5, board: newGame.board });
     setSaved(true); setTimeout(() => setSaved(false), 2000);
     load();
+    // Refocus name input for quick batch entry
+    setTimeout(() => document.getElementById("ng-name")?.focus(), 50);
   }
 
-  async function handleEditSave() {
-    if (!editing) return;
-    await saveLotteryGame(editing);
-    setEditing(null);
+  async function handleEditSave(g: LotteryGame & { is_enabled?: number }) {
+    await saveLotteryGame(g);
+    setEditingGame(null);
     load();
   }
 
@@ -233,86 +351,25 @@ function GamesTab() {
     load();
   }
 
+  async function handleDelete(g: LotteryGame & { is_enabled?: number }) {
+    if (confirm(`Delete "${g.name}"?`)) { await deleteLotteryGame(g.id!); load(); }
+  }
+
+  // Keyboard handler for the Add row
+  function addKey(e: React.KeyboardEvent, nextId?: string) {
+    if (e.key === "Enter") { e.preventDefault(); if (nextId) document.getElementById(nextId)?.focus(); else handleAdd(); }
+  }
+
   const nlb = games.filter(g => g.board === "NLB" && (!search || g.name.toLowerCase().includes(search.toLowerCase())));
   const dlb = games.filter(g => g.board === "DLB" && (!search || g.name.toLowerCase().includes(search.toLowerCase())));
   const visible = filter === "NLB" ? nlb : filter === "DLB" ? dlb : [...nlb, ...dlb];
-
-  const GameRow = ({ g }: { g: LotteryGame & { is_enabled?: number } }) => (
-    <tr key={g.id} className="hover:bg-gray-50/40 transition-colors"
-      style={{ borderBottom: "1px solid #F9F9F9", opacity: (g.is_enabled ?? 1) === 0 ? 0.5 : 1 }}>
-      <td className="px-3 py-2.5 text-sm font-medium" style={{ color: "#1D1D1D" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ padding: "1px 7px", borderRadius: 20, fontSize: 9, fontWeight: 700,
-            background: g.board === "NLB" ? "#dbeafe" : "#ffedd5",
-            color: g.board === "NLB" ? "#1d4ed8" : "#c2410c" }}>
-            {g.board}
-          </span>
-          {editing?.id === g.id
-            ? <input className="inp py-0.5 flex-1" value={editing!.name}
-                onChange={(e) => setEditing(p => p ? { ...p, name: e.target.value } : p)} autoFocus />
-            : g.name}
-        </div>
-      </td>
-      {/* 🟠 Nimalsiri → Ajith cost price */}
-      <td className="px-3 py-2.5 text-sm text-right">
-        {editing?.id === g.id
-          ? <input type="number" step="0.01" className="inp py-0.5 w-24 text-right" value={editing!.cost_price ?? 0}
-              onChange={(e) => setEditing(p => p ? { ...p, cost_price: parseFloat(e.target.value) || 0 } : p)} />
-          : <span style={{ color: "#D97706", fontWeight: 600 }}>Rs. {fmt(g.cost_price ?? 0)}</span>}
-      </td>
-      {/* 🟢 Ajith → Agent selling price */}
-      <td className="px-3 py-2.5 text-sm text-right">
-        {editing?.id === g.id
-          ? <input type="number" step="0.01" className="inp py-0.5 w-24 text-right" value={editing!.unit_price}
-              onChange={(e) => setEditing(p => p ? { ...p, unit_price: parseFloat(e.target.value) || 0 } : p)} />
-          : <span style={{ color: "#16A34A", fontWeight: 600 }}>Rs. {fmt(g.unit_price)}</span>}
-      </td>
-      {/* Margin */}
-      <td className="px-3 py-2.5 text-sm text-right">
-        {(() => {
-          const margin = g.unit_price - (g.cost_price ?? 0);
-          const pct = g.unit_price > 0 ? ((margin / g.unit_price) * 100).toFixed(1) : "0.0";
-          return <span style={{ color: margin >= 0 ? "#16A34A" : "#DC2626", fontWeight: 600 }}>
-            Rs. {fmt(margin)} <span style={{ color: "#9CA3AF", fontWeight: 400 }}>({pct}%)</span>
-          </span>;
-        })()}
-      </td>
-      {/* Toggle */}
-      <td className="px-3 py-2.5 text-center">
-        <button onClick={() => handleToggle(g)}>
-          {(g.is_enabled ?? 1) === 1
-            ? <ToggleRight size={20} style={{ color: "#10b981" }} />
-            : <ToggleLeft size={20} style={{ color: "#9CA3AF" }} />}
-        </button>
-      </td>
-      {/* Actions */}
-      <td className="px-2 py-2.5">
-        {editing?.id === g.id ? (
-          <div className="flex gap-1">
-            <button onClick={handleEditSave} className="p-1.5 rounded hover:bg-green-50" style={{ color: "#10b981" }}><Save size={13} /></button>
-            <button onClick={() => setEditing(null)} className="p-1.5 rounded hover:bg-gray-100" style={{ color: "#9CA3AF" }}><X size={13} /></button>
-          </div>
-        ) : (
-          <div className="flex gap-1">
-            <button onClick={() => setEditing({ ...g })} className="p-1.5 rounded hover:bg-gray-100" style={{ color: "#6B7280" }}><Pencil size={13} /></button>
-            <button onClick={() => { if (confirm(`Delete "${g.name}"?`)) deleteLotteryGame(g.id!).then(load); }}
-              className="p-1.5 rounded hover:bg-red-50" style={{ color: "#CF291D" }}><Trash2 size={13} /></button>
-          </div>
-        )}
-      </td>
-    </tr>
-  );
 
   const TableHeader = () => (
     <thead>
       <tr style={{ background: "#F9FAFB" }}>
         <th className="px-3 py-2.5 text-left" style={{ fontSize: 10, color: "#6B7280", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Game</th>
-        <th className="px-3 py-2.5 text-right" style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#D97706" }}>
-          🟠 Nimalsiri → Ajith
-        </th>
-        <th className="px-3 py-2.5 text-right" style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#16A34A" }}>
-          🟢 Ajith → Agent
-        </th>
+        <th className="px-3 py-2.5 text-right" style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#D97706" }}>🟠 Nimalsiri → Ajith</th>
+        <th className="px-3 py-2.5 text-right" style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#16A34A" }}>🟢 Ajith → Agent</th>
         <th className="px-3 py-2.5 text-right" style={{ fontSize: 10, color: "#6B7280", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Margin</th>
         <th className="px-3 py-2.5 text-center" style={{ fontSize: 10, color: "#6B7280", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Active</th>
         <th style={{ width: "5rem" }} />
@@ -322,35 +379,44 @@ function GamesTab() {
 
   return (
     <div className="space-y-4">
+      {/* Edit modal */}
+      {editingGame && (
+        <GameEditModal game={editingGame} onSave={handleEditSave} onClose={() => setEditingGame(null)} />
+      )}
+
       {/* Add game */}
       <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#fff", border: "1px solid #E8E8E8" }}>
         <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
           <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>➕ Add New Game</p>
-          <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Set both the purchase price from Nimalsiri and the selling price to agents</p>
+          <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Type and press Enter to move between fields · Enter on last field adds the game</p>
         </div>
         <div className="p-5 grid gap-3" style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr auto" }}>
           <div>
             <label className="block text-xs font-semibold mb-1" style={{ color: "#6B7280" }}>Game Name</label>
-            <input type="text" value={newGame.name} placeholder="e.g. Mega Power"
+            <input id="ng-name" type="text" value={newGame.name} placeholder="e.g. Mega Power"
               onChange={(e) => setNewGame({ ...newGame, name: e.target.value })}
-              className="inp w-full" />
+              onKeyDown={e=>addKey(e,"ng-cost")}
+              className="inp w-full" autoFocus />
           </div>
           <div>
             <label className="block text-xs font-semibold mb-1" style={{ color: "#D97706" }}>🟠 Nimalsiri → Ajith (Rs.)</label>
-            <input type="number" step="0.01" value={newGame.cost_price ?? ""} placeholder="Cost price"
+            <input id="ng-cost" type="number" step="0.01" value={newGame.cost_price ?? ""} placeholder="Cost price"
               onChange={(e) => setNewGame({ ...newGame, cost_price: parseFloat(e.target.value) || 0 })}
+              onKeyDown={e=>addKey(e,"ng-sell")}
               className="inp w-full" />
           </div>
           <div>
             <label className="block text-xs font-semibold mb-1" style={{ color: "#16A34A" }}>🟢 Ajith → Agent (Rs.)</label>
-            <input type="number" step="0.01" value={newGame.unit_price || ""} placeholder="Sell price"
+            <input id="ng-sell" type="number" step="0.01" value={newGame.unit_price || ""} placeholder="Sell price"
               onChange={(e) => setNewGame({ ...newGame, unit_price: parseFloat(e.target.value) || 0 })}
+              onKeyDown={e=>addKey(e,"ng-board")}
               className="inp w-full" />
           </div>
           <div>
             <label className="block text-xs font-semibold mb-1" style={{ color: "#6B7280" }}>Board</label>
-            <select value={newGame.board}
+            <select id="ng-board" value={newGame.board}
               onChange={(e) => setNewGame({ ...newGame, board: e.target.value as "NLB" | "DLB" })}
+              onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();handleAdd();}}}
               className="inp w-full">
               <option value="NLB">📘 NLB</option>
               <option value="DLB">📙 DLB</option>
@@ -372,10 +438,7 @@ function GamesTab() {
         {(["all", "NLB", "DLB"] as const).map(f => (
           <button key={f} onClick={() => setFilter(f)}
             className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
-            style={{
-              background: filter === f ? "#CF291D" : "#F3F4F6",
-              color: filter === f ? "#fff" : "#374151",
-            }}>
+            style={{ background: filter === f ? "#CF291D" : "#F3F4F6", color: filter === f ? "#fff" : "#374151" }}>
             {f === "all" ? `All (${games.length})` : f === "NLB" ? `📘 NLB (${nlb.length})` : `📙 DLB (${dlb.length})`}
           </button>
         ))}
@@ -385,29 +448,27 @@ function GamesTab() {
       </div>
 
       {/* NLB table */}
-      {(filter === "all" || filter === "NLB") && nlb.filter(g => !search || g.name.toLowerCase().includes(search.toLowerCase())).length > 0 && (
+      {(filter === "all" || filter === "NLB") && nlb.length > 0 && (
         <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#fff", border: "1px solid #E8E8E8" }}>
-          <div className="px-5 py-2.5 flex items-center gap-2"
-            style={{ background: "#EFF6FF", borderBottom: "2px solid #2563EB" }}>
+          <div className="px-5 py-2.5 flex items-center gap-2" style={{ background: "#EFF6FF", borderBottom: "2px solid #2563EB" }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>📘 NLB — National Lottery Board</span>
             <span style={{ marginLeft: "auto", fontSize: 11, color: "#6B7280" }}>{nlb.length} games</span>
           </div>
           <table className="w-full"><TableHeader />
-            <tbody>{nlb.filter(g => !search || g.name.toLowerCase().includes(search.toLowerCase())).map(g => <GameRow key={g.id} g={g} />)}</tbody>
+            <tbody>{nlb.map(g => <GameRow key={g.id} g={g} onToggle={handleToggle} onEdit={setEditingGame} onDelete={handleDelete} />)}</tbody>
           </table>
         </div>
       )}
 
       {/* DLB table */}
-      {(filter === "all" || filter === "DLB") && dlb.filter(g => !search || g.name.toLowerCase().includes(search.toLowerCase())).length > 0 && (
+      {(filter === "all" || filter === "DLB") && dlb.length > 0 && (
         <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#fff", border: "1px solid #E8E8E8" }}>
-          <div className="px-5 py-2.5 flex items-center gap-2"
-            style={{ background: "#FFF7ED", borderBottom: "2px solid #EA580C" }}>
+          <div className="px-5 py-2.5 flex items-center gap-2" style={{ background: "#FFF7ED", borderBottom: "2px solid #EA580C" }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: "#c2410c" }}>📙 DLB — Development Lottery Board</span>
             <span style={{ marginLeft: "auto", fontSize: 11, color: "#6B7280" }}>{dlb.length} games</span>
           </div>
           <table className="w-full"><TableHeader />
-            <tbody>{dlb.filter(g => !search || g.name.toLowerCase().includes(search.toLowerCase())).map(g => <GameRow key={g.id} g={g} />)}</tbody>
+            <tbody>{dlb.map(g => <GameRow key={g.id} g={g} onToggle={handleToggle} onEdit={setEditingGame} onDelete={handleDelete} />)}</tbody>
           </table>
         </div>
       )}
