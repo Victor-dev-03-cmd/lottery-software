@@ -9,17 +9,17 @@ import type { Agent, LotteryGame } from "../types";
 type DiscountKey = `${number}|${string}`;
 type DiscountMap = Map<DiscountKey, { discount_pct: number; custom_price: number | null }>;
 
-const KEY = (agentId: number, gameName: string): DiscountKey => `${agentId}|${gameName}`;
-const fmt = (n: number) => n.toLocaleString("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const KEY  = (agentId: number, gameName: string): DiscountKey => `${agentId}|${gameName}`;
+const fmt  = (n: number) => n.toLocaleString("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function AgentDiscounts() {
-  const [agents, setAgents]       = useState<Agent[]>([]);
-  const [games, setGames]         = useState<LotteryGame[]>([]);
+  const [agents,    setAgents]    = useState<Agent[]>([]);
+  const [games,     setGames]     = useState<LotteryGame[]>([]);
   const [discounts, setDiscounts] = useState<DiscountMap>(new Map());
-  const [dirty, setDirty]         = useState<Set<DiscountKey>>(new Set());
-  const [saving, setSaving]       = useState(false);
-  const [toast, setToast]         = useState("");
-  const [mode, setMode]           = useState<"discount" | "price">("discount");
+  const [dirty,     setDirty]     = useState<Set<DiscountKey>>(new Set());
+  const [saving,    setSaving]    = useState(false);
+  const [toast,     setToast]     = useState("");
+  const [mode,      setMode]      = useState<"discount" | "price">("discount");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function AgentDiscounts() {
   }
 
   function setCell(agentId: number, gameName: string, partial: Partial<{ discount_pct: number; custom_price: number | null }>) {
-    const key = KEY(agentId, gameName);
+    const key  = KEY(agentId, gameName);
     const prev = discounts.get(key) ?? { discount_pct: 0, custom_price: null };
     const next = { ...prev, ...partial };
     setDiscounts(m => new Map(m).set(key, next));
@@ -82,13 +82,12 @@ export default function AgentDiscounts() {
 
   const nlb  = games.filter(g => g.board === "NLB");
   const dlb  = games.filter(g => g.board === "DLB");
-  const rows = [...nlb, ...dlb];
+  const cols = [...nlb, ...dlb]; // games = columns
 
-  // ── border constants ─────────────────────────────────────────────────────────
-  const BORDER    = "1px solid #D1D5DB";
-  const BORDER_HD = "1px solid #374151";   // header divider
-  const GAME_W    = 175;
-  const COL_W     = Math.max(110, Math.floor(800 / Math.max(agents.length, 1))); // responsive
+  // Layout constants
+  const AGENT_W = 180;   // left frozen column
+  const COL_W   = 105;   // per-game column
+  const ROW_H   = 50;    // per-agent row
 
   return (
     <div style={{ background:"#F5F5F5", minHeight:"100%" }}>
@@ -109,11 +108,10 @@ export default function AgentDiscounts() {
               Sub-agent wise Discount
             </h1>
             <p className="text-xs mt-0.5" style={{ color:"#9CA3AF" }}>
-              Columns = Agents · Rows = Games · auto-applied on invoices · auto-saves on edit
+              Rows = Agents · Columns = Games · auto-applied on invoices · auto-saves 0.8s after edit
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Mode toggle */}
             <div style={{ display:"flex", background:"#F3F4F6", borderRadius:8, padding:3, gap:2 }}>
               {(["discount","price"] as const).map(m => (
                 <button key={m} onClick={() => setMode(m)}
@@ -145,9 +143,9 @@ export default function AgentDiscounts() {
         {/* Legend */}
         <div className="flex items-center gap-5 flex-wrap" style={{ fontSize:11, color:"#6B7280" }}>
           {[
-            { bg:"#DCFCE7", bd:"#86EFAC", label:"Discount set" },
+            { bg:"#DCFCE7", bd:"#4ADE80", label:"Discount set" },
             { bg:"#FEF9C3", bd:"#FDE047", label:"Unsaved change" },
-            { bg:"#fff",    bd:"#D1D5DB", label:"No override (default price)" },
+            { bg:"#fff",    bd:"#CBD5E1", label:"No override (default)" },
           ].map(l => (
             <span key={l.label} style={{ display:"flex", alignItems:"center", gap:5 }}>
               <span style={{ width:13, height:13, borderRadius:3, background:l.bg, border:`1px solid ${l.bd}`, display:"inline-block" }}/>
@@ -156,220 +154,225 @@ export default function AgentDiscounts() {
           ))}
           {dirty.size > 0 && (
             <span style={{ color:"#D97706", fontWeight:700, marginLeft:"auto" }}>
-              ⚠ {dirty.size} unsaved change{dirty.size > 1 ? "s" : ""}
+              ⚠ {dirty.size} unsaved change{dirty.size!==1?"s":""}
             </span>
           )}
         </div>
 
-        {/* ── EXCEL GRID ──────────────────────────────────────────────────────── */}
+        {/* ── SPREADSHEET ──────────────────────────────────────────────────── */}
         {agents.length === 0 ? (
-          <div className="text-center py-16 rounded-2xl" style={{ background:"#fff", border:"1px solid #E5E7EB", color:"#9CA3AF", fontSize:13 }}>
+          <div className="text-center py-16 rounded-2xl"
+            style={{ background:"#fff", border:"1px solid #E5E7EB", color:"#9CA3AF", fontSize:13 }}>
             No agents found. Add agents in Agent Profiles first.
           </div>
         ) : (
-          <div style={{ overflowX:"auto", overflowY:"auto", maxHeight:"calc(100vh - 280px)",
-            borderRadius:12, border:"2px solid #374151",
-            boxShadow:"0 4px 16px rgba(0,0,0,0.10)", background:"#fff" }}>
-            <table style={{ borderCollapse:"collapse", tableLayout:"fixed",
-              width: GAME_W + agents.length * COL_W,
-              minWidth: GAME_W + agents.length * COL_W }}>
-
-              {/* ── COLUMN GROUPS for fixed widths ── */}
+          <div style={{
+            overflowX:"auto", overflowY:"auto",
+            maxHeight:"calc(100vh - 275px)",
+            borderRadius:12, border:"2px solid #1E293B",
+            boxShadow:"0 4px 20px rgba(0,0,0,0.12)",
+          }}>
+            <table style={{
+              borderCollapse:"collapse", tableLayout:"fixed",
+              width: AGENT_W + cols.length * COL_W,
+              minWidth: AGENT_W + cols.length * COL_W,
+            }}>
               <colgroup>
-                <col style={{ width:GAME_W }}/>
-                {agents.map(a => <col key={a.id} style={{ width:COL_W }}/>)}
+                <col style={{ width:AGENT_W }}/>
+                {cols.map(g => <col key={g.id} style={{ width:COL_W }}/>)}
               </colgroup>
 
-              {/* ── HEADER ── */}
+              {/* ── HEADER: top-left corner + one column per GAME ── */}
               <thead>
+                {/* Board-group sub-header (NLB / DLB spans) */}
                 <tr>
-                  {/* Top-left corner */}
-                  <th style={{
+                  {/* Corner */}
+                  <th rowSpan={2} style={{
                     position:"sticky", left:0, top:0, zIndex:40,
-                    background:"#1E293B", color:"#94A3B8",
-                    padding:"10px 14px", textAlign:"left",
+                    background:"#0F172A", color:"#94A3B8",
+                    padding:"10px 14px", textAlign:"left", verticalAlign:"middle",
                     fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em",
-                    border:BORDER_HD, borderLeft:"none", borderTop:"none",
+                    borderRight:"2px solid #334155", borderBottom:"2px solid #334155",
                   }}>
-                    🎫 GAME / TICKET
+                    👤 AGENT NAME
                   </th>
-                  {/* One column per agent */}
-                  {agents.map((a, ai) => (
-                    <th key={a.id} style={{
-                      position:"sticky", top:0, zIndex:30,
-                      background: ai % 2 === 0 ? "#1E293B" : "#0F172A",
-                      color:"#F1F5F9",
-                      padding:"8px 6px",
-                      textAlign:"center",
-                      fontSize:11, fontWeight:800,
-                      border:BORDER_HD, borderTop:"none",
-                      overflow:"hidden",
-                    }}>
-                      {/* Agent avatar initial */}
-                      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-                        <div style={{
-                          width:28, height:28, borderRadius:"50%",
-                          background:"#CF291D", color:"#fff",
-                          display:"flex", alignItems:"center", justifyContent:"center",
-                          fontSize:12, fontWeight:900, flexShrink:0,
-                        }}>
-                          {a.name.charAt(0).toUpperCase()}
+                  {/* NLB span */}
+                  <th colSpan={nlb.length} style={{
+                    position:"sticky", top:0, zIndex:30,
+                    background:"#1d4ed8", color:"#fff",
+                    padding:"5px 8px", textAlign:"center",
+                    fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.06em",
+                    borderRight:"2px solid #1e40af", borderBottom:"1px solid #1e40af",
+                  }}>
+                    📘 NLB — National Lottery Board
+                  </th>
+                  {/* DLB span */}
+                  <th colSpan={dlb.length} style={{
+                    position:"sticky", top:0, zIndex:30,
+                    background:"#c2410c", color:"#fff",
+                    padding:"5px 8px", textAlign:"center",
+                    fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.06em",
+                    borderBottom:"1px solid #9a3412",
+                  }}>
+                    📙 DLB — Development Lottery Board
+                  </th>
+                </tr>
+                {/* Game name row */}
+                <tr>
+                  {cols.map((game, gi) => {
+                    const isNLB = game.board === "NLB";
+                    const isLastNLB = isNLB && gi === nlb.length - 1;
+                    return (
+                      <th key={game.id} style={{
+                        position:"sticky", top:26, zIndex:29,
+                        background: isNLB ? "#1E40AF" : "#9A3412",
+                        color:"#fff",
+                        padding:"6px 4px", textAlign:"center",
+                        fontSize:10, fontWeight:700,
+                        borderRight: isLastNLB ? "2px solid #93C5FD" : "1px solid rgba(255,255,255,0.15)",
+                        borderBottom:"2px solid #1E293B",
+                        lineHeight:1.2,
+                        overflow:"hidden",
+                      }}>
+                        <div style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+                          fontSize:10, maxWidth:COL_W-8 }}>
+                          {game.name}
                         </div>
-                        <span style={{ fontSize:10, fontWeight:700, lineHeight:1.2, textAlign:"center",
-                          overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:COL_W-12 }}>
-                          {a.name}
-                        </span>
-                        {mode === "discount" ? (
-                          <span style={{ fontSize:8, color:"#64748B", fontWeight:500 }}>Discount %</span>
-                        ) : (
-                          <span style={{ fontSize:8, color:"#64748B", fontWeight:500 }}>Custom Price</span>
-                        )}
-                      </div>
-                    </th>
-                  ))}
+                        <div style={{ fontSize:9, color:"rgba(255,255,255,0.6)", marginTop:2, fontWeight:400 }}>
+                          Rs. {fmt(game.unit_price)}
+                        </div>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
 
-              {/* ── BODY ── */}
+              {/* ── BODY: one row per AGENT ── */}
               <tbody>
-                {rows.map((game, ri) => {
-                  const isNLB  = game.board === "NLB";
-                  const isFirst = ri === 0 || rows[ri-1].board !== game.board;
-                  const isEven = ri % 2 === 0;
-                  return (
-                    <>
-                      {/* Board section divider row */}
-                      {isFirst && (
-                        <tr key={`section-${game.board}`}>
-                          <td colSpan={agents.length + 1} style={{
-                            background: isNLB ? "#1d4ed8" : "#c2410c",
-                            color:"#fff",
-                            padding:"5px 14px",
-                            fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.07em",
-                            border: BORDER_HD,
-                            borderLeft:"none", borderRight:"none",
-                            position:"sticky", left:0,
-                          }}>
-                            {isNLB ? "📘  NLB — NATIONAL LOTTERY BOARD  (8 GAMES)" : "📙  DLB — DEVELOPMENT LOTTERY BOARD  (8 GAMES)"}
-                          </td>
-                        </tr>
-                      )}
-
-                      {/* Data row */}
-                      <tr key={game.id}
-                        style={{ background: isEven ? "#fff" : "#F8FAFC" }}>
-
-                        {/* Frozen game name cell */}
-                        <td style={{
-                          position:"sticky", left:0, zIndex:10,
-                          background: isEven ? "#F1F5F9" : "#E2E8F0",
-                          padding:"0 0 0 14px",
-                          border: BORDER,
-                          borderLeft:"none",
+                {agents.map((agent, ai) => (
+                  <tr key={agent.id} style={{ height:ROW_H }}>
+                    {/* Frozen agent name cell */}
+                    <td style={{
+                      position:"sticky", left:0, zIndex:10,
+                      background: ai % 2 === 0 ? "#F1F5F9" : "#E2E8F0",
+                      padding:"0 14px",
+                      borderRight:"2px solid #CBD5E1",
+                      borderBottom:"1px solid #E2E8F0",
+                      verticalAlign:"middle",
+                    }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                        <div style={{
+                          width:32, height:32, borderRadius:"50%",
+                          background:"#CF291D", color:"#fff",
+                          display:"flex", alignItems:"center", justifyContent:"center",
+                          fontSize:13, fontWeight:900, flexShrink:0,
                         }}>
-                          <div style={{ display:"flex", flexDirection:"column", justifyContent:"center", height:48 }}>
-                            <span style={{ fontSize:12, fontWeight:700, color:"#1D1D1D", lineHeight:1.2 }}>
-                              {game.name}
-                            </span>
-                            <span style={{ fontSize:10, color:"#64748B", marginTop:2 }}>
-                              Default: Rs. {fmt(game.unit_price)}
-                            </span>
+                          {agent.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ fontSize:12, fontWeight:700, color:"#1D1D1D", lineHeight:1.2 }}>
+                            {agent.name}
+                          </div>
+                          {(agent.nlb_reg || agent.dlb_reg) && (
+                            <div style={{ fontSize:9, color:"#64748B" }}>
+                              {agent.nlb_reg ? `NLB: ${agent.nlb_reg}` : `DLB: ${agent.dlb_reg}`}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* One cell per game */}
+                    {cols.map((game, gi) => {
+                      const cell    = getCell(agent.id!, game.name);
+                      const key     = KEY(agent.id!, game.name);
+                      const isSet   = cell.discount_pct > 0 || cell.custom_price !== null;
+                      const isDirty = dirty.has(key);
+                      const isLastNLB = game.board === "NLB" && gi === nlb.length - 1;
+
+                      const effPrice   = cell.custom_price !== null
+                        ? cell.custom_price
+                        : game.unit_price * (1 - cell.discount_pct / 100);
+                      const savingAmt  = game.unit_price - effPrice;
+
+                      return (
+                        <td key={game.id} style={{
+                          padding:0, verticalAlign:"middle",
+                          borderRight: isLastNLB ? "2px solid #93C5FD" : "1px solid #E2E8F0",
+                          borderBottom:"1px solid #E2E8F0",
+                          background: isDirty ? "#FEFCE8"
+                            : isSet ? (ai % 2 === 0 ? "#F0FDF4" : "#ECFDF5")
+                            : (ai % 2 === 0 ? "#fff" : "#F8FAFC"),
+                          transition:"background 0.15s",
+                        }}>
+                          <div style={{ display:"flex", flexDirection:"column", alignItems:"center",
+                            justifyContent:"center", height:ROW_H, gap:2 }}>
+
+                            {mode === "discount" ? (
+                              <>
+                                <div style={{ display:"flex", alignItems:"center", gap:3 }}>
+                                  <input
+                                    type="number" min="0" max="100" step="0.5"
+                                    value={cell.discount_pct || ""}
+                                    placeholder="0"
+                                    onChange={e => setCell(agent.id!, game.name, { discount_pct: parseFloat(e.target.value) || 0 })}
+                                    style={{
+                                      width:50, height:26, textAlign:"center", padding:0,
+                                      border:`2px solid ${isDirty?"#FDE047":isSet?"#4ADE80":"#CBD5E1"}`,
+                                      borderRadius:5, fontSize:13, fontWeight:800,
+                                      background:"transparent", color:"#111827", outline:"none",
+                                    }}
+                                    onFocus={e => { e.target.select(); e.currentTarget.style.borderColor="#CF291D"; }}
+                                    onBlur={e => { e.currentTarget.style.borderColor = isDirty?"#FDE047":isSet?"#4ADE80":"#CBD5E1"; }}
+                                  />
+                                  <span style={{ fontSize:11, color:"#64748B", fontWeight:700 }}>%</span>
+                                </div>
+                                {isSet && (
+                                  <div style={{ fontSize:9, fontWeight:700,
+                                    color: savingAmt >= 0 ? "#16A34A" : "#DC2626" }}>
+                                    Rs. {fmt(effPrice)}
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <input
+                                  type="number" min="0" step="0.5"
+                                  value={cell.custom_price ?? ""}
+                                  placeholder={fmt(game.unit_price)}
+                                  onChange={e => {
+                                    const v = e.target.value === "" ? null : parseFloat(e.target.value);
+                                    setCell(agent.id!, game.name, { custom_price: v });
+                                  }}
+                                  style={{
+                                    width:76, height:26, textAlign:"right", padding:"0 4px",
+                                    border:`2px solid ${isDirty?"#FDE047":isSet?"#4ADE80":"#CBD5E1"}`,
+                                    borderRadius:5, fontSize:12, fontWeight:800,
+                                    background:"transparent", color:"#111827", outline:"none",
+                                  }}
+                                  onFocus={e => { e.target.select(); e.currentTarget.style.borderColor="#CF291D"; }}
+                                  onBlur={e => { e.currentTarget.style.borderColor = isDirty?"#FDE047":isSet?"#4ADE80":"#CBD5E1"; }}
+                                />
+                                {isSet && savingAmt > 0 && (
+                                  <div style={{ fontSize:9, fontWeight:700, color:"#16A34A" }}>
+                                    -{fmt(savingAmt)}
+                                  </div>
+                                )}
+                              </>
+                            )}
                           </div>
                         </td>
-
-                        {/* Per-agent input cell */}
-                        {agents.map((agent, ai) => {
-                          const cell    = getCell(agent.id!, game.name);
-                          const key     = KEY(agent.id!, game.name);
-                          const isSet   = cell.discount_pct > 0 || cell.custom_price !== null;
-                          const isDirty = dirty.has(key);
-
-                          const effPrice = cell.custom_price !== null
-                            ? cell.custom_price
-                            : game.unit_price * (1 - cell.discount_pct / 100);
-
-                          const saving_amt = game.unit_price - effPrice;
-
-                          return (
-                            <td key={agent.id} style={{
-                              padding:0,
-                              border: BORDER,
-                              background: isDirty ? "#FEFCE8"
-                                : isSet ? (isEven ? "#F0FDF4" : "#ECFDF5")
-                                : (ai % 2 === 0 ? (isEven ? "#fff" : "#F8FAFC") : (isEven ? "#FAFAFA" : "#F3F4F6")),
-                              transition:"background 0.15s",
-                              verticalAlign:"middle",
-                            }}>
-                              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:48, gap:2 }}>
-                                {mode === "discount" ? (
-                                  <>
-                                    <div style={{ display:"flex", alignItems:"center", gap:3 }}>
-                                      <input
-                                        type="number" min="0" max="100" step="0.5"
-                                        value={cell.discount_pct || ""}
-                                        placeholder="0"
-                                        onChange={e => setCell(agent.id!, game.name, { discount_pct: parseFloat(e.target.value) || 0 })}
-                                        style={{
-                                          width:52, height:28, textAlign:"center",
-                                          border:`2px solid ${isDirty?"#FDE047":isSet?"#4ADE80":"#CBD5E1"}`,
-                                          borderRadius:5, fontSize:13, fontWeight:800,
-                                          background: isDirty?"#FEFCE8":isSet?"#F0FDF4":"#fff",
-                                          color:"#111827", outline:"none", padding:0,
-                                        }}
-                                        onFocus={e => { e.target.select(); (e.currentTarget.style.borderColor="#CF291D"); }}
-                                        onBlur={e => { e.currentTarget.style.borderColor = isDirty?"#FDE047":isSet?"#4ADE80":"#CBD5E1"; }}
-                                      />
-                                      <span style={{ fontSize:11, color:"#64748B", fontWeight:700 }}>%</span>
-                                    </div>
-                                    {isSet && (
-                                      <div style={{ fontSize:9, fontWeight:700,
-                                        color: saving_amt > 0 ? "#16A34A" : saving_amt < 0 ? "#DC2626" : "#64748B" }}>
-                                        → Rs. {fmt(effPrice)}
-                                      </div>
-                                    )}
-                                  </>
-                                ) : (
-                                  <>
-                                    <input
-                                      type="number" min="0" step="0.5"
-                                      value={cell.custom_price ?? ""}
-                                      placeholder={fmt(game.unit_price)}
-                                      onChange={e => {
-                                        const v = e.target.value === "" ? null : parseFloat(e.target.value);
-                                        setCell(agent.id!, game.name, { custom_price: v });
-                                      }}
-                                      style={{
-                                        width:80, height:28, textAlign:"right",
-                                        border:`2px solid ${isDirty?"#FDE047":isSet?"#4ADE80":"#CBD5E1"}`,
-                                        borderRadius:5, fontSize:12, fontWeight:800,
-                                        background: isDirty?"#FEFCE8":isSet?"#F0FDF4":"#fff",
-                                        color:"#111827", outline:"none", padding:"0 6px",
-                                      }}
-                                      onFocus={e => { e.target.select(); (e.currentTarget.style.borderColor="#CF291D"); }}
-                                      onBlur={e => { e.currentTarget.style.borderColor = isDirty?"#FDE047":isSet?"#4ADE80":"#CBD5E1"; }}
-                                    />
-                                    {isSet && saving_amt > 0 && (
-                                      <div style={{ fontSize:9, fontWeight:700, color:"#16A34A" }}>
-                                        -{fmt(saving_amt)} off
-                                      </div>
-                                    )}
-                                  </>
-                                )}
-                              </div>
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    </>
-                  );
-                })}
+                      );
+                    })}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         )}
 
         <p style={{ fontSize:11, color:"#9CA3AF", textAlign:"center" }}>
-          💡 Auto-saves 0.8s after you stop typing · Tab between cells · Click Save All to force-save all changes
+          💡 Auto-saves 0.8s after you stop typing · Tab moves between cells · Save All to force-flush all pending changes
         </p>
       </div>
     </div>
