@@ -3,7 +3,7 @@ import {
   BarChart2, Settings, ChevronLeft, ChevronRight,
   Ticket, RotateCcw, ClipboardList, Percent, Bell, Trophy, ShoppingCart,
   TrendingUp, Network, Brain, Printer, UserCog,
-  Warehouse, HandCoins, FileClock, FileCheck, FileX, Palette, BookOpen,
+  Warehouse, HandCoins, FileClock, FileCheck, FileX, Palette, BookOpen, Tag,
 } from "lucide-react";
 import { useAuth, CASHIER_ALLOWED } from "../../contexts/AuthContext";
 import type { View } from "../../types";
@@ -48,8 +48,9 @@ const NAV_GROUPS: NavGroup[] = [
     // Step 3: Collect payments
     heading: "COLLECTIONS",
     items: [
-      { view: "collections", label: "Daily Collections", icon: <ClipboardList size={17} /> },
-      { view: "commission",  label: "Commission",        icon: <Percent size={17} /> },
+      { view: "collections",     label: "Daily Collections",      icon: <ClipboardList size={17} /> },
+      { view: "commission",      label: "Commission",             icon: <Percent size={17} /> },
+      { view: "agent-discounts", label: "Sub-agent wise Discount",icon: <Tag size={17} /> },
     ],
   },
   {

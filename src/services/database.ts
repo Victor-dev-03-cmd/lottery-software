@@ -556,6 +556,48 @@ async function initSchema() {
     "ALTER TABLE purchase_invoice_items ADD COLUMN tickets_per_book INTEGER DEFAULT 100",
     "ALTER TABLE purchase_invoice_items ADD COLUMN draw_number TEXT DEFAULT ''",
   ]) { try { await d.execute(col); } catch {} }
+
+  // agent_game_discounts — per-agent per-game discount/price overrides
+  await d.execute(`
+    CREATE TABLE IF NOT EXISTS agent_game_discounts (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      agent_id    INTEGER NOT NULL,
+      game_name   TEXT    NOT NULL,
+      discount_pct REAL   NOT NULL DEFAULT 0,
+      custom_price REAL   DEFAULT NULL,
+      UNIQUE(agent_id, game_name)
+    )
+  `);
+}
+
+// ── Agent Game Discounts ──────────────────────────────────────────────────────
+
+export async function getAgentGameDiscounts(): Promise<{ agent_id: number; game_name: string; discount_pct: number; custom_price: number | null }[]> {
+  const d = await getDb();
+  return d.select("SELECT agent_id, game_name, discount_pct, custom_price FROM agent_game_discounts");
+}
+
+export async function getAgentGameDiscount(agentId: number, gameName: string): Promise<{ discount_pct: number; custom_price: number | null } | null> {
+  const d = await getDb();
+  const rows = await d.select<{ discount_pct: number; custom_price: number | null }[]>(
+    "SELECT discount_pct, custom_price FROM agent_game_discounts WHERE agent_id=? AND game_name=?",
+    [agentId, gameName]
+  );
+  return rows[0] ?? null;
+}
+
+export async function saveAgentGameDiscount(agentId: number, gameName: string, discountPct: number, customPrice: number | null): Promise<void> {
+  const d = await getDb();
+  await d.execute(`
+    INSERT INTO agent_game_discounts (agent_id, game_name, discount_pct, custom_price)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(agent_id, game_name) DO UPDATE SET discount_pct=excluded.discount_pct, custom_price=excluded.custom_price
+  `, [agentId, gameName, discountPct, customPrice]);
+}
+
+export async function deleteAgentGameDiscount(agentId: number, gameName: string): Promise<void> {
+  const d = await getDb();
+  await d.execute("DELETE FROM agent_game_discounts WHERE agent_id=? AND game_name=?", [agentId, gameName]);
 }
 
 // ── Company Settings ──────────────────────────────────────────────────────────
