@@ -590,11 +590,8 @@ export async function getAgentsWithCreditLimit(): Promise<(Agent & { credit_limi
   return d.select(`
     SELECT a.*, COALESCE(a.credit_limit, 0) as credit_limit,
            COALESCE((
-             SELECT ROUND(SUM(
-               i.outstanding_balance
-               - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=i.id),0)
-               - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr WHERE tr.invoice_id=i.id AND tr.status='settled'),0)
-             ),2) FROM invoices i WHERE i.agent_id=a.id
+             SELECT ROUND(SUM(MAX(0, i.outstanding_balance)), 2)
+             FROM invoices i WHERE i.agent_id=a.id
                AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')
            ), 0) as outstanding_balance
     FROM agents a ORDER BY a.name ASC
@@ -804,23 +801,14 @@ export async function getAgentSummaries(): Promise<AgentSummary[]> {
       COALESCE(SUM(i.cash_received), 0) as total_cash,
       COALESCE(SUM(i.cash_received), 0) as paid_cash,
       COALESCE(SUM(i.invoice_total) - SUM(i.cash_received + i.dlb_winning + i.nlb_winning), 0) as amount_over,
+      -- loan_amount: total live outstanding (outstanding_balance is kept current by syncInvoiceLiveBalance)
       COALESCE((
-        SELECT ROUND(SUM(
-          i3.outstanding_balance
-          - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=i3.id),0)
-          - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr WHERE tr.invoice_id=i3.id AND tr.status='settled'),0)
-        ),2) FROM invoices i3 WHERE i3.agent_id=a.id
+        SELECT ROUND(SUM(MAX(0, i3.outstanding_balance)), 2)
+        FROM invoices i3 WHERE i3.agent_id=a.id
           AND COALESCE(i3.invoice_status,'paid') NOT IN ('draft','cancelled')
       ), 0) as loan_amount,
       ROUND(COALESCE((
-        SELECT SUM(
-          ROUND(
-            i2.outstanding_balance
-            - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i2.id), 0)
-            - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr
-                        WHERE tr.invoice_id = i2.id AND tr.status = 'settled'), 0),
-          2)
-        )
+        SELECT SUM(MAX(0, ROUND(i2.outstanding_balance, 2)))
         FROM invoices i2 WHERE i2.agent_id = a.id
           AND COALESCE(i2.invoice_status, 'paid') NOT IN ('draft', 'cancelled')
       ), 0), 2) as outstanding_balance
@@ -872,30 +860,20 @@ export async function resolveUniqueInvoiceNumber(candidate: string): Promise<str
 export async function getAgentLastOutstanding(agentId: number): Promise<number> {
   const d = await getDb();
   const rows = await d.select<{ live: number }[]>(`
-    SELECT ROUND(COALESCE(SUM(
-      i.outstanding_balance
-      - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0)
-      - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr
-                  WHERE tr.invoice_id = i.id AND tr.status = 'settled'), 0)
-    ), 0), 2) as live
+    -- outstanding_balance is kept current by syncInvoiceLiveBalance — just sum it directly
+    SELECT ROUND(COALESCE(SUM(MAX(0, i.outstanding_balance)), 0), 2) as live
     FROM invoices i
     WHERE i.agent_id = ?
       AND COALESCE(i.invoice_status, 'paid') NOT IN ('draft', 'cancelled')
   `, [agentId]);
-  // Double-guard: ROUND in SQL + toFixed in JS eliminates all float artifacts
   return Math.max(0, Number((rows[0]?.live ?? 0).toFixed(2)));
 }
 
-/** Live balance for a single invoice — rounded to 2 decimal places. */
+/** Live balance for a single invoice — reads the maintained outstanding_balance column. */
 export async function getLiveInvoiceBalance(invoiceId: number): Promise<number> {
   const d = await getDb();
   const rows = await d.select<{ live: number }[]>(`
-    SELECT ROUND(
-      i.outstanding_balance
-      - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0)
-      - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr
-                  WHERE tr.invoice_id = i.id AND tr.status = 'settled'), 0),
-    2) as live
+    SELECT ROUND(MAX(0, i.outstanding_balance), 2) as live
     FROM invoices i WHERE i.id = ?
   `, [invoiceId]);
   return Math.max(0, Number((rows[0]?.live ?? 0).toFixed(2)));
@@ -919,12 +897,9 @@ export async function getAgentInvoiceLedger(agentId: number): Promise<import("..
       ROUND(COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0), 2) as post_payments,
       ROUND(COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr
                 WHERE tr.invoice_id = i.id AND tr.status = 'settled'), 0), 2) as settled_returns,
-      ROUND(
-        i.outstanding_balance
-        - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0)
-        - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr
-                    WHERE tr.invoice_id = i.id AND tr.status = 'settled'), 0),
-      2) as live_balance
+      -- outstanding_balance is kept current by syncInvoiceLiveBalance after every payment/return.
+      -- Do NOT subtract payments/returns again — that would double-count them.
+      ROUND(MAX(0, i.outstanding_balance), 2) as live_balance
     FROM invoices i
     WHERE i.agent_id = ?
       AND COALESCE(i.invoice_status, 'paid') NOT IN ('draft', 'cancelled')
@@ -1231,15 +1206,7 @@ export async function getAgentPerformance(): Promise<import("../types").AgentPer
       a.name,
       COALESCE(SUM(i.invoice_total), 0) as total_value,
       COUNT(i.id) as invoice_count,
-      COALESCE(SUM(CASE WHEN (
-        i.outstanding_balance
-        - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0)
-        - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr WHERE tr.invoice_id = i.id AND tr.status='settled'), 0)
-      ) > 0 THEN (
-        i.outstanding_balance
-        - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0)
-        - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr WHERE tr.invoice_id = i.id AND tr.status='settled'), 0)
-      ) ELSE 0 END), 0) as outstanding,
+      COALESCE(SUM(CASE WHEN i.outstanding_balance > 0 THEN i.outstanding_balance ELSE 0 END), 0) as outstanding,
       CASE
         WHEN COALESCE(SUM(i.invoice_total), 0) > 0
         THEN ROUND((COALESCE(SUM(i.cash_received + i.dlb_winning + i.nlb_winning), 0) /
@@ -1262,20 +1229,12 @@ export async function getAgingReport(): Promise<import("../types").AgingEntry[]>
       a.name,
       i.invoice_number,
       i.invoice_date,
-      ROUND(
-        i.outstanding_balance
-        - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0)
-        - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr WHERE tr.invoice_id = i.id AND tr.status='settled'), 0),
-      2) as outstanding_balance,
+      ROUND(MAX(0, i.outstanding_balance), 2) as outstanding_balance,
       CAST(julianday('now') - julianday(i.invoice_date) AS INTEGER) as days_old
     FROM invoices i
     JOIN agents a ON a.id = i.agent_id
     WHERE COALESCE(i.invoice_status, 'paid') NOT IN ('draft', 'cancelled')
-      AND (
-        i.outstanding_balance
-        - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0)
-        - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr WHERE tr.invoice_id = i.id AND tr.status='settled'), 0)
-      ) > 0
+      AND i.outstanding_balance > 0
     ORDER BY days_old DESC
   `);
 }
@@ -1313,17 +1272,7 @@ export async function getGlobalStats(): Promise<import("../types").GlobalStats> 
         COALESCE(SUM(invoice_total), 0)                     as total_invoice_value,
         COALESCE(SUM(cash_received), 0)                     as total_cash_collected,
         COALESCE(SUM(dlb_winning + nlb_winning), 0)         as total_winnings_returned,
-        COALESCE(SUM(
-          CASE WHEN (
-            outstanding_balance
-            - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = invoices.id), 0)
-            - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr WHERE tr.invoice_id = invoices.id AND tr.status='settled'), 0)
-          ) > 0 THEN (
-            outstanding_balance
-            - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = invoices.id), 0)
-            - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr WHERE tr.invoice_id = invoices.id AND tr.status='settled'), 0)
-          ) ELSE 0 END
-        ), 0)                                               as total_outstanding,
+        COALESCE(SUM(CASE WHEN outstanding_balance > 0 THEN outstanding_balance ELSE 0 END), 0) as total_outstanding,
         COUNT(*)                                            as total_invoices
       FROM invoices
       WHERE COALESCE(invoice_status, 'paid') NOT IN ('draft', 'cancelled')
@@ -1351,10 +1300,7 @@ export async function getNotifications(): Promise<{ pendingCount: number; lowSto
     d.select<{ cnt: number }[]>(`
       SELECT COUNT(*) as cnt FROM invoices
       WHERE COALESCE(invoice_status,'paid') NOT IN ('draft','cancelled')
-        AND (outstanding_balance
-             - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = invoices.id), 0)
-             - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr WHERE tr.invoice_id = invoices.id AND tr.status='settled'), 0)
-            ) > 0
+        AND outstanding_balance > 0
     `),
     d.select<{ cnt: number }[]>("SELECT COUNT(*) as cnt FROM inventory_batches WHERE (total_qty - distributed_qty) <= low_stock_threshold"),
     d.select<{ cnt: number }[]>("SELECT COUNT(*) as cnt FROM ticket_returns WHERE status='pending'"),
@@ -1702,15 +1648,7 @@ export async function getPeriodStats(days: number) {
         COUNT(*) as invoice_count,
         COALESCE(SUM(invoice_total), 0) as total_invoiced,
         COALESCE(SUM(cash_received + dlb_winning + nlb_winning), 0) as total_collected,
-        COALESCE(SUM(CASE WHEN (
-          outstanding_balance
-          - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = invoices.id), 0)
-          - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr WHERE tr.invoice_id = invoices.id AND tr.status='settled'), 0)
-        ) > 0 THEN (
-          outstanding_balance
-          - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = invoices.id), 0)
-          - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr WHERE tr.invoice_id = invoices.id AND tr.status='settled'), 0)
-        ) ELSE 0 END), 0) as total_outstanding
+        COALESCE(SUM(CASE WHEN outstanding_balance > 0 THEN outstanding_balance ELSE 0 END), 0) as total_outstanding
       FROM invoices
       WHERE invoice_date >= ?
         AND COALESCE(invoice_status,'paid') NOT IN ('draft','cancelled')
@@ -1757,15 +1695,7 @@ export async function getTodayStats() {
     d.select<{ cnt: number; total: number; cash: number; outstanding: number }[]>(`
       SELECT COUNT(*) as cnt, COALESCE(SUM(invoice_total),0) as total,
              COALESCE(SUM(cash_received),0) as cash,
-             COALESCE(SUM(CASE WHEN (
-               outstanding_balance
-               - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = invoices.id), 0)
-               - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr WHERE tr.invoice_id = invoices.id AND tr.status='settled'), 0)
-             ) > 0 THEN (
-               outstanding_balance
-               - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = invoices.id), 0)
-               - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr WHERE tr.invoice_id = invoices.id AND tr.status='settled'), 0)
-             ) ELSE 0 END), 0) as outstanding
+             COALESCE(SUM(CASE WHEN outstanding_balance > 0 THEN outstanding_balance ELSE 0 END), 0) as outstanding
       FROM invoices WHERE invoice_date=?
         AND COALESCE(invoice_status,'paid') NOT IN ('draft','cancelled')
     `, [today]),
