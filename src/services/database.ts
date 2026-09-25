@@ -1021,12 +1021,19 @@ export async function getBatchesForGame(gameName: string): Promise<{
       WHERE ii.purchase_batch_id = ?
         AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')
     `, [b.id]);
-    const sold      = soldRow?.sold ?? 0;
-    const maxEnd    = soldRow?.max_end ?? "";
-    // Next available start = last issued end (exclusive convention: end = first NOT included)
+    const sold   = soldRow?.sold ?? 0;
+    const maxEnd = soldRow?.max_end ?? "";
     const nextStart = maxEnd || b.barcode_start;
-    const remaining = b.total_qty - b.distributed_qty;
-    return { ...b, sold_from_invoices: sold, next_start_barcode: nextStart, remaining_qty: remaining };
+
+    // Use purchase_invoice_items to get the authoritative total for this batch
+    // (avoids corrupted distributed_qty / total_qty from old sync operations)
+    const [purchRow] = await d.select<{ purchased: number }[]>(
+      `SELECT COALESCE(SUM(qty),0) as purchased FROM purchase_invoice_items WHERE game_name=? AND barcode_start=?`,
+      [b.game_name, b.barcode_start]
+    );
+    const realTotal = (purchRow?.purchased ?? 0) > 0 ? purchRow!.purchased : b.total_qty;
+    const remaining = realTotal - sold;
+    return { ...b, total_qty: realTotal, sold_from_invoices: sold, next_start_barcode: nextStart, remaining_qty: remaining };
   }));
 }
 
@@ -2445,43 +2452,55 @@ export async function syncInventoryFromTransactions(): Promise<InventorySyncResu
         `, [game_name]);
         const supplierReturned = suppRetRow?.returned ?? 0;
 
-        // Correct totals:
-        // total_qty = purchased - returned_to_supplier
-        const correctTotal       = Math.max(0, total_purchased - supplierReturned);
-        // distributed_qty = invoiced to agents (no agent-return deduction — Ajith sorts manually)
-        const correctDistributed = Math.max(0, Math.min(correctTotal, distributed));
-
-        // Step 4: Update ALL batches for this game (H-4 fix — previously only oldest was touched).
-        // Zero out every batch first, then write the corrected aggregates into the oldest one.
-        // This prevents doubled totals when multiple batches exist for the same game.
-        const allBatches = await d.select<{ id: number }[]>(
-          "SELECT id FROM inventory_batches WHERE game_name = ? ORDER BY batch_date ASC",
+        // Step 4: Repair each batch individually using its own purchase_invoice_items data.
+        // Each batch = one purchase line identified by (game_name, barcode_start).
+        // Supplier returns are applied proportionally across batches (oldest first).
+        const allBatches = await d.select<{ id: number; barcode_start: string }[]>(
+          "SELECT id, barcode_start FROM inventory_batches WHERE game_name = ? ORDER BY batch_date ASC",
           [game_name]
         );
 
         if (allBatches.length > 0) {
-          // Zero out all batches except the oldest
-          for (const { id } of allBatches.slice(1)) {
-            await d.execute(
-              "UPDATE inventory_batches SET total_qty = 0, distributed_qty = 0 WHERE id = ?",
-              [id]
+          let remainingReturns = supplierReturned; // distribute supplier returns from oldest batch
+          for (const batch of allBatches) {
+            // Get purchased qty for this specific barcode range
+            const [pRow] = await d.select<{ purchased: number }[]>(
+              `SELECT COALESCE(SUM(qty),0) as purchased FROM purchase_invoice_items WHERE game_name=? AND barcode_start=?`,
+              [game_name, batch.barcode_start]
             );
+            const batchPurchased = pRow?.purchased ?? 0;
+
+            // Apply supplier returns to oldest batch first
+            const batchReturned = Math.min(remainingReturns, batchPurchased);
+            remainingReturns = Math.max(0, remainingReturns - batchReturned);
+            const batchTotal = Math.max(0, batchPurchased - batchReturned);
+
+            // Sold from invoices that selected this specific batch
+            const [sRow] = await d.select<{ sold: number }[]>(`
+              SELECT COALESCE(SUM(ii.qty),0) as sold
+              FROM invoice_items ii JOIN invoices i ON i.id=ii.invoice_id
+              WHERE ii.purchase_batch_id=?
+                AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')
+            `, [batch.id]);
+            const batchSold = Math.min(batchTotal, sRow?.sold ?? 0);
+
+            await d.execute(
+              "UPDATE inventory_batches SET total_qty = ?, distributed_qty = ? WHERE id = ?",
+              [batchTotal, batchSold, batch.id]
+            );
+            await enqueueBatchSync(d, batch.id);
           }
-          // Write the corrected all-time totals into the canonical (oldest) batch
-          await d.execute(
-            "UPDATE inventory_batches SET total_qty = ?, distributed_qty = ? WHERE id = ?",
-            [correctTotal, correctDistributed, allBatches[0].id]
-          );
-          await enqueueBatchSync(d, allBatches[0].id); // H-9
-        } else if (correctTotal > 0) {
-          // No existing batch — create a canonical one
+        } else if (total_purchased > 0) {
+          // No batches exist — create one canonical batch
+          const correctTotal       = Math.max(0, total_purchased - supplierReturned);
+          const correctDistributed = Math.max(0, Math.min(correctTotal, distributed));
           const ins = await d.execute(
             `INSERT INTO inventory_batches
              (game_name, batch_date, barcode_start, barcode_end, total_qty, distributed_qty, unit_price, low_stock_threshold, notes)
              VALUES (?, date('now'), '', '', ?, ?, 32.50, 100, 'Auto-synced from transactions')`,
             [game_name, correctTotal, correctDistributed]
           );
-          await enqueueBatchSync(d, ins.lastInsertId as number); // H-9
+          await enqueueBatchSync(d, ins.lastInsertId as number);
         }
         result.batchesUpdated++;
       } catch (e) {
@@ -2546,34 +2565,39 @@ export async function confirmInvoice(id: number): Promise<void> {
   );
   enqueueSync("invoices","upsert",{ id, invoice_status: "confirmed" },"id").catch(()=>{});
 
-  // Greedy FIFO stock decrement — spans multiple batches until the full qty is consumed.
-  // Previously a single LIMIT 1 UPDATE silently dropped any overflow beyond the first batch.
-  const items = await d.select<{ ticket_name: string; qty: number }[]>(
-    "SELECT ticket_name, qty FROM invoice_items WHERE invoice_id=? AND ticket_name != '' AND qty > 0", [id]
+  // Decrement inventory stock: use the specific batch the user picked (purchase_batch_id),
+  // or fall back to FIFO across batches when no batch was chosen.
+  const items = await d.select<{ ticket_name: string; qty: number; purchase_batch_id: number | null }[]>(
+    "SELECT ticket_name, qty, purchase_batch_id FROM invoice_items WHERE invoice_id=? AND ticket_name != '' AND qty > 0", [id]
   );
   for (const item of items) {
-    let remaining = item.qty;
-    while (remaining > 0) {
-      // Pick the oldest batch that still has available stock
-      const batches = await d.select<{ id: number; available: number }[]>(`
-        SELECT id, (total_qty - distributed_qty) AS available
-        FROM inventory_batches
-        WHERE game_name = ? AND (total_qty - distributed_qty) > 0
-        ORDER BY batch_date ASC LIMIT 1
-      `, [item.ticket_name]);
-
-      if (!batches.length) break; // No more stock across any batch — stop
-
-      const toDeduct = Math.min(remaining, batches[0].available);
+    if (item.purchase_batch_id) {
+      // Deduct from the exact batch the user selected — preserves per-batch accuracy
       await d.execute(
         "UPDATE inventory_batches SET distributed_qty = distributed_qty + ? WHERE id = ?",
-        [toDeduct, batches[0].id]
+        [item.qty, item.purchase_batch_id]
       );
-      await enqueueBatchSync(d, batches[0].id); // H-9: sync to Supabase
-      remaining -= toDeduct;
+      await enqueueBatchSync(d, item.purchase_batch_id);
+    } else {
+      // No batch selected — fall back to FIFO across all batches for this game
+      let remaining = item.qty;
+      while (remaining > 0) {
+        const batches = await d.select<{ id: number; available: number }[]>(`
+          SELECT id, (total_qty - distributed_qty) AS available
+          FROM inventory_batches
+          WHERE game_name = ? AND (total_qty - distributed_qty) > 0
+          ORDER BY batch_date ASC LIMIT 1
+        `, [item.ticket_name]);
+        if (!batches.length) break;
+        const toDeduct = Math.min(remaining, batches[0].available);
+        await d.execute(
+          "UPDATE inventory_batches SET distributed_qty = distributed_qty + ? WHERE id = ?",
+          [toDeduct, batches[0].id]
+        );
+        await enqueueBatchSync(d, batches[0].id);
+        remaining -= toDeduct;
+      }
     }
-    // If remaining > 0 here, invoice was confirmed with more qty than available stock.
-    // The stock simply runs to 0; the invoice still goes through (business may track this manually).
   }
 }
 
