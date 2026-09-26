@@ -1586,13 +1586,30 @@ export async function settleTicketReturn(id: number): Promise<void> {
 
 export async function deleteTicketReturn(id: number): Promise<void> {
   const d = await getDb();
-  // Read invoice_id before deleting so we can resync the balance afterwards (H-10)
-  const rows = await d.select<{ invoice_id: number | null }[]>(
-    "SELECT invoice_id FROM ticket_returns WHERE id=?", [id]
-  );
+  // Read all fields needed before deleting
+  const rows = await d.select<{
+    invoice_id: number | null;
+    purchase_batch_id: number | null;
+    status: string;
+    qty: number;
+  }[]>("SELECT invoice_id, purchase_batch_id, status, qty FROM ticket_returns WHERE id=?", [id]);
+
   await d.execute("DELETE FROM ticket_returns WHERE id=?", [id]);
-  // If the deleted return was settled, the invoice balance must go back up
-  if (rows.length) await syncInvoiceLiveBalance(d, rows[0].invoice_id);
+
+  if (rows.length) {
+    // Invoice balance must go back up if return was settled (H-10)
+    await syncInvoiceLiveBalance(d, rows[0].invoice_id);
+
+    // If the return was settled and linked to a batch, reverse the distributed_qty restoration
+    // (settleTicketReturn decreases distributed_qty; deleting that settled return must undo it)
+    if (rows[0].status === "settled" && rows[0].purchase_batch_id) {
+      await d.execute(
+        "UPDATE inventory_batches SET distributed_qty = distributed_qty + ? WHERE id=?",
+        [rows[0].qty, rows[0].purchase_batch_id]
+      );
+      await enqueueBatchSync(d, rows[0].purchase_batch_id);
+    }
+  }
 }
 
 export async function getReturnSummary() {

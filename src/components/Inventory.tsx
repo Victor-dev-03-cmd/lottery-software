@@ -84,6 +84,14 @@ export default function Inventory() {
 
   useEffect(() => { load(); }, []);
 
+  // Reload whenever the window regains focus — catches changes made on other pages
+  // (e.g. deleting a settled return on the Returns page)
+  useEffect(() => {
+    function onFocus() { load(); }
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
+
   async function handleSync() {
     if (!confirm("Recalculate all stock counts from purchases, invoices, and returns?\n\nThis fixes stock numbers that are out of sync with existing transactions.")) return;
     setSyncing(true);
