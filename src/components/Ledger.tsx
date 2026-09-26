@@ -229,9 +229,34 @@ export default function Ledger() {
 
         {!selectedAgent ? (
           <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-            <div className="p-12 text-center">
-              <CreditCard size={40} className="mx-auto mb-3" style={{ color: "#E8E8E8" }} />
-              <p style={{ color: "#9CA3AF" }}>Select an agent above to view their ledger.</p>
+            <div style={{ padding:"36px 40px", textAlign:"center" }}>
+              <CreditCard size={44} className="mx-auto mb-4" style={{ color: "#E8E8E8" }} />
+              <p style={{ color:"#6B7280", fontSize:14, fontWeight:600, marginBottom:16 }}>
+                Select an agent above to view their ledger.
+              </p>
+              {/* Sinhala explanation of outstanding balance */}
+              <div style={{
+                maxWidth:560, margin:"0 auto", padding:"18px 24px",
+                background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:12,
+                textAlign:"left",
+              }}>
+                <p style={{ fontSize:13, fontWeight:700, color:"#92400E", marginBottom:10 }}>
+                  💡 හිඟ ශේෂ ගැන දැනගත යුතු දේ
+                </p>
+                <p style={{ fontSize:12, color:"#78350F", lineHeight:1.8, marginBottom:8 }}>
+                  නියෝජිතයෙකුගේ <strong>හිඟ ශේෂය</strong> (Outstanding Balance) ඇති විය හැකි හේතු:
+                </p>
+                <ul style={{ fontSize:11, color:"#92400E", lineHeight:2, paddingLeft:18, margin:0 }}>
+                  <li>📦 නිකුත් කළ ටිකට් සඳහා සම්පූර්ණ මුදල් ගෙවා නොමැති නිසා</li>
+                  <li>💰 බෙදාහැරීමේදී ලැබූ මුදල ප්‍රමාණවත් නොවීම</li>
+                  <li>↩ ටිකට් ආපසු ලැබ නොතිබීම (Agent Return pending)</li>
+                  <li>🏆 NLB / DLB ජයග්‍රාහී ටිකට් ණය ලෙස ශේෂ ගත වී ඇත</li>
+                  <li>📋 පෙර ඉන්වොයිස් වල හිඟ ශේෂ ඉදිරියට ගෙන ගිය නිසා</li>
+                </ul>
+                <p style={{ fontSize:11, color:"#92400E", marginTop:10, fontStyle:"italic" }}>
+                  නියෝජිතයෙකු තේරීමෙන් ඔවුන්ගේ සම්පූර්ණ ගෙවීම් ඉතිහාසය, ශේෂ හා ඉන්වොයිස් ලේජරය බැලිය හැක.
+                </p>
+              </div>
             </div>
           </div>
         ) : (
