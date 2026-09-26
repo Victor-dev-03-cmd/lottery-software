@@ -142,20 +142,17 @@ export default function ProfitAnalytics() {
             </div>
 
             {/* Net Profit */}
-            <div className="rounded-2xl p-5 shadow-sm col-span-2"
-              style={{ background: summary.net_profit >= 0
-                ? "linear-gradient(135deg,#064e3b,#16a34a)"
-                : "linear-gradient(135deg,#7f1d1d,#CF291D)",
-                border: "none" }}>
+            <div className="rounded-2xl p-5 col-span-2"
+              style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", borderTop: `3px solid ${summary.net_profit >= 0 ? "#16a34a" : "#CF291D"}` }}>
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "rgba(255,255,255,0.6)" }}>Net Profit</p>
-                  <p className="text-4xl font-black text-white">Rs. {fmt(summary.net_profit)}</p>
-                  <p className="text-sm mt-1 text-white/70">Margin: {summary.margin_pct}%</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "#9CA3AF" }}>Net Profit</p>
+                  <p className="text-4xl font-black" style={{ color: summary.net_profit >= 0 ? "#16a34a" : "#CF291D" }}>Rs. {fmt(summary.net_profit)}</p>
+                  <p className="text-sm mt-1" style={{ color: "#9CA3AF" }}>Margin: {summary.margin_pct}%</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "rgba(255,255,255,0.6)" }}>Breakdown</p>
-                  <div className="space-y-1 text-xs text-white/80">
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>Breakdown</p>
+                  <div className="space-y-1 text-xs" style={{ color: "#6B7280" }}>
                     <div className="flex justify-between gap-8">
                       <span>Revenue</span><span className="font-bold">+{fmt(summary.total_revenue)}</span>
                     </div>
@@ -165,9 +162,9 @@ export default function ProfitAnalytics() {
                     <div className="flex justify-between gap-8">
                       <span>Commission</span><span className="font-bold">−{fmt(summary.total_commission)}</span>
                     </div>
-                    <div className="flex justify-between gap-8 pt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.2)" }}>
-                      <span className="font-black">Net</span>
-                      <span className="font-black">Rs. {fmt(summary.net_profit)}</span>
+                    <div className="flex justify-between gap-8 pt-1" style={{ borderTop: "1px solid #E8E8E8" }}>
+                      <span className="font-black" style={{ color: "#1D1D1D" }}>Net</span>
+                      <span className="font-black" style={{ color: summary.net_profit >= 0 ? "#16a34a" : "#CF291D" }}>Rs. {fmt(summary.net_profit)}</span>
                     </div>
                   </div>
                 </div>
@@ -178,11 +175,11 @@ export default function ProfitAnalytics() {
 
         {/* Daily Trend Chart */}
         {trend.length > 0 && (
-          <div className="rounded-2xl shadow-sm overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-            <div className="px-5 py-3.5 flex items-center gap-2"
-              style={{ background: "linear-gradient(135deg,#1D1D1D,#374151)", borderBottom: "2px solid #CF291D" }}>
+          <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <div className="px-5 py-3 flex items-center gap-2"
+              style={{ background: "#FFFFFF", borderBottom: "1px solid #E8E8E8", borderLeft: "3px solid #CF291D" }}>
               <BarChart2 size={15} style={{ color: "#CF291D" }}/>
-              <span className="text-sm font-semibold text-white">Daily Net Profit Trend</span>
+              <span className="text-sm font-semibold" style={{ color: "#1D1D1D" }}>Daily Net Profit Trend</span>
             </div>
             <div className="p-5">
               <div className="flex items-end gap-1.5" style={{ height: 120 }}>
@@ -231,10 +228,10 @@ export default function ProfitAnalytics() {
             <div className="overflow-x-auto" style={{ borderTop: "1px solid #F3F4F6" }}>
               <table className="w-full">
                 <thead>
-                  <tr style={{ background: "#F9F9F9" }}>
+                  <tr style={{ background: "#374151" }}>
                     {["Date","Revenue","Stock Cost","Net Profit"].map(h => (
                       <th key={h} className={`px-4 py-2.5 ${h==="Date"?"text-left":"text-right"}`}
-                        style={{ fontSize:10, color:"#9CA3AF", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em" }}>{h}</th>
+                        style={{ fontSize:10, color:"rgba(255,255,255,0.7)", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>

@@ -188,7 +188,7 @@ export default function PrintExport({ onNavigate }: Props) {
                   { label:"Outstanding",       val: stats30?.total_outstanding ?? 0, color:"#CF291D", icon:<AlertTriangle size={16}/> },
                   { label:"Tickets Issued",    val: stats30?.total_tickets ?? 0,     color:"#2563eb", icon:<Package size={16}/>, isInt: true },
                 ].map(c => (
-                  <div key={c.label} className="rounded-xl p-3" style={{ background:"#F9F9F9", border:"1px solid #F0F0F0" }}>
+                  <div key={c.label} className="rounded-xl p-3" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", borderTop:`3px solid ${c.color}`, boxShadow:"0 1px 4px rgba(0,0,0,0.04)" }}>
                     <div className="flex items-center gap-1.5 mb-2" style={{ color: c.color }}>{c.icon}</div>
                     <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>{c.label}</p>
                     <p className="text-lg font-black" style={{ color: c.color }}>
@@ -203,7 +203,7 @@ export default function PrintExport({ onNavigate }: Props) {
             <div className="grid grid-cols-2 gap-0" style={{ borderBottom:"2px solid #F3F4F6" }}>
               {/* Revenue & Expenses */}
               <div className="px-8 py-5" style={{ borderRight:"1px solid #F3F4F6" }}>
-                <h3 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color:"#9CA3AF" }}>
+                <h3 className="text-xs font-bold uppercase tracking-wider mb-3 pl-2" style={{ color:"#374151", borderLeft:"3px solid #CF291D" }}>
                   Revenue & Expenses
                 </h3>
                 <table className="w-full text-xs">
@@ -233,7 +233,7 @@ export default function PrintExport({ onNavigate }: Props) {
 
               {/* Payroll summary */}
               <div className="px-8 py-5">
-                <h3 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color:"#9CA3AF" }}>
+                <h3 className="text-xs font-bold uppercase tracking-wider mb-3 pl-2" style={{ color:"#374151", borderLeft:"3px solid #CF291D" }}>
                   Payroll Summary — {monthLabel}
                 </h3>
                 <table className="w-full text-xs">

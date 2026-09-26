@@ -127,8 +127,8 @@ export default function DistributionSummary() {
             { label:"Commission",      val: totals.commission,  color:"#d97706", icon:<CreditCard size={16}/> },
             { label:"Outstanding",     val: totals.outstanding, color:"#CF291D", icon:<Users size={16}/> },
           ].map(c => (
-            <div key={c.label} className="rounded-xl p-4 shadow-sm"
-              style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: `3px solid ${c.color}` }}>
+            <div key={c.label} className="rounded-2xl p-4"
+              style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: `3px solid ${c.color}`, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
               <div className="flex items-center gap-2 mb-1.5" style={{ color: c.color }}>{c.icon}</div>
               <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "#9CA3AF" }}>{c.label}</p>
               <p className="text-lg font-black" style={{ color: c.color }}>Rs. {fmt(c.val)}</p>
@@ -139,10 +139,10 @@ export default function DistributionSummary() {
         {/* Agent table */}
         <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
           <div className="px-5 py-3 flex items-center justify-between"
-            style={{ background: "linear-gradient(135deg,#1D1D1D,#374151)", borderBottom: "2px solid #CF291D" }}>
-            <span className="text-sm font-semibold text-white">Agent Performance & Balance</span>
+            style={{ background: "#FFFFFF", borderBottom: "1px solid #E8E8E8", borderLeft: "3px solid #CF291D" }}>
+            <span className="text-sm font-semibold" style={{ color: "#1D1D1D" }}>Agent Performance & Balance</span>
             <span className="text-[11px] px-2 py-0.5 rounded-full font-medium"
-              style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}>
+              style={{ background: "#F3F4F6", color: "#6B7280" }}>
               {filtered.length} agents
             </span>
           </div>
@@ -158,10 +158,10 @@ export default function DistributionSummary() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr style={{ background: "#F9F9F9" }}>
+                  <tr style={{ background: "#374151" }}>
                     {["Agent","Invoices","Total Invoiced","Collected","Coll. Rate","Returns","Commission","Live Balance","Status"].map(h => (
                       <th key={h} className={`px-4 py-3 ${h==="Agent"?"text-left":"text-right"} last:text-center`}
-                        style={{ fontSize:10, color:"#9CA3AF", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", whiteSpace:"nowrap" }}>{h}</th>
+                        style={{ fontSize:10, color:"rgba(255,255,255,0.7)", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", whiteSpace:"nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>

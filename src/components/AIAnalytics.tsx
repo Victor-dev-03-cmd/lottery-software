@@ -295,14 +295,10 @@ export default function AIAnalytics({ onNavigate }: Props) {
   const card = {
     background: "#FFFFFF",
     border: "1px solid #E8E8E8",
-    borderRadius: 8,
+    borderRadius: 16,
     padding: 16,
+    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
   } as const;
-
-  const hdr = {
-    fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const,
-    letterSpacing: "0.06em", color: "#9CA3AF", marginBottom: 8,
-  };
 
   return (
     <div style={{ display: "flex", height: "calc(100vh - 56px)", background: "#F5F5F5", overflow: "hidden" }}>
@@ -338,7 +334,9 @@ export default function AIAnalytics({ onNavigate }: Props) {
 
           {/* Business Health Score */}
           <div style={card}>
-            <p style={hdr}>Business Health Score</p>
+            <div style={{ borderLeft: "3px solid #CF291D", paddingLeft: 10, marginBottom: 10 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "#374151", margin: 0 }}>Business Health Score</p>
+            </div>
             {loading ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "12px 0" }}>
                 <SK h={80} w={80}/>
@@ -379,7 +377,9 @@ export default function AIAnalytics({ onNavigate }: Props) {
 
           {/* Revenue & Profit Breakdown */}
           <div style={card}>
-            <p style={hdr}>Revenue & Profit Breakdown — Last 30 Days</p>
+            <div style={{ borderLeft: "3px solid #CF291D", paddingLeft: 10, marginBottom: 10 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "#374151", margin: 0 }}>Revenue & Profit Breakdown — Last 30 Days</p>
+            </div>
             {loading ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {[1,2,3,4].map(i => <SK key={i} h={44}/>)}
@@ -425,10 +425,10 @@ export default function AIAnalytics({ onNavigate }: Props) {
 
         {/* Row 2: Collection Priority */}
         <div style={card}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: "3px solid #CF291D", paddingLeft: 10, marginBottom: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <AlertTriangle size={14} color="#DC2626"/>
-              <p style={{ ...hdr, margin: 0 }}>Collection Priority — Urgent Follow-ups</p>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "#374151", margin: 0 }}>Collection Priority — Urgent Follow-ups</p>
             </div>
             {agentRisks.some(a => a.risk_level === "critical") && (
               <span style={{ padding: "2px 8px", borderRadius: 4, background: "#FEE2E2", color: "#DC2626", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>
@@ -476,15 +476,17 @@ export default function AIAnalytics({ onNavigate }: Props) {
 
         {/* Row 3: Inventory Velocity */}
         <div style={card}>
-          <p style={hdr}>Demand Forecast — Ticket Inventory Velocity</p>
+          <div style={{ borderLeft: "3px solid #CF291D", paddingLeft: 10, marginBottom: 10 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "#374151", margin: 0 }}>Demand Forecast — Ticket Inventory Velocity</p>
+          </div>
           {loading ? <SK h={120}/> : (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                 <thead>
-                  <tr style={{ borderBottom: "1px solid #F3F4F6" }}>
+                  <tr style={{ background: "#374151" }}>
                     {["Game","Total","Distributed","Velocity","Days Left","Status"].map(h => (
                       <th key={h} style={{ padding: "6px 8px", textAlign: h === "Game" ? "left" : "right",
-                        fontSize: 10, fontWeight: 600, textTransform: "uppercase", color: "#9CA3AF", letterSpacing: "0.04em" }}>{h}</th>
+                        fontSize: 10, fontWeight: 600, textTransform: "uppercase" as const, color: "rgba(255,255,255,0.7)", letterSpacing: "0.04em" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -524,7 +526,9 @@ export default function AIAnalytics({ onNavigate }: Props) {
         {/* Row 4: 6-month trend */}
         {trend.length > 0 && (
           <div style={card}>
-            <p style={hdr}>6-Month Revenue Trend</p>
+            <div style={{ borderLeft: "3px solid #CF291D", paddingLeft: 10, marginBottom: 10 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "#374151", margin: 0 }}>6-Month Revenue Trend</p>
+            </div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80 }}>
               {trend.map(t => {
                 const h = Math.max(4, (t.revenue / maxTrend) * 72);
@@ -559,9 +563,9 @@ export default function AIAnalytics({ onNavigate }: Props) {
 
         {/* Row 5: AI Recommendations */}
         <div style={card}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, borderLeft: "3px solid #CF291D", paddingLeft: 10, marginBottom: 10 }}>
             <Lightbulb size={14} color="#D97706"/>
-            <p style={{ ...hdr, margin: 0 }}>AI Recommendations</p>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "#374151", margin: 0 }}>AI Recommendations</p>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {[
@@ -628,7 +632,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
             { icon: <Package size={14}/>, label: "Stock Batches", val: velocity.length,       color: "#D97706" },
             { icon: <Brain size={14}/>, label: "Months Tracked",  val: trend.length,          color: "#16A34A" },
           ].map(s => (
-            <div key={s.label} style={{ ...card, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+            <div key={s.label} style={{ ...card, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, borderTop: `3px solid ${s.color}` }}>
               <div style={{ width: 32, height: 32, borderRadius: 6, background: `${s.color}12`,
                 display: "flex", alignItems: "center", justifyContent: "center", color: s.color, flexShrink: 0 }}>
                 {s.icon}
