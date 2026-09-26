@@ -8,6 +8,7 @@ import {
   deletePettyCashTransaction, getPettyCashClosing, savePettyCashClosing,
   getDailyIncome, type PettyCashTx, type PettyCashClosing,
 } from "../services/database";
+import { SI, StatLabel, SectionLabel } from "../utils/si";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -21,6 +22,12 @@ const CATEGORIES = [
   "Food / Refreshments",
   "Other",
 ];
+
+/** Category dropdown option showing English + Sinhala */
+function CatOption({ cat }: { cat: string }) {
+  const si = (SI as Record<string, string>)[cat];
+  return <option value={cat}>{cat}{si ? ` · ${si}` : ""}</option>;
+}
 
 const today = () => new Date().toISOString().split("T")[0];
 
@@ -153,16 +160,20 @@ export default function PettyCash() {
             {/* Form */}
             <div style={{ padding:20, display:"flex", flexDirection:"column", gap:14 }}>
               <div>
-                <label style={{ fontSize:11, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>Category</label>
+                <label style={{ fontSize:11, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>
+                  Category <span className="si" style={{ fontWeight:400, color:"#9CA3AF" }}>· {SI.category}</span>
+                </label>
                 <select value={form.category} onChange={e => setForm(p=>({...p, category:e.target.value}))}
                   style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:"1px solid #E5E7EB", fontSize:13, background:"#FAFAFA", color:"#1D1D1D", outline:"none" }}
                   onFocus={e => e.currentTarget.style.borderColor="#CF291D"}
                   onBlur={e => e.currentTarget.style.borderColor="#E5E7EB"}>
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  {CATEGORIES.map(c => <CatOption key={c} cat={c} />)}
                 </select>
               </div>
               <div>
-                <label style={{ fontSize:11, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>Amount (Rs.)</label>
+                <label style={{ fontSize:11, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>
+                  Amount (Rs.) <span className="si" style={{ fontWeight:400, color:"#9CA3AF" }}>· {SI.amount}</span>
+                </label>
                 <input type="number" min="0" step="0.01" value={form.amount || ""}
                   onChange={e => setForm(p=>({...p, amount:parseFloat(e.target.value)||0}))}
                   onFocus={e => e.target.select()}
@@ -173,7 +184,9 @@ export default function PettyCash() {
                   autoFocus />
               </div>
               <div>
-                <label style={{ fontSize:11, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>Reason / Description *</label>
+                <label style={{ fontSize:11, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>
+                  Reason / Description * <span className="si" style={{ fontWeight:400, color:"#9CA3AF" }}>· {SI.reason}</span>
+                </label>
                 <textarea rows={2} value={form.reason}
                   onChange={e => setForm(p=>({...p, reason:e.target.value}))}
                   onKeyDown={e => { if (e.key==="Enter" && e.ctrlKey) handleSave(); }}
@@ -246,16 +259,17 @@ export default function PettyCash() {
         {/* ── Summary cards ── */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(5, 1fr)", gap:12 }}>
           {[
-            { label:"Opening Balance", value: closing.opening_balance, color:"#6B7280",  icon:<Wallet size={16}/> },
-            { label:"Daily Income",    value: income.total,            color:"#2563EB",  icon:<TrendingUp size={16}/> },
-            { label:"Total Outflows",  value: totalOutflow,            color:"#CF291D",  icon:<TrendingDown size={16}/> },
-            { label:"Expected in Drawer", value: expectedCash,         color:"#D97706",  icon:<Wallet size={16}/> },
+            { en:"Opening Balance", si:SI.openingBalance, value: closing.opening_balance, color:"#6B7280",  icon:<Wallet size={16}/> },
+            { en:"Daily Income",    si:SI.dailyIncome,    value: income.total,            color:"#2563EB",  icon:<TrendingUp size={16}/> },
+            { en:"Total Outflows",  si:SI.cashOutflows,   value: totalOutflow,            color:"#CF291D",  icon:<TrendingDown size={16}/> },
+            { en:"Expected in Drawer", si:SI.expectedCash, value: expectedCash,           color:"#D97706",  icon:<Wallet size={16}/> },
             {
-              label: isBalanced ? "✓ Balanced" : "Discrepancy",
+              en: isBalanced ? "✓ Balanced" : "Discrepancy",
+              si: isBalanced ? SI.balanced : SI.variance,
               value: Math.abs(discrepancy),
               color: isBalanced ? "#16A34A" : "#CF291D",
               icon: isBalanced ? <CheckCircle size={16}/> : <AlertTriangle size={16}/>,
-              sub: !isBalanced ? (discrepancy > 0 ? `Rs. ${fmt(discrepancy)} over` : `Rs. ${fmt(-discrepancy)} short`) : "All balanced",
+              sub: !isBalanced ? (discrepancy > 0 ? `Rs. ${fmt(discrepancy)} over / ${SI.cashOver}` : `Rs. ${fmt(-discrepancy)} short / ${SI.cashShort}`) : "All balanced",
             },
           ].map((c, i) => (
             <div key={i} style={{ background:"#fff", borderRadius:12, padding:"14px 16px",
@@ -263,7 +277,7 @@ export default function PettyCash() {
               boxShadow:"0 1px 4px rgba(0,0,0,0.05)" }}>
               <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
                 <span style={{ color:c.color }}>{c.icon}</span>
-                <span style={{ fontSize:10, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:"0.05em" }}>{c.label}</span>
+                <StatLabel en={c.en} si={c.si} />
               </div>
               <div style={{ fontSize:18, fontWeight:900, color:c.color }}>Rs. {fmt(c.value)}</div>
               {c.sub && <div style={{ fontSize:10, color:"#9CA3AF", marginTop:3 }}>{c.sub}</div>}
@@ -279,20 +293,23 @@ export default function PettyCash() {
             {/* Income breakdown */}
             <div style={{ background:"#fff", borderRadius:12, border:"1px solid #E8E8E8", overflow:"hidden" }}>
               <div style={{ padding:"12px 16px", borderBottom:"1px solid #F3F4F6", borderLeft:"3px solid #2563EB", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                <span style={{ fontSize:13, fontWeight:700, color:"#1D1D1D" }}>
-                  <TrendingUp size={14} style={{ display:"inline", marginRight:6, color:"#2563EB" }}/>
-                  Cash Income — {date}
+                <span>
+                  <TrendingUp size={14} style={{ display:"inline", marginRight:6, color:"#2563EB", verticalAlign:"middle" }}/>
+                  <SectionLabel en={`Cash Income — ${date}`} si={`${SI.dailyIncome} — ${date}`} />
                 </span>
                 <span style={{ fontSize:12, fontWeight:800, color:"#2563EB" }}>Rs. {fmt(income.total)}</span>
               </div>
               <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:8 }}>
                 {[
-                  { label:"Invoice Cash (Delivery)",      value: income.invoice_cash,       color:"#2563EB" },
-                  { label:"Post-Delivery Cash Payments",  value: income.post_payments,      color:"#7C3AED" },
-                  { label:"Daily Collections",            value: income.daily_collections,  color:"#059669" },
+                  { label:"Invoice Cash (Delivery)",     si:"ඉන්වොයිස් ගෙවීම",    value: income.invoice_cash,       color:"#2563EB" },
+                  { label:"Post-Delivery Cash Payments", si:"පසු ගෙවීම්",           value: income.post_payments,      color:"#7C3AED" },
+                  { label:"Daily Collections",           si:SI.dailyCollections,    value: income.daily_collections,  color:"#059669" },
                 ].map(row => (
                   <div key={row.label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 10px", background:"#F9FAFB", borderRadius:8 }}>
-                    <span style={{ fontSize:12, color:"#374151" }}>{row.label}</span>
+                    <span style={{ fontSize:12, color:"#374151" }}>
+                      {row.label}
+                      <span className="si" style={{ display:"block", fontSize:9, color:"#9CA3AF" }}>{row.si}</span>
+                    </span>
                     <span style={{ fontSize:13, fontWeight:700, color: row.value > 0 ? row.color : "#9CA3AF" }}>
                       Rs. {fmt(row.value)}
                     </span>
@@ -304,14 +321,15 @@ export default function PettyCash() {
             {/* Outflows table */}
             <div style={{ background:"#fff", borderRadius:12, border:"1px solid #E8E8E8", overflow:"hidden" }}>
               <div style={{ padding:"12px 16px", borderBottom:"1px solid #F3F4F6", borderLeft:"3px solid #CF291D", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                <span style={{ fontSize:13, fontWeight:700, color:"#1D1D1D" }}>
-                  <TrendingDown size={14} style={{ display:"inline", marginRight:6, color:"#CF291D" }}/>
-                  Cash Outflows / Expenses
+                <span>
+                  <TrendingDown size={14} style={{ display:"inline", marginRight:6, color:"#CF291D", verticalAlign:"middle" }}/>
+                  <SectionLabel en="Cash Outflows / Expenses" si={`${SI.cashOutflows} / ${SI.expenses}`} />
                 </span>
                 {!isClosed && (
                   <button onClick={openAdd}
                     style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", borderRadius:7, border:"none", background:"#CF291D", color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer" }}>
                     <Plus size={13}/> Add Expense
+                    <span className="si" style={{ fontSize:10, fontWeight:400 }}>· {SI.addExpense}</span>
                   </button>
                 )}
               </div>
@@ -383,8 +401,12 @@ export default function PettyCash() {
             {/* Opening balance */}
             <div style={{ background:"#fff", borderRadius:12, border:"1px solid #E8E8E8", overflow:"hidden" }}>
               <div style={{ padding:"12px 14px", borderBottom:"1px solid #F3F4F6", borderLeft:"3px solid #6B7280" }}>
-                <p style={{ fontSize:12, fontWeight:700, color:"#374151", margin:0 }}>Opening Balance</p>
-                <p style={{ fontSize:10, color:"#9CA3AF", marginTop:2 }}>Cash available at start of day</p>
+                <p style={{ fontSize:12, fontWeight:700, color:"#374151", margin:0 }}>
+                  Opening Balance <span className="si" style={{ fontSize:11, fontWeight:400, color:"#9CA3AF" }}>· {SI.openingBalance}</span>
+                </p>
+                <p style={{ fontSize:10, color:"#9CA3AF", marginTop:2 }}>
+                  Cash available at start of day / <span className="si">දිනය ආරම්භයේ ලැබෙන මුදල</span>
+                </p>
               </div>
               <div style={{ padding:"12px 14px", display:"flex", gap:8 }}>
                 <input type="number" min="0" step="0.01"
@@ -406,11 +428,17 @@ export default function PettyCash() {
             {/* Physical cash count */}
             <div style={{ background:"#fff", borderRadius:12, border:`2px solid ${isBalanced&&closing.actual_cash>0?"#BBF7D0":"#E8E8E8"}`, overflow:"hidden" }}>
               <div style={{ padding:"12px 14px", borderBottom:"1px solid #F3F4F6", borderLeft:"3px solid #D97706" }}>
-                <p style={{ fontSize:12, fontWeight:700, color:"#374151", margin:0 }}>Physical Cash Count</p>
-                <p style={{ fontSize:10, color:"#9CA3AF", marginTop:2 }}>Count cash in drawer and enter below</p>
+                <p style={{ fontSize:12, fontWeight:700, color:"#374151", margin:0 }}>
+                  Physical Cash Count <span className="si" style={{ fontSize:11, fontWeight:400, color:"#9CA3AF" }}>· {SI.physicalCashCount}</span>
+                </p>
+                <p style={{ fontSize:10, color:"#9CA3AF", marginTop:2 }}>
+                  Count cash in drawer and enter below / <span className="si">ලෙස ගණන් කරන්න</span>
+                </p>
               </div>
               <div style={{ padding:"12px 14px" }}>
-                <label style={{ fontSize:10, fontWeight:700, color:"#9CA3AF", display:"block", marginBottom:6 }}>ACTUAL CASH IN DRAWER (Rs.)</label>
+                <label style={{ fontSize:10, fontWeight:700, color:"#9CA3AF", display:"block", marginBottom:6 }}>
+                  ACTUAL CASH IN DRAWER (Rs.) · <span className="si">{SI.actualCash}</span>
+                </label>
                 <input type="number" min="0" step="0.01"
                   value={closing.actual_cash || ""}
                   onChange={e => setClosing(p=>({...p, actual_cash: parseFloat(e.target.value)||0}))}
@@ -439,7 +467,9 @@ export default function PettyCash() {
             {/* Notes */}
             <div style={{ background:"#fff", borderRadius:12, border:"1px solid #E8E8E8", overflow:"hidden" }}>
               <div style={{ padding:"10px 14px", borderBottom:"1px solid #F3F4F6" }}>
-                <p style={{ fontSize:12, fontWeight:700, color:"#374151", margin:0 }}>Day Notes</p>
+                <p style={{ fontSize:12, fontWeight:700, color:"#374151", margin:0 }}>
+                  Day Notes <span className="si" style={{ fontSize:11, fontWeight:400, color:"#9CA3AF" }}>· {SI.dayNotes}</span>
+                </p>
               </div>
               <div style={{ padding:"12px 14px" }}>
                 <textarea rows={3} value={closing.notes}
@@ -461,7 +491,10 @@ export default function PettyCash() {
                   display:"flex", alignItems:"center", justifyContent:"center", gap:8,
                   opacity: closingSaving ? 0.6 : 1 }}>
                 <CheckCircle size={16}/>
-                {closingSaving ? "Saving…" : "Close Day & Save Reconciliation"}
+                <span>
+                  {closingSaving ? "Saving…" : "Close Day & Save Reconciliation"}
+                  <span className="si" style={{ display:"block", fontSize:9, fontWeight:400, opacity:0.7 }}>{SI.closeDay} · {SI.reconciliation}</span>
+                </span>
               </button>
             ) : (
               <div style={{ padding:"12px 16px", borderRadius:10, background:"#F0FFF4", border:"1px solid #BBF7D0", display:"flex", alignItems:"center", gap:8, fontSize:12, fontWeight:700, color:"#16A34A" }}>

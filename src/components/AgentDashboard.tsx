@@ -13,6 +13,7 @@ import {
   getDailyRevenue, getAgentPerformance, getPeriodStats,
   getSupplierOutstanding, getSupplierAging,
 } from "../services/database";
+import { SI } from "../utils/si";
 import { invoke } from "@tauri-apps/api/core";
 import type { AgentSummary, Invoice, DailyRevenue, AgentPerformance, View, SupplierAgingBracket } from "../types";
 
@@ -292,9 +293,10 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
               style={{ background: "rgba(255,255,255,0.15)" }}>
               <TrendingUp size={18} className="text-white" />
             </div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-white/70 mb-3">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/70 mb-1">
               {kpiPeriodLabel}
             </p>
+            <p className="si text-[9px] text-white/50 mb-2">{SI.totalRevenue}</p>
             {loading ? (
               <div className="h-9 w-28 rounded-lg animate-pulse" style={{ background: "rgba(255,255,255,0.2)" }} />
             ) : (
@@ -316,6 +318,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
           <KpiWhite
             icon={<Ticket size={17} />}
             label={`Tickets (${period})`}
+            labelSi="ටිකට් ගණන"
             value={loading ? "…" : (periodStats?.total_tickets ?? 0).toLocaleString("en-LK")}
             sub={`${periodStats?.invoice_count ?? 0} invoices`}
             loading={loading}
@@ -325,6 +328,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
           <KpiWhite
             icon={<Banknote size={17} />}
             label={`Collected (${period})`}
+            labelSi="එකතු කළ මුදල"
             value={loading ? "…" : fmts(periodStats?.total_collected ?? 0)}
             sub={`${collRate}% of invoiced`}
             trend={collRate >= 80 ? "↑ On track" : "↓ Follow up"}
@@ -336,9 +340,10 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
           <KpiWhite
             icon={<AlertTriangle size={17} />}
             label={`Outstanding (${period})`}
+            labelSi={SI.outstanding}
             value={loading ? "…" : fmts(Math.max(0, periodStats?.total_outstanding ?? 0))}
             sub={`${rows.filter(r=>r.outstanding_balance>0).length} agents`}
-            trend={Math.max(0, periodStats?.total_outstanding ?? 0) > 0 ? "Requires collection" : "All settled ✓"}
+            trend={Math.max(0, periodStats?.total_outstanding ?? 0) > 0 ? "Requires collection / ගෙවීමට ඇත" : "All settled ✓ · නිම"}
             trendColor={Math.max(0, periodStats?.total_outstanding ?? 0) > 0 ? C.red : "#16a34a"}
             onClick={() => onNavigate("ledger")}
             loading={loading}
@@ -823,8 +828,8 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-function KpiWhite({ icon, label, value, sub, trend, trendColor="#16a34a", onClick, loading }: {
-  icon: React.ReactNode; label: string; value: string;
+function KpiWhite({ icon, label, labelSi, value, sub, trend, trendColor="#16a34a", onClick, loading }: {
+  icon: React.ReactNode; label: string; labelSi?: string; value: string;
   sub?: string; trend?: string; trendColor?: string;
   onClick?: () => void; loading?: boolean;
 }) {
@@ -839,7 +844,8 @@ function KpiWhite({ icon, label, value, sub, trend, trendColor="#16a34a", onClic
           {icon}
         </div>
       </div>
-      <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color:"#9CA3AF" }}>{label}</p>
+      <p className="text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{ color:"#9CA3AF" }}>{label}</p>
+      {labelSi && <p className="si text-[8px] mb-1.5" style={{ color:"#C4CAD0" }}>{labelSi}</p>}
       {loading
         ? <div className="h-8 w-24 rounded-lg animate-pulse" style={{ background:"#F3F4F6" }} />
         : <p className="text-2xl font-black leading-tight" style={{ color:"#1D1D1D" }}>{value}</p>

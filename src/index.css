@@ -6,8 +6,14 @@
   }
   body {
     margin: 0;
-    font-family: Inter, system-ui, -apple-system, sans-serif;
+    /* Inter for Latin; Nirmala UI = Windows built-in Sinhala; Noto Sans Sinhala = Google fallback */
+    font-family: Inter, 'Nirmala UI', 'Noto Sans Sinhala', 'Iskoola Pota', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
+  }
+  /* Sinhala text helper class */
+  .si {
+    font-family: 'Nirmala UI', 'Noto Sans Sinhala', 'Iskoola Pota', sans-serif;
+    line-height: 1.6;
   }
 }
 
