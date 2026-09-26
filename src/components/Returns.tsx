@@ -3,10 +3,12 @@ import { Plus, CheckCircle, Trash2, X, Save, RefreshCw, Home, ChevronRight, Rota
 import {
   getAgents, getInvoices, getLotteryGames,
   getTicketReturns, saveTicketReturn, settleTicketReturn, deleteTicketReturn, getReturnSummary,
+  getBatchesForGame,
 } from "../services/database";
 import type { Agent, Invoice, LotteryGame, TicketReturn, ReturnReason } from "../types";
 import { useAuth } from "../contexts/AuthContext";
-import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode } from "../utils/barcode";
+import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, lastTicketBarcode } from "../utils/barcode";
+import TicketLogoPicker, { resolveLogoUrl } from "./TicketLogoPicker";
 
 interface ScannedItem {
   barcode_start: string;
@@ -49,6 +51,11 @@ export default function Returns() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "settled">("all");
   const [authError, setAuthError] = useState<string | null>(null);
+
+  // Logo picker + batch picker for manual form
+  const [logoPicker, setLogoPicker] = useState(false);
+  const [batchOptions, setBatchOptions] = useState<Awaited<ReturnType<typeof getBatchesForGame>>>([]);
+  const [selectedBatchId, setSelectedBatchId] = useState<number | null>(null);
 
   // Quick Scan state
   const [quickScanActive, setQuickScanActive] = useState(false);
@@ -100,9 +107,21 @@ export default function Returns() {
     if (field === "game_name") {
       const g = games.find((x) => x.name === String(value));
       if (g) updated.unit_price = g.unit_price;
+      setSelectedBatchId(null);
+      setBatchOptions([]);
+      if (String(value).trim()) {
+        getBatchesForGame(String(value)).then(setBatchOptions).catch(() => setBatchOptions([]));
+      }
     }
     updated.total_value = Math.round(updated.qty * updated.unit_price * 100) / 100;
     setForm(updated);
+  }
+
+  function resetForm() {
+    setForm(null);
+    setBatchOptions([]);
+    setSelectedBatchId(null);
+    setLogoPicker(false);
   }
 
   async function handleSave() {
@@ -110,7 +129,7 @@ export default function Returns() {
     if (!form.game_name.trim()) { alert("Game name required."); return; }
     if (form.qty <= 0) { alert("Quantity must be > 0."); return; }
     await saveTicketReturn(form);
-    setForm(null);
+    resetForm();
     load();
   }
 
@@ -275,7 +294,7 @@ export default function Returns() {
             <button
               onClick={() => {
                 setQuickScanActive((v) => !v);
-                if (form) setForm(null);
+                if (form) resetForm();
               }}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
               style={
@@ -535,191 +554,199 @@ export default function Returns() {
               <span className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>
                 New Return Entry
               </span>
-              <button style={{ color: "#9CA3AF" }} onClick={() => setForm(null)}>
+              <button style={{ color: "#9CA3AF" }} onClick={() => resetForm()}>
                 <X size={16} />
               </button>
             </div>
-            <div className="p-5">
-              <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div className="p-5 space-y-4">
+
+              {/* ── Logo picker modal ── */}
+              {logoPicker && (
+                <TicketLogoPicker
+                  onSelect={name => {
+                    setField("game_name", name);
+                    setLogoPicker(false);
+                  }}
+                  onClose={() => setLogoPicker(false)}
+                />
+              )}
+
+              {/* ── Row 1: Agent + Date + Invoice ── */}
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label
-                    className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}
-                  >
-                    Agent *
-                  </label>
-                  <FocusSelect
-                    value={form.agent_id || ""}
-                    onChange={(e) => setField("agent_id", Number(e.target.value))}
-                  >
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Agent *</label>
+                  <FocusSelect value={form.agent_id || ""} onChange={e => setField("agent_id", Number(e.target.value))}>
                     <option value="">— Select —</option>
-                    {agents.map((a) => (
-                      <option key={a.id} value={a.id}>{a.name}</option>
+                    {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </FocusSelect>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Return Date</label>
+                  <FocusInput type="date" value={form.return_date} onChange={e => setField("return_date", e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>
+                    🔗 Linked Invoice <span style={{ color:"#9CA3AF", fontWeight:400 }}>(select to link)</span>
+                  </label>
+                  <FocusSelect value={form.invoice_id ?? ""} onChange={e => setField("invoice_id", e.target.value ? Number(e.target.value) : "")}>
+                    <option value="">— None —</option>
+                    {invoices.filter(i => i.agent_id === form.agent_id).map(i => (
+                      <option key={i.id} value={i.id}>#{i.invoice_number} · {i.invoice_date}</option>
                     ))}
                   </FocusSelect>
+                  {form.invoice_id && (() => {
+                    const inv = invoices.find(i => i.id === form.invoice_id);
+                    return inv ? (
+                      <div style={{ marginTop:4, fontSize:10, color:"#16A34A", fontWeight:600 }}>
+                        ✓ Linked to #{inv.invoice_number} · Rs. {fmt(inv.invoice_total)}
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+              </div>
+
+              {/* ── Row 2: Game / Ticket with image picker ── */}
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>
+                  🎫 Game / Ticket Name *
+                </label>
+                <button type="button" onClick={() => setLogoPicker(true)}
+                  style={{
+                    display:"flex", alignItems:"center", gap:12, width:"100%",
+                    padding:"10px 14px", borderRadius:10, textAlign:"left", cursor:"pointer",
+                    border:`2px solid ${form.game_name?"#2563EB":"#CF291D"}`,
+                    background: form.game_name?"#EFF6FF":"#FEF2F2",
+                    transition:"all 0.15s",
+                  }}>
+                  {form.game_name ? (
+                    <>
+                      <img src={resolveLogoUrl(form.game_name)} alt="" style={{ width:40, height:40, objectFit:"contain", borderRadius:6, background:"#fff" }}
+                        onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none"}}/>
+                      <div>
+                        <div style={{ fontSize:13, fontWeight:700, color:"#1D4ED8" }}>{form.game_name}</div>
+                        <div style={{ fontSize:10, color:"#6B7280" }}>click to change</div>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ fontSize:12, color:"#CF291D", fontWeight:600 }}>
+                      🎫 Click to select ticket — choose from image picker
+                    </div>
+                  )}
+                </button>
+              </div>
+
+              {/* ── Batch picker — shown after game is selected ── */}
+              {form.game_name && (
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>
+                    📦 Select Batch to Return From
+                  </label>
+                  {batchOptions.length === 0 ? (
+                    <div style={{ padding:"10px 12px", background:"#FEF9C3", borderRadius:8, fontSize:11, color:"#92400E", border:"1px solid #FDE68A" }}>
+                      ⚠ No stock batches found for {form.game_name}. Add stock in Stock Purchases first.
+                    </div>
+                  ) : (
+                    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                      {batchOptions.map(b => {
+                        const isSelected = selectedBatchId === b.id;
+                        return (
+                          <button key={b.id} type="button"
+                            onClick={() => {
+                              setSelectedBatchId(b.id);
+                              // Use next_start_barcode (after already-sold tickets) as the return start
+                              const nextStart = b.next_start_barcode || b.barcode_start;
+                              setField("barcode_start", nextStart);
+                              setField("unit_price", b.unit_price);
+                              if (form.qty > 0) setField("barcode_end", String(Number(nextStart) + form.qty));
+                            }}
+                            style={{
+                              display:"flex", alignItems:"center", justifyContent:"space-between",
+                              padding:"10px 14px", border:`2px solid ${isSelected?"#CF291D":"#E5E7EB"}`,
+                              borderRadius:10, background: isSelected?"#FEF2F2":"#F9FAFB",
+                              cursor:"pointer", textAlign:"left", transition:"all 0.12s",
+                            }}>
+                            <div>
+                              <div style={{ fontSize:12, fontWeight:700, color:"#111827", marginBottom:3 }}>
+                                {isSelected && <span style={{ marginRight:5, color:"#CF291D" }}>✓</span>}
+                                Batch #{b.id} · {b.batch_date}
+                              </div>
+                              <div style={{ fontSize:10, fontFamily:"monospace", color:"#6B7280" }}>
+                                <span style={{ color:"#2563EB" }}>{b.barcode_start}</span>
+                                <span style={{ margin:"0 4px", color:"#9CA3AF" }}>→</span>
+                                <span style={{ color:"#7C3AED" }}>{b.barcode_end}</span>
+                                <span style={{ marginLeft:8, color:"#9CA3AF" }}>
+                                  Last ticket: <strong style={{ color:"#374151" }}>{lastTicketBarcode(b.barcode_end)}</strong>
+                                </span>
+                              </div>
+                              <div style={{ fontSize:9, color:"#6B7280", marginTop:2 }}>
+                                Next available start: <strong style={{ color:"#2563EB" }}>{b.next_start_barcode || b.barcode_start}</strong>
+                              </div>
+                            </div>
+                            <div style={{ textAlign:"right" }}>
+                              <div style={{ fontSize:14, fontWeight:900, color: b.remaining_qty < 100?"#CF291D":"#16A34A" }}>
+                                {b.remaining_qty.toLocaleString()}
+                              </div>
+                              <div style={{ fontSize:9, color:"#9CA3AF" }}>available</div>
+                              <div style={{ fontSize:10, color:"#6B7280", marginTop:2 }}>Rs. {b.unit_price}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Row 3: Barcodes + Qty + Price ── */}
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>
+                    Barcode Start {selectedBatchId ? <span style={{ color:"#16A34A", fontWeight:600 }}>✓ auto-filled</span> : ""}
+                  </label>
+                  <FocusInput type="text" value={form.barcode_start}
+                    onChange={e => setField("barcode_start", e.target.value)}
+                    placeholder="62900474690" mono />
                 </div>
                 <div>
-                  <label
-                    className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}
-                  >
-                    Return Date
-                  </label>
-                  <FocusInput
-                    type="date"
-                    value={form.return_date}
-                    onChange={(e) => setField("return_date", e.target.value)}
-                  />
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Barcode End (auto)</label>
+                  <FocusInput type="text" value={form.barcode_end}
+                    onChange={e => setField("barcode_end", e.target.value)}
+                    placeholder="Auto-calculated" mono />
                 </div>
                 <div>
-                  <label
-                    className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}
-                  >
-                    Game / Ticket Name *
-                  </label>
-                  <FocusInput
-                    list="ret-games"
-                    value={form.game_name}
-                    onChange={(e) => setField("game_name", e.target.value)}
-                    placeholder="Mega Power…"
-                  />
-                  <datalist id="ret-games">
-                    {games.map((g) => <option key={g.id} value={g.name} />)}
-                  </datalist>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Qty (auto)</label>
+                  <FocusInput type="number" min="0" value={form.qty || ""} placeholder="0"
+                    onChange={e => setField("qty", parseInt(e.target.value) || 0)}
+                    onFocus={e => e.target.select()} />
                 </div>
                 <div>
-                  <label
-                    className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}
-                  >
-                    Linked Invoice
-                  </label>
-                  <FocusSelect
-                    value={form.invoice_id ?? ""}
-                    onChange={(e) =>
-                      setField("invoice_id", e.target.value ? Number(e.target.value) : "")
-                    }
-                  >
-                    <option value="">— None —</option>
-                    {invoices
-                      .filter((i) => i.agent_id === form.agent_id)
-                      .map((i) => (
-                        <option key={i.id} value={i.id}>#{i.invoice_number}</option>
-                      ))}
-                  </FocusSelect>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Unit Price (Rs.)</label>
+                  <FocusInput type="number" step="0.01" value={form.unit_price || ""} placeholder="0"
+                    onChange={e => setField("unit_price", parseFloat(e.target.value) || 0)}
+                    onFocus={e => e.target.select()} />
                 </div>
                 <div>
-                  <label
-                    className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}
-                  >
-                    Barcode Start
-                  </label>
-                  <FocusInput
-                    type="text"
-                    value={form.barcode_start}
-                    onChange={(e) => setField("barcode_start", e.target.value)}
-                    placeholder="62900474690"
-                    mono
-                  />
-                </div>
-                <div>
-                  <label
-                    className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}
-                  >
-                    Barcode End (auto)
-                  </label>
-                  <FocusInput
-                    type="text"
-                    value={form.barcode_end}
-                    onChange={(e) => setField("barcode_end", e.target.value)}
-                    placeholder="Auto-calculated"
-                    mono
-                  />
-                </div>
-                <div>
-                  <label
-                    className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}
-                  >
-                    Qty (auto)
-                  </label>
-                  <FocusInput
-                    type="number"
-                    min="0"
-                    value={form.qty || ""}
-                    placeholder="0"
-                    onChange={(e) => setField("qty", parseInt(e.target.value) || 0)}
-                    onFocus={(e) => e.target.select()}
-                  />
-                </div>
-                <div>
-                  <label
-                    className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}
-                  >
-                    Unit Price (Rs.)
-                  </label>
-                  <FocusInput
-                    type="number"
-                    step="0.01"
-                    value={form.unit_price || ""}
-                    placeholder="0"
-                    onChange={(e) => setField("unit_price", parseFloat(e.target.value) || 0)}
-                    onFocus={(e) => e.target.select()}
-                  />
-                </div>
-                <div>
-                  <label
-                    className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}
-                  >
-                    Total Value
-                  </label>
-                  <div
-                    className="w-full rounded-lg px-3 py-2 text-sm font-semibold cursor-default"
-                    style={{
-                      border: "1px solid #E8E8E8",
-                      background: "#F9F9F9",
-                      color: "#16a34a",
-                    }}
-                  >
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Total Value</label>
+                  <div className="w-full rounded-lg px-3 py-2 text-sm font-semibold"
+                    style={{ border:"1px solid #E8E8E8", background:"#F9F9F9", color:"#16a34a" }}>
                     {fmt(form.total_value)}
                   </div>
                 </div>
-                {/* Return Reason */}
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}>
-                    Return Reason
-                  </label>
-                  <select
-                    value={form.return_reason ?? "unsold"}
-                    onChange={e => setField("return_reason", e.target.value)}
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Return Reason</label>
+                  <select value={form.return_reason ?? "unsold"} onChange={e => setField("return_reason", e.target.value)}
                     className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
-                    style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#1D1D1D" }}
+                    style={{ border:"1px solid #E8E8E8", background:"#FAFAFA", color:"#1D1D1D" }}
                     onFocus={e => (e.currentTarget.style.borderColor = "#CF291D")}
                     onBlur={e  => (e.currentTarget.style.borderColor = "#E8E8E8")}>
-                    {RETURN_REASONS.map(r => (
-                      <option key={r.value} value={r.value}>{r.label}</option>
-                    ))}
+                    {RETURN_REASONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                   </select>
                 </div>
                 <div className="col-span-2">
-                  <label
-                    className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}
-                  >
-                    Notes
-                  </label>
-                  <FocusInput
-                    type="text"
-                    value={form.notes}
-                    onChange={(e) => setField("notes", e.target.value)}
-                    placeholder="Additional details…"
-                  />
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Notes</label>
+                  <FocusInput type="text" value={form.notes}
+                    onChange={e => setField("notes", e.target.value)}
+                    placeholder="Additional details…" />
                 </div>
               </div>
               <div className="flex gap-2 mt-5 pt-4" style={{ borderTop: "1px solid #F3F4F6" }}>
@@ -731,7 +758,7 @@ export default function Returns() {
                   <Save size={14} /> Save Return
                 </button>
                 <button
-                  onClick={() => setForm(null)}
+                  onClick={() => resetForm()}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all"
                   style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
                 >
