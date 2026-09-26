@@ -1,11 +1,11 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "lottery-manager",
-  "version": "1.0.0",
+  "version": "1.0.10",
   "identifier": "com.ajithrohana.lotterymanager",
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVDOUU5N0Q0Mjk2NDQ1NTUKUldSVlJXUXAxSmVlWFBBVGdjaEo3RCthbzIvQS93cW1WQWVJWWRjeEF3eHQ3ZndtTjJndlRUcE0K",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY5RDNCRjZENkNFOUQ5QTEKUldTaDJlbHNiYi9UYVVEWDd1M2Z3RlRQZVpQcVh0NjdlWE5uK1U1L3Q3YjBidkxROVN6dUtRN0sK",
       "endpoints": [
         "https://github.com/Victor-dev-03-cmd/lottery-software/releases/latest/download/latest.json"
       ],
