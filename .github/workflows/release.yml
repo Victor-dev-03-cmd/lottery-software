@@ -31,21 +31,43 @@ jobs:
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf
 
       - name: Install frontend dependencies
         run: bun install
 
-      - name: Build the app
+      - name: Build and publish
         uses: tauri-apps/tauri-action@v0.5.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Signing keys — required for in-app updater signature verification.
+          # Set these in GitHub → Settings → Secrets → Actions:
+          #   TAURI_SIGNING_PRIVATE_KEY  (from: tauri signer generate → private key)
+          #   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  (password you chose when generating)
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Lottery Manager ${{ github.ref_name }}"
-          releaseBody: "Download the installer for your platform below."
+          # tauri-action automatically generates and uploads latest.json to the release
+          # when TAURI_SIGNING_PRIVATE_KEY is set — this is what the in-app updater fetches.
+          releaseBody: |
+            ## Lottery Manager ${{ github.ref_name }}
+
+            ### Installation
+            - **Windows**: Download `Lottery.Manager_*_x64-setup.exe`
+            - **Linux (Debian)**: Download `lottery-manager_*_amd64.deb`
+
+            ### In-App Updates
+            If you already have the app installed, open **Settings → Software Updates** and click **Check for Updates** — it will download and install automatically.
+
+            ---
+            *Download the appropriate installer for your platform below.*
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
