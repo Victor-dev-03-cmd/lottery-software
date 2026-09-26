@@ -8,6 +8,7 @@ import {
 import type { LotteryResult } from "../types";
 import { saveLotteryResult, getLatestLotteryResult, getLotteryResultByDate } from "../services/database";
 import { pushResultToCloud, pullResultsFromCloud, subscribeToCloudUpdates } from "../services/supabase";
+import { resolveLogoUrl } from "./TicketLogoPicker";
 
 // ── Game catalog ──────────────────────────────────────────────────────────────
 
@@ -654,60 +655,58 @@ export default function LiveResults() {
       <div className="px-6 pb-8 space-y-5">
 
         {/* ── HERO HEADER ── */}
-        <div className="rounded-2xl overflow-hidden shadow-xl"
-          style={{ background:"linear-gradient(135deg,#0A0A0A 0%,#1A1A1A 50%,#0A0A0A 100%)",
-            border:"1px solid #2A2A2A",
-            boxShadow:"0 0 0 1px #CF291D22, 0 20px 60px rgba(0,0,0,0.5)" }}>
-          <div className="flex items-stretch" style={{ minHeight:130 }}>
-            {/* NLB */}
-            <div className="flex flex-col items-center justify-center px-6 py-4 shrink-0"
-              style={{ minWidth:130, background:"linear-gradient(180deg,#111 0%,#0D1A2E 100%)", borderRight:"1px solid #2A2A2A" }}>
-              <div className="rounded-xl overflow-hidden flex items-center justify-center mb-2"
-                style={{ width:88, height:66, background:"#fff", padding:4 }}>
-                <img src="/NLB.png" alt="NLB" className="object-contain w-full h-full"
-                  onError={e=>{(e.target as HTMLImageElement).style.display="none";}}/>
-              </div>
-              <p className="text-[9px] font-semibold text-center tracking-wide" style={{ color:"#64748B" }}>
-                National Lotteries Board
-              </p>
+        <div className="rounded-2xl overflow-hidden"
+          style={{ background:"linear-gradient(135deg,#0F172A 0%,#1E293B 60%,#0F172A 100%)",
+            border:"1px solid #1E293B",
+            boxShadow:"0 4px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(207,41,29,0.15)" }}>
+          <div style={{ display:"flex", alignItems:"center", padding:"20px 28px", gap:20 }}>
+            {/* NLB logo */}
+            <div style={{ flexShrink:0, background:"rgba(255,255,255,0.07)", borderRadius:12,
+              padding:"8px 14px", border:"1px solid rgba(255,255,255,0.08)" }}>
+              <img src="/NLB.png" alt="NLB" style={{ height:44, objectFit:"contain", display:"block" }}
+                onError={e=>{(e.target as HTMLImageElement).style.display="none";}}/>
+              <p style={{ fontSize:8, color:"#475569", marginTop:4, textAlign:"center",
+                fontWeight:600, textTransform:"uppercase", letterSpacing:"0.06em" }}>NLB</p>
             </div>
-            {/* Centre */}
-            <div className="flex-1 flex flex-col items-center justify-center px-6 py-5 text-center">
-              <p className="text-sm mb-2 font-medium" style={{ color:"#6B7280" }}>
-                ජයග්‍රාහී ප්‍රතිඵල &nbsp;<span style={{color:"#4B5563"}}>·</span>&nbsp; வெற்றி முடிவுகள்
+            {/* Centre text */}
+            <div style={{ flex:1, textAlign:"center" }}>
+              <p style={{ fontSize:11, color:"#475569", marginBottom:6, fontWeight:500 }}>
+                ජයග්‍රාහී ප්‍රතිඵල &nbsp;·&nbsp; வெற்றி முடிவுகள்
               </p>
-              <h1 className="flex items-center gap-3 font-black tracking-tight"
-                style={{ fontSize:26, color:"#FFFFFF", textShadow:"0 0 30px rgba(207,41,29,0.4)" }}>
-                <Trophy size={24} style={{ color:"#CF291D", filter:"drop-shadow(0 0 8px #CF291D80)" }}/>
+              <h1 style={{ fontSize:24, fontWeight:900, color:"#F1F5F9", margin:0,
+                display:"flex", alignItems:"center", justifyContent:"center", gap:10 }}>
+                <Trophy size={22} style={{ color:"#CF291D" }}/>
                 Live Lottery Results
               </h1>
-              <div className="mt-2.5 px-3 py-1 rounded-full text-xs font-medium"
-                style={{ background:"rgba(207,41,29,0.12)", border:"1px solid rgba(207,41,29,0.25)", color:"#CF291D" }}>
-                {new Date().toLocaleDateString("en-LK",{weekday:"short",year:"numeric",month:"short",day:"numeric"})}
+              <div style={{ marginTop:8, display:"inline-block", padding:"4px 14px",
+                borderRadius:20, fontSize:11, fontWeight:600,
+                background:"rgba(207,41,29,0.12)", border:"1px solid rgba(207,41,29,0.25)",
+                color:"#CF291D" }}>
+                {new Date().toLocaleDateString("en-LK",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}
               </div>
             </div>
-            {/* DLB */}
-            <div className="flex flex-col items-center justify-center px-6 py-4 shrink-0"
-              style={{ minWidth:130, background:"linear-gradient(180deg,#111 0%,#1A0A0A 100%)", borderLeft:"1px solid #2A2A2A" }}>
-              <div className="rounded-xl overflow-hidden flex items-center justify-center mb-2"
-                style={{ width:88, height:66, background:"#fff", padding:4 }}>
-                <img src="/BLB.jpeg" alt="DLB" className="object-contain w-full h-full"
-                  onError={e=>{(e.target as HTMLImageElement).style.display="none";}}/>
-              </div>
-              <p className="text-[9px] font-semibold text-center tracking-wide" style={{ color:"#64748B" }}>
-                Development Lotteries Board
-              </p>
+            {/* DLB logo */}
+            <div style={{ flexShrink:0, background:"rgba(255,255,255,0.07)", borderRadius:12,
+              padding:"8px 14px", border:"1px solid rgba(255,255,255,0.08)" }}>
+              <img src="/BLB.jpeg" alt="DLB" style={{ height:44, objectFit:"contain", display:"block" }}
+                onError={e=>{(e.target as HTMLImageElement).style.display="none";}}/>
+              <p style={{ fontSize:8, color:"#475569", marginTop:4, textAlign:"center",
+                fontWeight:600, textTransform:"uppercase", letterSpacing:"0.06em" }}>DLB</p>
             </div>
           </div>
           {/* Board tabs */}
-          <div className="flex" style={{ borderTop:"1px solid #2A2A2A" }}>
-            {(["NLB","DLB"] as const).map((b,i)=>(
+          <div style={{ display:"flex", borderTop:"1px solid rgba(255,255,255,0.06)" }}>
+            {(["NLB","DLB"] as const).map((b,i) => (
               <button key={b} onClick={()=>switchBoard(b)}
-                className="flex-1 py-2.5 text-sm font-bold transition-all"
                 style={{
-                  background: board===b ? "linear-gradient(90deg,#CF291D,#B50717)" : "transparent",
-                  color: board===b ? "#FFFFFF" : "#6B7280",
-                  borderRight: i===0 ? "1px solid #2A2A2A" : undefined,
+                  flex:1, padding:"11px 0", fontSize:13, fontWeight:700,
+                  background: board===b
+                    ? `linear-gradient(90deg,${b==="NLB"?"#CF291D,#991B1B":"#1d4ed8,#1e40af"})`
+                    : "transparent",
+                  color: board===b ? "#fff" : "#475569",
+                  border:"none", cursor:"pointer",
+                  borderRight: i===0 ? "1px solid rgba(255,255,255,0.06)" : undefined,
+                  transition:"all 0.15s",
                 }}>
                 {b==="NLB" ? "🇱🇰  National Lotteries Board" : "🎯  Development Lotteries Board"}
               </button>
@@ -715,57 +714,87 @@ export default function LiveResults() {
           </div>
         </div>
 
-        {/* ── GAME SELECTOR — fixed 4×2 grid (8 equal slots) ── */}
+        {/* ── GAME SELECTOR ── */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color:"#9CA3AF" }}>
-              Select Game · {board} · 8 Available
+              {board} Games · {games.length} Available
             </p>
             <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
-              style={{ background: board==="NLB" ? "#FEF2F2" : "#EFF6FF",
-                color: board==="NLB" ? "#CF291D" : "#2563eb" }}>
-              {board==="NLB" ? "National Lotteries Board" : "Development Lotteries Board"}
+              style={{ background: board==="NLB" ? "#EFF6FF" : "#FFF7ED",
+                color: board==="NLB" ? "#1d4ed8" : "#c2410c" }}>
+              {board==="NLB" ? "📘 National Lotteries Board" : "📙 Development Lotteries Board"}
             </span>
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10 }}>
             {games.map(g => {
               const isActive = selectedGame.slug===g.slug;
               const isHov    = hoveredGame===g.slug;
+              const logoUrl  = resolveLogoUrl(g.name);
               return (
                 <button key={g.slug} onClick={()=>selectGame(g)}
                   onMouseEnter={()=>setHovered(g.slug)} onMouseLeave={()=>setHovered(null)}
-                  className="flex flex-col items-start gap-2 p-4 rounded-2xl text-left transition-all"
                   style={{
-                    background:  isActive ? g.gradient : "#FFFFFF",
-                    border:      `2px solid ${isActive ? "transparent" : isHov ? g.glow+"60" : "#E8E8E8"}`,
-                    boxShadow:   isActive ? `0 0 0 1px ${g.glow}40,0 8px 24px ${g.glow}30` : isHov ? `0 4px 16px ${g.glow}20` : "0 1px 4px rgba(0,0,0,0.06)",
-                    transform:   isActive||isHov ? "translateY(-2px)" : "none",
-                    minHeight:   130,
+                    display:"flex", flexDirection:"column", alignItems:"center",
+                    gap:8, padding:"14px 10px", borderRadius:14, textAlign:"center",
+                    background: isActive ? "#111827" : "#FFFFFF",
+                    border: `2px solid ${isActive ? g.glow : isHov ? g.glow+"80" : "#E8E8E8"}`,
+                    boxShadow: isActive
+                      ? `0 0 0 1px ${g.glow}50, 0 8px 24px ${g.glow}35`
+                      : isHov ? `0 4px 12px ${g.glow}25` : "0 1px 4px rgba(0,0,0,0.06)",
+                    transform: isHov && !isActive ? "translateY(-2px)" : "none",
+                    cursor:"pointer", transition:"all 0.15s", position:"relative",
+                    minHeight:150,
                   }}>
-                  {/* Top row: board badge + days */}
-                  <div className="flex items-center justify-between w-full">
-                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded"
-                      style={{ background:isActive?"rgba(255,255,255,0.22)":g.glow+"18", color:isActive?"#fff":g.glow }}>
-                      {g.board}
-                    </span>
-                    <span className="text-[9px]" style={{ color:isActive?"rgba(255,255,255,0.55)":"#BFBFBF" }}>{g.days}</span>
+                  {/* Days badge */}
+                  <span style={{
+                    position:"absolute", top:8, right:8,
+                    fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:20,
+                    background: isActive ? `${g.glow}30` : "#F3F4F6",
+                    color: isActive ? g.glow : "#9CA3AF",
+                  }}>{g.days}</span>
+
+                  {/* Ticket logo */}
+                  <div style={{
+                    width:64, height:64, borderRadius:12, overflow:"hidden",
+                    background: isActive ? "rgba(255,255,255,0.08)" : "#F3F4F6",
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    border: isActive ? `1px solid ${g.glow}40` : "1px solid #E5E7EB",
+                    flexShrink:0,
+                  }}>
+                    <img src={logoUrl} alt={g.name}
+                      style={{ width:56, height:56, objectFit:"contain" }}
+                      onError={e => {
+                        const el = e.currentTarget as HTMLImageElement;
+                        el.style.display="none";
+                        const parent = el.parentElement;
+                        if (parent) {
+                          parent.style.background = g.gradient;
+                          parent.innerHTML = `<span style="font-size:22px">🎫</span>`;
+                        }
+                      }}/>
                   </div>
-                  {/* Icon */}
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ background:isActive?"rgba(255,255,255,0.22)":g.gradient,
-                      boxShadow:isActive?"none":`0 4px 12px ${g.glow}35` }}>
-                    <Trophy size={18} className="text-white"/>
-                  </div>
+
                   {/* Name */}
-                  <div className="flex-1">
-                    <p className="text-sm font-bold leading-tight" style={{ color:isActive?"#FFFFFF":"#1D1D1D" }}>{g.name}</p>
-                    <p className="text-[10px] mt-0.5" style={{ color:isActive?"rgba(255,255,255,0.65)":"#9CA3AF" }}>{g.nameLocal}</p>
+                  <div>
+                    <p style={{ fontSize:11, fontWeight:800, lineHeight:1.2,
+                      color: isActive ? "#FFFFFF" : "#111827" }}>
+                      {g.name}
+                    </p>
+                    <p style={{ fontSize:9, marginTop:2,
+                      color: isActive ? g.glow : "#9CA3AF" }}>
+                      {g.nameLocal}
+                    </p>
                   </div>
+
                   {/* Jackpot */}
                   {g.jackpot && (
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full w-full text-center"
-                      style={{ background:isActive?"rgba(255,255,255,0.18)":"#F5F5F5",
-                        color:isActive?"#fff":"#16a34a" }}>
+                    <span style={{
+                      fontSize:9, fontWeight:700, padding:"3px 8px", borderRadius:20,
+                      background: isActive ? `${g.glow}25` : "#F0FDF4",
+                      color: isActive ? g.glow : "#16a34a",
+                      border: isActive ? `1px solid ${g.glow}40` : "1px solid #BBF7D0",
+                    }}>
                       🏆 {g.jackpot}
                     </span>
                   )}
