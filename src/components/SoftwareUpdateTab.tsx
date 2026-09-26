@@ -19,15 +19,27 @@ import { check, type Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { RefreshCw, Download, CheckCircle, AlertTriangle, ExternalLink } from "lucide-react";
 
+const GITHUB_API = "https://api.github.com/repos/Victor-dev-03-cmd/lottery-software/releases/latest";
+
 type Phase =
   | "idle"
   | "checking"
   | "up-to-date"
-  | "available"
+  | "available"           // native Tauri updater — silent install possible
+  | "available-manual"    // latest.json missing — show manual download link
   | "downloading"
   | "installing"
   | "done"
   | "error";
+
+interface GhRelease {
+  tag_name: string;
+  name: string;
+  body: string | null;
+  published_at: string;
+  html_url: string;
+  assets: { name: string; browser_download_url: string; size: number }[];
+}
 
 function ReleaseNotes({ body }: { body: string }) {
   const lines = body.split("\n");
@@ -52,35 +64,65 @@ function ReleaseNotes({ body }: { body: string }) {
 
 export default function SoftwareUpdateTab() {
   const [phase, setPhase]         = useState<Phase>("idle");
-  const [currentVer, setCurrentVer] = useState("");
-  const [update, setUpdate]       = useState<Update | null>(null);
-  const [downloaded, setDownloaded] = useState(0);
-  const [total, setTotal]         = useState(0);
-  const [errMsg, setErrMsg]       = useState("");
+  const [currentVer, setCurrentVer]   = useState("");
+  const [update, setUpdate]           = useState<Update | null>(null);
+  const [ghRelease, setGhRelease]     = useState<GhRelease | null>(null);
+  const [downloaded, setDownloaded]   = useState(0);
+  const [total, setTotal]             = useState(0);
+  const [errMsg, setErrMsg]           = useState("");
 
   const pct = total > 0 ? Math.min(100, Math.round((downloaded / total) * 100)) : 0;
+
+  function semverGt(a: string, b: string) {
+    const p = (v: string) => v.replace(/^v/, "").split(".").map(Number);
+    const [aMaj,aMin,aPatch] = p(a);
+    const [bMaj,bMin,bPatch] = p(b);
+    if (aMaj !== bMaj) return aMaj > bMaj;
+    if (aMin !== bMin) return aMin > bMin;
+    return aPatch > bPatch;
+  }
 
   async function handleCheck() {
     setPhase("checking");
     setUpdate(null);
+    setGhRelease(null);
     setErrMsg("");
+
+    const ver = await getVersion().catch(() => "");
+    setCurrentVer(ver);
+
+    // ── Step 1: Try Tauri native updater (requires latest.json + signing keys) ──
     try {
-      const ver = await getVersion();
-      setCurrentVer(ver);
       const u = await check();
       if (u?.available) {
         setUpdate(u);
         setPhase("available");
+        return;
+      }
+      // check() succeeded but no update — we're up to date
+      setPhase("up-to-date");
+      return;
+    } catch (nativeErr) {
+      // Native updater failed (latest.json missing, network error, signing mismatch)
+      console.warn("Native updater failed, falling back to GitHub API:", nativeErr);
+    }
+
+    // ── Step 2: Fallback — query GitHub API directly ──────────────────────────
+    try {
+      const resp = await fetch(GITHUB_API, {
+        headers: { "Accept": "application/vnd.github+json" },
+      });
+      if (!resp.ok) throw new Error(`GitHub API ${resp.status}`);
+      const rel: GhRelease = await resp.json();
+      const latestVer = rel.tag_name.replace(/^v/, "");
+      if (ver && semverGt(latestVer, ver)) {
+        setGhRelease(rel);
+        setPhase("available-manual");
       } else {
         setPhase("up-to-date");
       }
-    } catch (e) {
-      console.error("Update check failed:", e);
-      setErrMsg(
-        String(e).includes("404") || String(e).includes("latest.json")
-          ? "Could not reach the update server. Check your internet connection or try again later."
-          : String(e)
-      );
+    } catch (ghErr) {
+      setErrMsg(`Cannot check for updates: ${String(ghErr)}. Verify your internet connection.`);
       setPhase("error");
     }
   }
@@ -186,7 +228,84 @@ export default function SoftwareUpdateTab() {
         </div>
       )}
 
-      {/* Update available */}
+      {/* ── Manual download fallback (latest.json not yet available) ── */}
+      {phase === "available-manual" && ghRelease && (() => {
+        const winAsset = ghRelease.assets.find(a => a.name.includes("x64-setup.exe") && !a.name.endsWith(".sig"));
+        const latestVer = ghRelease.tag_name.replace(/^v/, "");
+        return (
+          <div style={{ ...card }}>
+            <div style={{ padding: "14px 20px", background: "linear-gradient(135deg,#0F172A,#1E293B)",
+              display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <p style={{ fontSize: 15, fontWeight: 800, color: "#F1F5F9", margin: 0 }}>
+                  🎉 New Version Available
+                </p>
+                <p style={{ fontSize: 12, color: "#64748B", marginTop: 3 }}>
+                  v{currentVer} → <strong style={{ color: "#4ADE80" }}>v{latestVer}</strong>
+                  {ghRelease.published_at && (
+                    <span style={{ marginLeft: 8, color: "#94A3B8" }}>
+                      · Released {new Date(ghRelease.published_at).toLocaleDateString("en-LK")}
+                    </span>
+                  )}
+                </p>
+              </div>
+              <a href={ghRelease.html_url} target="_blank" rel="noreferrer"
+                style={{ display:"flex", alignItems:"center", gap:5, fontSize:11, color:"#64748B", textDecoration:"none" }}>
+                <ExternalLink size={12}/> View on GitHub
+              </a>
+            </div>
+            <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+              {/* Release notes */}
+              {ghRelease.body && (
+                <div>
+                  <p style={{ fontSize:11, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:"0.06em", margin:"0 0 8px" }}>What's New</p>
+                  <div style={{ background:"#F9FAFB", borderRadius:10, padding:"12px 14px", maxHeight:200, overflowY:"auto", border:"1px solid #E5E7EB" }}>
+                    <ReleaseNotes body={ghRelease.body} />
+                  </div>
+                </div>
+              )}
+
+              {/* Yellow notice about in-app install not available */}
+              <div style={{ padding:"10px 14px", background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:8, fontSize:11 }}>
+                <p style={{ fontWeight:700, color:"#92400E", margin:"0 0 4px" }}>
+                  ⚠ Silent install not available for this release
+                </p>
+                <p style={{ color:"#78350F", margin:0 }}>
+                  The automatic in-app installer requires a signed update manifest (<code>latest.json</code>) which is missing from this release.
+                  Set <strong>TAURI_SIGNING_PRIVATE_KEY</strong> in GitHub Secrets and rebuild to enable one-click updates.
+                  For now, download the installer below and run it manually.
+                </p>
+              </div>
+
+              {/* Download button */}
+              {winAsset ? (
+                <div style={{ display:"flex", gap:12, alignItems:"center", flexWrap:"wrap" }}>
+                  <a href={winAsset.browser_download_url} target="_blank" rel="noreferrer"
+                    style={{ display:"flex", alignItems:"center", gap:8, padding:"11px 22px",
+                      borderRadius:10, background:"#CF291D", color:"#fff",
+                      fontSize:13, fontWeight:800, textDecoration:"none",
+                      boxShadow:"0 4px 14px rgba(207,41,29,0.35)" }}>
+                    <Download size={15}/>
+                    Download Windows Installer ({(winAsset.size / 1024 / 1024).toFixed(1)} MB)
+                  </a>
+                  <p style={{ fontSize:11, color:"#9CA3AF", margin:0 }}>
+                    Run the .exe — it will upgrade your existing installation.
+                  </p>
+                </div>
+              ) : (
+                <a href={ghRelease.html_url} target="_blank" rel="noreferrer"
+                  style={{ display:"flex", alignItems:"center", gap:8, padding:"11px 22px",
+                    borderRadius:10, background:"#374151", color:"#fff",
+                    fontSize:13, fontWeight:800, textDecoration:"none" }}>
+                  <ExternalLink size={15}/> Open GitHub Releases
+                </a>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Update available — native silent install */}
       {(phase === "available" || phase === "downloading" || phase === "installing" || phase === "done") && update && (
         <div style={{ ...card }}>
           {/* Header */}
