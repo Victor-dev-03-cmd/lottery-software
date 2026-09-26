@@ -10,7 +10,7 @@ import {
 } from "../services/database";
 import { useAuth } from "../contexts/AuthContext";
 import type { PurchaseInvoice, LotteryGame } from "../types";
-import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode } from "../utils/barcode";
+import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, cleanBarcode } from "../utils/barcode";
 
 // ── Local types ───────────────────────────────────────────────────────────────
 
@@ -192,6 +192,11 @@ export default function SupplierReturns() {
 
   function setField(field: keyof SupplierReturn, value: string | number | null) {
     setForm((prev) => {
+      // Clean barcodes on input — strips \r \n tabs and non-digit chars from scanner
+      if ((field === "barcode_start" || field === "barcode_end") && value !== null) {
+        value = cleanBarcode(String(value));
+      }
+
       const updated = { ...prev, [field]: value } as SupplierReturn;
 
       // Barcode / qty cross-computation
@@ -717,8 +722,17 @@ export default function SupplierReturns() {
               <FieldLabel>Barcode Start {selectedBatchId ? <span style={{ color:"#16A34A", fontWeight:600 }}>✓ auto-filled</span> : ""}</FieldLabel>
               <FocusInput
                 type="text"
+                inputMode="numeric"
                 value={form.barcode_start}
                 onChange={(e) => setField("barcode_start", e.target.value)}
+                onFocus={(e) => e.target.select()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === "Tab") {
+                    e.preventDefault();
+                    // advance to barcode_end input
+                    (e.currentTarget.closest(".grid")?.querySelector("input:last-of-type") as HTMLElement)?.focus();
+                  }
+                }}
                 placeholder="62900474690"
                 mono
               />
@@ -727,8 +741,17 @@ export default function SupplierReturns() {
               <FieldLabel>Barcode End (auto)</FieldLabel>
               <FocusInput
                 type="text"
+                inputMode="numeric"
                 value={form.barcode_end}
                 onChange={(e) => setField("barcode_end", e.target.value)}
+                onFocus={(e) => e.target.select()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === "Tab") {
+                    e.preventDefault();
+                    // advance to qty input
+                    (e.currentTarget.closest(".grid")?.nextElementSibling?.querySelector("input") as HTMLElement)?.focus();
+                  }
+                }}
                 placeholder="Auto-calculated"
                 mono
               />

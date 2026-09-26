@@ -14,7 +14,7 @@ import {
   getBatchesForGame,
 } from "../services/database";
 import type { Agent, LotteryGame, Invoice, InvoiceItem, View } from "../types";
-import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode } from "../utils/barcode";
+import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, cleanBarcode } from "../utils/barcode";
 
 interface Props {
   editInvoiceId?: number | null;
@@ -173,24 +173,27 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
         }
 
         // ── Barcode auto-calculation ─────────────────────────────────────────
+        // Always clean barcodes: strips \r \n tabs and non-digit chars from scanner input
+        if (field === "barcode_start" || field === "barcode_end") {
+          const cleaned = cleanBarcode(String(value));
+          updated[field] = cleaned;
+          value = cleaned; // use cleaned for all calculations below
+        }
+
         if (field === "qty" && isNumericBarcode(updated.barcode_start)) {
-          // qty changed → recalculate end barcode
           updated.barcode_end = calcEndBarcode(updated.barcode_start, Number(value));
         } else if (
           field === "barcode_end" &&
           isNumericBarcode(updated.barcode_start) &&
           isNumericBarcode(String(value))
         ) {
-          // end barcode changed → recalculate qty (and value)
           const newQty = calcQtyFromBarcodes(updated.barcode_start, String(value));
           updated.qty = newQty;
           updated.value = Math.round(newQty * updated.unit_price * 100) / 100;
         } else if (field === "barcode_start" && isNumericBarcode(String(value))) {
           if (updated.qty > 0) {
-            // start changed, qty already set → recalculate end
             updated.barcode_end = calcEndBarcode(String(value), updated.qty);
           } else if (isNumericBarcode(updated.barcode_end)) {
-            // start changed, end already set → recalculate qty
             const newQty = calcQtyFromBarcodes(String(value), updated.barcode_end);
             updated.qty = newQty;
             updated.value = Math.round(newQty * updated.unit_price * 100) / 100;
@@ -750,26 +753,38 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                     <td className="px-2 py-1.5" id={`row-${i}-bc-start`}>
                       <input
                         type="text"
+                        inputMode="numeric"
                         value={item.barcode_start}
                         onChange={(e) => updateItem(i, "barcode_start", e.target.value)}
-                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); document.getElementById(`row-${i}-bc-end`)?.querySelector("input")?.focus(); }}}
+                        onKeyDown={e => {
+                          if (e.key === "Enter" || e.key === "Tab") {
+                            e.preventDefault();
+                            document.getElementById(`row-${i}-bc-end`)?.querySelector("input")?.focus();
+                          }
+                        }}
                         placeholder="Scan start barcode"
                         className="w-full rounded px-2 py-1 text-sm font-mono focus:outline-none"
                         style={{ border: "1px solid transparent", background: "transparent", color: "#1D1D1D" }}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = "#CF291D")}
+                        onFocus={(e) => { e.target.select(); e.currentTarget.style.borderColor = "#CF291D"; }}
                         onBlur={(e) => (e.currentTarget.style.borderColor = "transparent")}
                       />
                     </td>
                     <td className="px-2 py-1.5" id={`row-${i}-bc-end`}>
                       <input
                         type="text"
+                        inputMode="numeric"
                         value={item.barcode_end}
                         onChange={(e) => updateItem(i, "barcode_end", e.target.value)}
-                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); document.getElementById(`row-${i}-qty`)?.querySelector("input")?.focus(); }}}
+                        onKeyDown={e => {
+                          if (e.key === "Enter" || e.key === "Tab") {
+                            e.preventDefault();
+                            document.getElementById(`row-${i}-qty`)?.querySelector("input")?.focus();
+                          }
+                        }}
                         placeholder="Auto-filled"
                         className="w-full rounded px-2 py-1 text-sm font-mono focus:outline-none"
                         style={{ border: "1px solid transparent", background: "#F0FFF4", color: "#1D1D1D" }}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = "#CF291D")}
+                        onFocus={(e) => { e.target.select(); e.currentTarget.style.borderColor = "#CF291D"; }}
                         onBlur={(e) => (e.currentTarget.style.borderColor = "transparent")}
                       />
                     </td>

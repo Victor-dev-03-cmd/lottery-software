@@ -8,7 +8,7 @@ import {
 } from "../services/database";
 import type { Agent, Invoice, LotteryGame, TicketReturn, ReturnReason } from "../types";
 import { useAuth } from "../contexts/AuthContext";
-import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, lastTicketBarcode } from "../utils/barcode";
+import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, lastTicketBarcode, cleanBarcode } from "../utils/barcode";
 import TicketLogoPicker, { resolveLogoUrl } from "./TicketLogoPicker";
 
 interface ScannedItem {
@@ -88,7 +88,8 @@ export default function Returns() {
   // Auto-focus scan input when Quick Scan opens
   useEffect(() => {
     if (quickScanActive) {
-      setTimeout(() => scanInputRef.current?.focus(), 50);
+      // 150ms + rAF: WebView2 on Windows needs more time to composite DOM before focus lands
+      setTimeout(() => requestAnimationFrame(() => scanInputRef.current?.focus()), 150);
     }
   }, [quickScanActive]);
 
@@ -166,7 +167,8 @@ export default function Returns() {
   }
 
   function processScan(raw: string) {
-    const barcode = raw.trim();
+    // cleanBarcode strips \r \n tabs and non-digit characters — handles Windows scanner \r\n suffix
+    const barcode = cleanBarcode(raw);
     if (!barcode || !isNumericBarcode(barcode)) return;
 
     if (pendingStart === null) {
@@ -190,9 +192,11 @@ export default function Returns() {
   }
 
   function handleScanKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") {
+    // Handle Enter AND Tab — some scanners send Tab as the terminator
+    if (e.key === "Enter" || e.key === "Tab") {
       e.preventDefault();
-      processScan(scanInput);
+      // Read live DOM value (not React state) to avoid stale-state race on fast scanners
+      processScan(e.currentTarget.value);
       setScanInput("");
     }
   }
