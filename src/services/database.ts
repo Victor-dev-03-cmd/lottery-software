@@ -559,6 +559,28 @@ async function initSchema() {
     "ALTER TABLE purchase_invoice_items ADD COLUMN draw_number TEXT DEFAULT ''",
   ]) { try { await d.execute(col); } catch {} }
 
+  // Petty Cash — daily cash flow tracking
+  await d.execute(`
+    CREATE TABLE IF NOT EXISTS petty_cash_transactions (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      date       TEXT    NOT NULL,
+      category   TEXT    NOT NULL,
+      amount     REAL    NOT NULL,
+      reason     TEXT    NOT NULL DEFAULT '',
+      created_at TEXT    DEFAULT (datetime('now','localtime'))
+    )
+  `);
+  await d.execute(`
+    CREATE TABLE IF NOT EXISTS petty_cash_closings (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      date            TEXT    NOT NULL UNIQUE,
+      opening_balance REAL    NOT NULL DEFAULT 0,
+      actual_cash     REAL    NOT NULL DEFAULT 0,
+      notes           TEXT    DEFAULT '',
+      is_closed       INTEGER NOT NULL DEFAULT 0,
+      created_at      TEXT    DEFAULT (datetime('now','localtime'))
+    )
+  `);
 }
 
 // ── Company Settings ──────────────────────────────────────────────────────────
@@ -2856,4 +2878,110 @@ export async function saveInvoiceTemplate(template: InvoiceTemplate): Promise<vo
     "INSERT OR REPLACE INTO app_settings (key, value) VALUES ('invoice_template', ?)",
     [JSON.stringify(template)]
   );
+}
+
+// ── Petty Cash ─────────────────────────────────────────────────────────────────
+
+export interface PettyCashTx {
+  id?: number;
+  date: string;
+  category: string;
+  amount: number;
+  reason: string;
+  created_at?: string;
+}
+
+export interface PettyCashClosing {
+  id?: number;
+  date: string;
+  opening_balance: number;
+  actual_cash: number;
+  notes: string;
+  is_closed: number;
+}
+
+/** All outflow transactions for a given date */
+export async function getPettyCashTransactions(date: string): Promise<PettyCashTx[]> {
+  const d = await getDb();
+  return d.select<PettyCashTx[]>(
+    "SELECT * FROM petty_cash_transactions WHERE date=? ORDER BY created_at ASC",
+    [date]
+  );
+}
+
+/** Add a new petty cash outflow */
+export async function addPettyCashTransaction(tx: PettyCashTx): Promise<number> {
+  const d = await getDb();
+  const r = await d.execute(
+    "INSERT INTO petty_cash_transactions (date, category, amount, reason) VALUES (?,?,?,?)",
+    [tx.date, tx.category, tx.amount, tx.reason]
+  );
+  return r.lastInsertId as number;
+}
+
+/** Update an existing petty cash outflow */
+export async function updatePettyCashTransaction(tx: PettyCashTx): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE petty_cash_transactions SET category=?, amount=?, reason=? WHERE id=?",
+    [tx.category, tx.amount, tx.reason, tx.id]
+  );
+}
+
+/** Delete a petty cash outflow */
+export async function deletePettyCashTransaction(id: number): Promise<void> {
+  const d = await getDb();
+  await d.execute("DELETE FROM petty_cash_transactions WHERE id=?", [id]);
+}
+
+/** Get the daily closing record for a date */
+export async function getPettyCashClosing(date: string): Promise<PettyCashClosing | null> {
+  const d = await getDb();
+  const rows = await d.select<PettyCashClosing[]>(
+    "SELECT * FROM petty_cash_closings WHERE date=?", [date]
+  );
+  return rows[0] ?? null;
+}
+
+/** Save/update daily closing (opening balance + actual cash + notes) */
+export async function savePettyCashClosing(closing: PettyCashClosing): Promise<void> {
+  const d = await getDb();
+  await d.execute(`
+    INSERT INTO petty_cash_closings (date, opening_balance, actual_cash, notes, is_closed)
+    VALUES (?,?,?,?,?)
+    ON CONFLICT(date) DO UPDATE SET
+      opening_balance=excluded.opening_balance,
+      actual_cash=excluded.actual_cash,
+      notes=excluded.notes,
+      is_closed=excluded.is_closed
+  `, [closing.date, closing.opening_balance, closing.actual_cash, closing.notes, closing.is_closed]);
+}
+
+/** Aggregate daily income from invoices + post-delivery payments for a date */
+export async function getDailyIncome(date: string): Promise<{
+  invoice_cash: number;   // cash_received at delivery on confirmed/paid invoices
+  post_payments: number;  // cash payments recorded in Payment Ledger for that date
+  daily_collections: number; // cash from daily_collections table
+  total: number;
+}> {
+  const d = await getDb();
+  const [invRow] = await d.select<{ total: number }[]>(`
+    SELECT COALESCE(SUM(cash_received),0) as total
+    FROM invoices
+    WHERE invoice_date=? AND COALESCE(invoice_status,'paid') NOT IN ('draft','cancelled')
+  `, [date]);
+  const [payRow] = await d.select<{ total: number }[]>(`
+    SELECT COALESCE(SUM(amount),0) as total
+    FROM payments
+    WHERE payment_date=? AND payment_type='cash'
+  `, [date]);
+  const [dcRow] = await d.select<{ total: number }[]>(`
+    SELECT COALESCE(SUM(cash_amount),0) as total
+    FROM daily_collections
+    WHERE collection_date=?
+  `, [date]);
+  const inv = invRow?.total ?? 0;
+  const pay = payRow?.total ?? 0;
+  const dc  = dcRow?.total ?? 0;
+  return { invoice_cash: inv, post_payments: pay, daily_collections: dc, total: inv + pay + dc };
 }

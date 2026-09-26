@@ -14,6 +14,7 @@ import Ledger from "./components/Ledger";
 import Returns from "./components/Returns";
 import DailyCollectionView from "./components/DailyCollection";
 import Commission from "./components/Commission";
+import PettyCash from "./components/PettyCash";
 import Alerts from "./components/Alerts";
 import LiveResults from "./components/LiveResults";
 import Purchases from "./components/Purchases";
@@ -277,6 +278,7 @@ function AppInner({
           {effectiveView === "returns"          && can("returns")          && <Returns />}
           {effectiveView === "collections"      && <DailyCollectionView />}
           {effectiveView === "commission"       && can("commission")       && <Commission />}
+          {effectiveView === "petty-cash"       && <PettyCash />}
           {effectiveView === "alerts"           && <Alerts />}
           {effectiveView === "live-results"     && <LiveResults />}
           {effectiveView === "purchases"          && can("purchases")          && <Purchases />}

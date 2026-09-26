@@ -3,7 +3,7 @@ import {
   BarChart2, Settings, ChevronLeft, ChevronRight,
   Ticket, RotateCcw, ClipboardList, Percent, Bell, Trophy, ShoppingCart,
   TrendingUp, Network, Brain, Printer, UserCog,
-  Warehouse, HandCoins, FileClock, FileCheck, FileX, Palette, BookOpen,
+  Warehouse, HandCoins, FileClock, FileCheck, FileX, Palette, BookOpen, Wallet,
 } from "lucide-react";
 import { useAuth, CASHIER_ALLOWED } from "../../contexts/AuthContext";
 import type { View } from "../../types";
@@ -50,6 +50,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { view: "collections", label: "Daily Collections", icon: <ClipboardList size={17} /> },
       { view: "commission",  label: "Commission",        icon: <Percent size={17} /> },
+      { view: "petty-cash",  label: "Petty Cash",        icon: <Wallet size={17} /> },
     ],
   },
   {

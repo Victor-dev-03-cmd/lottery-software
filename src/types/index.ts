@@ -385,7 +385,8 @@ export type View =
   | "distribution"
   | "payroll"
   | "ai-analytics"
-  | "print-export";
+  | "print-export"
+  | "petty-cash";
 
 // ── Payroll ───────────────────────────────────────────────────────────────────
 
