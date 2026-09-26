@@ -27,25 +27,30 @@ function fmtRs(n: number) {
 
 // ── Totals row helper ─────────────────────────────────────────────────────────
 function TRow({
-  label, value, bold, separator, accent,
+  label, labelSi, value, bold, separator, accent, green,
 }: {
-  label: string; value: string; bold?: boolean; separator?: boolean; accent?: boolean;
+  label: string; labelSi?: string; value: string;
+  bold?: boolean; separator?: boolean; accent?: boolean; green?: boolean;
 }) {
+  const color = accent ? "#CF291D" : green ? "#16A34A" : bold ? "#111827" : "#4B5563";
   return (
-    <tr style={{
-      borderTop: separator ? "1.5px solid #1A1A1A" : undefined,
-    }}>
+    <tr style={{ borderTop: separator ? "1.5px solid #1A1A1A" : undefined }}>
       <td style={{
         padding: "3px 12px 3px 0", textAlign: "right",
         fontWeight: bold ? 700 : 400,
-        fontSize: bold ? "9.5pt" : "9pt",
-        color: accent ? "#CF291D" : bold ? "#111827" : "#4B5563",
-      }}>{label}</td>
+        fontSize: bold ? "9.5pt" : "9pt", color,
+      }}>
+        {label}
+        {labelSi && (
+          <span style={{ display: "block", fontSize: "8pt", fontWeight: 400, color: "#9CA3AF", lineHeight: 1.2 }}>
+            {labelSi}
+          </span>
+        )}
+      </td>
       <td style={{
         padding: "3px 0", textAlign: "right", minWidth: "120px",
         fontWeight: bold ? 800 : 500,
-        fontSize: bold ? "10pt" : "9pt",
-        color: accent ? "#CF291D" : bold ? "#111827" : "#374151",
+        fontSize: bold ? "10pt" : "9pt", color,
       }}>{value}</td>
     </tr>
   );
@@ -58,12 +63,16 @@ export default function InvoiceA4Preview({
   status,
   primaryColor,
   logoSrc,
+  postPayments = 0,
+  settledReturns = 0,
 }: {
   invoice: Invoice;
   company: CompanySettings | null;
   status: InvoiceStatus;
   primaryColor?: string;
   logoSrc?: string;
+  postPayments?: number;
+  settledReturns?: number;
 }) {
   const sc = STATUS_COLORS[status] ?? STATUS_COLORS.draft;
   const totalTickets = (invoice.items ?? []).reduce((s, it) => s + Number(it.qty), 0);
@@ -268,25 +277,51 @@ export default function InvoiceA4Preview({
           </tbody>
         </table>
 
-        {/* ── Totals ── */}
+        {/* ── Totals (with Sinhala labels) ── */}
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <table style={{ minWidth: "280px" }}>
+          <table style={{ minWidth: "300px" }}>
             <tbody>
-              <TRow label="INVOICE TOTAL"       value={`Rs. ${fmtRs(invoice.invoice_total)}`} bold />
+              <TRow
+                label="INVOICE TOTAL" labelSi="ඉන්වොයිස් මුළු මුදල"
+                value={`Rs. ${fmtRs(invoice.invoice_total)}`} bold />
               {invoice.prev_outstanding > 0 && (
-                <TRow label="Prev Outstanding Balance" value={`Rs. ${fmtRs(invoice.prev_outstanding)}`} />
+                <TRow
+                  label="Previous Outstanding" labelSi="පෙර ශේෂ මුදල"
+                  value={`Rs. ${fmtRs(invoice.prev_outstanding)}`} />
               )}
-              <TRow label="TOTAL PAYABLE"        value={`Rs. ${fmtRs(invoice.total_payable)}`}   bold separator />
+              <TRow
+                label="TOTAL PAYABLE" labelSi="ගෙවිය යුතු මුළු මුදල"
+                value={`Rs. ${fmtRs(invoice.total_payable)}`} bold separator />
               {invoice.cash_received > 0 && (
-                <TRow label="Cash Received"       value={`Rs. ${fmtRs(invoice.cash_received)}`} />
+                <TRow
+                  label="Cash Received (Delivery)" labelSi="බෙදාහැරීමේදී ලැබූ මුදල"
+                  value={`Rs. ${fmtRs(invoice.cash_received)}`} />
               )}
               {invoice.dlb_winning > 0 && (
-                <TRow label="DLB Winning Tickets" value={`Rs. ${fmtRs(invoice.dlb_winning)}`} />
+                <TRow
+                  label="DLB Winning Tickets" labelSi="DLB ජයග්‍රාහී ටිකට්"
+                  value={`Rs. ${fmtRs(invoice.dlb_winning)}`} />
               )}
               {invoice.nlb_winning > 0 && (
-                <TRow label="NLB Winning Tickets" value={`Rs. ${fmtRs(invoice.nlb_winning)}`} />
+                <TRow
+                  label="NLB Winning Tickets" labelSi="NLB ජයග්‍රාහී ටිකට්"
+                  value={`Rs. ${fmtRs(invoice.nlb_winning)}`} />
               )}
-              <TRow label="OUTSTANDING BALANCE"  value={`Rs. ${fmtRs(invoice.outstanding_balance)}`} bold accent separator />
+              {postPayments > 0 && (
+                <TRow
+                  label="Settle Outstanding" labelSi="හිඟ මුදල් ගෙවීම"
+                  value={`Rs. ${fmtRs(postPayments)}`} green />
+              )}
+              {settledReturns > 0 && (
+                <TRow
+                  label="Agent Return Amount" labelSi="නියෝජිත ආපසු ලබා දීම"
+                  value={`Rs. ${fmtRs(settledReturns)}`} green />
+              )}
+              <TRow
+                label={invoice.outstanding_balance <= 0 ? "FULLY PAID" : "OUTSTANDING BALANCE"}
+                labelSi={invoice.outstanding_balance <= 0 ? "සම්පූර්ණයෙන් ගෙවා ඇත" : "හිඟ ශේෂ මුදල"}
+                value={invoice.outstanding_balance <= 0 ? "Rs. 0.00" : `Rs. ${fmtRs(invoice.outstanding_balance)}`}
+                bold accent separator />
             </tbody>
           </table>
         </div>

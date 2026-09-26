@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Printer, ArrowLeft, Thermometer, FileText, MessageCircle } from "lucide-react";
-import { getInvoiceWithItems, getCompanySettings } from "../services/database";
+import { getInvoiceWithItems, getCompanySettings, getInvoicePaymentSummary } from "../services/database";
 import type { Invoice, CompanySettings, InvoiceStatus } from "../types";
 import InvoiceA4Preview from "./shared/InvoiceA4Preview";
 
@@ -19,18 +19,21 @@ function fmtDate(d: string) {
 export default function InvoicePrint({ invoiceId, onBack }: Props) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [company,  setCompany]  = useState<CompanySettings | null>(null);
+  const [paySum,   setPaySum]   = useState({ post_payments: 0, settled_returns: 0 });
   const [loading,  setLoading]  = useState(true);
   const [printMode, setPrintMode] = useState<PrintMode>("a4");
 
   useEffect(() => {
     async function load() {
       try {
-        const [inv, co] = await Promise.all([
+        const [inv, co, ps] = await Promise.all([
           getInvoiceWithItems(invoiceId),
           getCompanySettings(),
+          getInvoicePaymentSummary(invoiceId),
         ]);
         setInvoice(inv);
         setCompany(co);
+        setPaySum(ps);
       } finally { setLoading(false); }
     }
     load();
@@ -107,6 +110,8 @@ export default function InvoicePrint({ invoiceId, onBack }: Props) {
               invoice={{ ...invoice, outstanding_balance: liveBalance }}
               company={company}
               status={(invoice.invoice_status ?? "paid") as InvoiceStatus}
+              postPayments={paySum.post_payments}
+              settledReturns={paySum.settled_returns}
             />
           </div>
         ) : (

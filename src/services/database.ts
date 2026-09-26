@@ -1199,8 +1199,9 @@ async function syncInvoiceLiveBalance(
   // payments, settled_returns) are stable or accumulated — never the running balance itself.
   await d.execute("UPDATE invoices SET outstanding_balance=? WHERE id=?", [clamped, invoiceId]);
 
-  // Auto-advance waiting/confirmed → paid when fully settled
-  if ((invoice_status === "waiting" || invoice_status === "confirmed") && clamped <= 0) {
+  // Auto-advance 'waiting' → paid when fully settled.
+  // 'confirmed' invoices are NOT auto-advanced — admin must explicitly click the Paid button.
+  if (invoice_status === "waiting" && clamped <= 0) {
     await d.execute("UPDATE invoices SET invoice_status='paid' WHERE id=?", [invoiceId]);
     enqueueSync("invoices", "upsert", { id: invoiceId, invoice_status: "paid", outstanding_balance: 0 }, "id").catch(() => {});
   } else {
@@ -1210,6 +1211,21 @@ async function syncInvoiceLiveBalance(
 
 // Keep old name as alias so existing call-sites (autoMarkPaidIfSettled) compile
 const autoMarkPaidIfSettled = syncInvoiceLiveBalance;
+
+/** Returns post-delivery payments and settled returns for invoice print display */
+export async function getInvoicePaymentSummary(invoiceId: number): Promise<{
+  post_payments: number;   // sum of payments.amount linked to this invoice
+  settled_returns: number; // sum of settled ticket_returns.total_value for this invoice
+}> {
+  const d = await getDb();
+  const [pRow] = await d.select<{ total: number }[]>(
+    "SELECT COALESCE(SUM(amount),0) as total FROM payments WHERE invoice_id=?", [invoiceId]
+  );
+  const [rRow] = await d.select<{ total: number }[]>(
+    "SELECT COALESCE(SUM(total_value),0) as total FROM ticket_returns WHERE invoice_id=? AND status='settled'", [invoiceId]
+  );
+  return { post_payments: pRow?.total ?? 0, settled_returns: rRow?.total ?? 0 };
+}
 
 export async function savePayment(payment: import("../types").Payment): Promise<number> {
   const d = await getDb();
