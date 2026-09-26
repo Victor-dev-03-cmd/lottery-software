@@ -15,6 +15,7 @@ import type {
 } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 import { cleanBarcode, calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, lastTicketBarcode } from "../utils/barcode";
+import { getDrawNumber, getDrawInfo } from "../utils/drawNumbers";
 import TicketLogoPicker, { resolveLogoUrl } from "./TicketLogoPicker";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -315,10 +316,15 @@ export default function Purchases() {
       if (i !== index) return it;
       let next = { ...it, [field]: val };
 
-      // Auto-fill cost price when game is selected
-      if (field === "game_name" && gameCostMap[val as string]) {
-        next.unit_price = gameCostMap[val as string];
+      // Auto-fill cost price + draw number when game is selected
+      if (field === "game_name") {
+        if (gameCostMap[val as string]) next.unit_price = gameCostMap[val as string];
+        const date = editPurchase?.purchase_date ?? today();
+        const auto = getDrawNumber(val as string, date);
+        if (auto) next.draw_number = auto;
       }
+      // Re-calculate draw number when it was auto-set and date changes
+      if (field === "draw_number" as any) { /* user typed manually — keep as-is */ }
 
       // Barcode cleaning + auto-calc
       if (field === "barcode_start") {
@@ -475,7 +481,16 @@ export default function Purchases() {
                 <div>
                   <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Purchase Date</label>
                   <input type="date" value={editPurchase.purchase_date}
-                    onChange={e => setEdit({ ...editPurchase, purchase_date: e.target.value })}
+                    onChange={e => {
+                      const newDate = e.target.value;
+                      setEdit({ ...editPurchase, purchase_date: newDate });
+                      // Re-calculate draw numbers for all rows when date changes
+                      setFormItems(prev => prev.map(it => {
+                        if (!it.game_name) return it;
+                        const auto = getDrawNumber(it.game_name, newDate);
+                        return auto ? { ...it, draw_number: auto } : it;
+                      }));
+                    }}
                     className={inputCls} style={inputStyle("pd")}
                     onFocus={() => setFocused("pd")} onBlur={() => setFocused(null)}/>
                 </div>
@@ -557,13 +572,29 @@ export default function Purchases() {
                             </td>
 
                             {/* Draw number */}
-                            <td className="px-2 py-2" style={{ width:90 }}>
-                              <input value={it.draw_number ?? ""}
-                                onChange={e => updateItem(idx, "draw_number", e.target.value)}
-                                onKeyDown={e => { if (e.key==="Enter") { e.preventDefault(); setFormItems(p=>[...p,EMPTY_ITEM()]); }}}
-                                placeholder="e.g. 4521"
-                                className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none text-center font-mono"
-                                style={{ border:"1px solid #E8E8E8", background:"#FAFAFA" }}/>
+                            <td className="px-2 py-2" style={{ width:100 }}>
+                              {(() => {
+                                const date = editPurchase?.purchase_date ?? today();
+                                const info = it.game_name ? getDrawInfo(it.game_name, date) : null;
+                                return (
+                                  <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
+                                    <input value={it.draw_number ?? ""}
+                                      onChange={e => updateItem(idx, "draw_number", e.target.value)}
+                                      onKeyDown={e => { if (e.key==="Enter") { e.preventDefault(); setFormItems(p=>[...p,EMPTY_ITEM()]); }}}
+                                      placeholder={info?.drawNo || "e.g. 4521"}
+                                      className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none text-center font-mono"
+                                      style={{ border:`1px solid ${it.draw_number?"#2563EB":"#E8E8E8"}`,
+                                        background: it.draw_number?"#EFF6FF":"#FAFAFA",
+                                        color:"#1D4ED8", fontWeight:700 }}/>
+                                    {info?.drawNo && !it.draw_number && (
+                                      <div style={{ fontSize:9, color:"#6B7280", textAlign:"center", lineHeight:1.2 }}>
+                                        Auto: <strong style={{ color:"#2563EB" }}>#{info.drawNo}</strong>
+                                        <span style={{ color:"#9CA3AF" }}> (prev #{info.prevDrawNo})</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </td>
 
                             {/* Barcode Start — first physical ticket */}
