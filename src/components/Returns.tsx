@@ -4,6 +4,7 @@ import {
   getAgents, getInvoices, getLotteryGames,
   getTicketReturns, saveTicketReturn, settleTicketReturn, deleteTicketReturn, getReturnSummary,
   getBatchesForGame,
+  getInvoiceWithItems,
 } from "../services/database";
 import type { Agent, Invoice, LotteryGame, TicketReturn, ReturnReason } from "../types";
 import { useAuth } from "../contexts/AuthContext";
@@ -651,13 +652,31 @@ export default function Returns() {
                         const isSelected = selectedBatchId === b.id;
                         return (
                           <button key={b.id} type="button"
-                            onClick={() => {
+                            onClick={async () => {
                               setSelectedBatchId(b.id);
-                              // Use next_start_barcode (after already-sold tickets) as the return start
-                              const nextStart = b.next_start_barcode || b.barcode_start;
-                              setField("barcode_start", nextStart);
                               setField("unit_price", b.unit_price);
-                              if (form.qty > 0) setField("barcode_end", String(Number(nextStart) + form.qty));
+
+                              // For a return we need the barcode range the agent RECEIVED,
+                              // not the next-to-be-issued position.
+                              // Priority: linked invoice item → batch start
+                              let returnStart = b.barcode_start;
+
+                              if (form.invoice_id) {
+                                try {
+                                  const inv = await getInvoiceWithItems(form.invoice_id);
+                                  const matchItem = inv?.items?.find(
+                                    it => it.ticket_name === form.game_name &&
+                                         (it.purchase_batch_id === b.id ||
+                                          // fallback: barcode_start is within this batch's range
+                                          (Number(it.barcode_start) >= Number(b.barcode_start) &&
+                                           Number(it.barcode_start) < Number(b.barcode_end)))
+                                  );
+                                  if (matchItem?.barcode_start) returnStart = matchItem.barcode_start;
+                                } catch { /* use batch start as fallback */ }
+                              }
+
+                              setField("barcode_start", returnStart);
+                              if (form.qty > 0) setField("barcode_end", String(Number(returnStart) + form.qty));
                             }}
                             style={{
                               display:"flex", alignItems:"center", justifyContent:"space-between",
@@ -679,7 +698,8 @@ export default function Returns() {
                                 </span>
                               </div>
                               <div style={{ fontSize:9, color:"#6B7280", marginTop:2 }}>
-                                Next available start: <strong style={{ color:"#2563EB" }}>{b.next_start_barcode || b.barcode_start}</strong>
+                                Issued: <strong style={{ color:"#CF291D" }}>{b.sold_from_invoices.toLocaleString()}</strong> tickets ·
+                                Remaining in stock: <strong style={{ color:"#16A34A" }}>{b.remaining_qty.toLocaleString()}</strong>
                               </div>
                             </div>
                             <div style={{ textAlign:"right" }}>
