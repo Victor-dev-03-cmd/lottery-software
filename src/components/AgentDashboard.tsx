@@ -190,7 +190,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
   const kpiPeriodLabel = period === "All" ? "All-Time" : `${period} Revenue`;
 
   return (
-    <div style={{ background: C.surf, minHeight: "100%" }}>
+    <div style={{ background: "#F5F5F5", minHeight: "100%" }}>
 
       {/* ── Top chrome: breadcrumb + period controls ── */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
@@ -749,7 +749,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr style={{ background:"#FAFAFA", borderBottom:`1px solid ${C.bdr}` }}>
+                <tr style={{ background:"#F9FAFB", borderBottom:`1px solid ${C.bdr}` }}>
                   {["Name","Total Tickets","Total Value","Winnings","Cash","Paid","Over Total","Outstanding"].map(h=>(
                     <th key={h} className="px-4 py-3 text-left font-semibold"
                       style={{ fontSize:10, color:C.txt3, textTransform:"uppercase", letterSpacing:"0.04em" }}>
@@ -774,7 +774,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
                 {visible.map((r,i) => (
                   <tr key={r.agent_id}
                     className="transition-colors hover:bg-red-50/30"
-                    style={{ background: r.outstanding_balance>0 ? "#FFF8F8" : i%2===0 ? C.white : "#FCFCFC",
+                    style={{ background: r.outstanding_balance>0 ? "#FFF8F8" : i%2===0 ? "#FFFFFF" : "#F9FAFB",
                       borderBottom:`1px solid #F5F5F5` }}>
                     <td className="px-4 py-2.5 font-semibold text-xs" style={{ color:C.muted }}>
                       {r.outstanding_balance>0 && (
@@ -832,7 +832,7 @@ function KpiWhite({ icon, label, value, sub, trend, trendColor="#16a34a", onClic
     <div onClick={onClick}
       className="rounded-2xl p-5 transition-all shadow-sm"
       style={{ background:"#FFFFFF", border:`1px solid #E8E8E8`,
-        borderLeft:"4px solid #CF291D", cursor: onClick?"pointer":undefined }}>
+        borderTop:"3px solid #CF291D", cursor: onClick?"pointer":undefined }}>
       <div className="flex items-center justify-between mb-3">
         <div className="w-8 h-8 rounded-xl flex items-center justify-center"
           style={{ background:"#F4F4F4", color:"#374151" }}>

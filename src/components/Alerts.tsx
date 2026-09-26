@@ -385,7 +385,7 @@ export default function Alerts() {
                   <div>
                     {/* Column headers */}
                     <div className="px-4 py-2 grid gap-3"
-                      style={{ gridTemplateColumns: "2fr 1fr 1fr 1.5fr auto", borderBottom: "1px solid #F3F4F6", background: "#FAFAFA" }}>
+                      style={{ gridTemplateColumns: "2fr 1fr 1fr 1.5fr auto", borderBottom: "1px solid #F3F4F6", background: "#F9FAFB" }}>
                       {["Agent / Phone","Overdue","Invoices","Outstanding","Actions"].map(h => (
                         <p key={h} className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#9CA3AF" }}>{h}</p>
                       ))}
@@ -515,7 +515,7 @@ export default function Alerts() {
                 </div>
                 <table className="w-full">
                   <thead>
-                    <tr style={{ background: "#FAFAFA" }}>
+                    <tr style={{ background: "#F9FAFB" }}>
                       {["Game","Remaining","Threshold","Status"].map(h => (
                         <th key={h} className={`px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider ${h==="Game"?"text-left":"text-right last:text-left"}`}
                           style={{ color: "#9CA3AF" }}>{h}</th>

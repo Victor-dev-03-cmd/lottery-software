@@ -157,27 +157,27 @@ export default function DailyCollectionView() {
 
         {/* Summary metric cards */}
         <div className="grid grid-cols-5 gap-4 no-print">
-          <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #16a34a" }}>
+          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #16a34a" }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>Total Cash</p>
             <p className="text-2xl font-black" style={{ color: "#16a34a" }}>Rs. {fmt(totalCash)}</p>
             <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>cash collections</p>
           </div>
-          <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #2563eb" }}>
+          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #2563eb" }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>Total Cheque</p>
             <p className="text-2xl font-black" style={{ color: "#2563eb" }}>Rs. {fmt(totalCheque)}</p>
             <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>cheque receipts</p>
           </div>
-          <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #7c3aed" }}>
+          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #7c3aed" }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>NLB Winnings</p>
             <p className="text-2xl font-black" style={{ color: "#7c3aed" }}>Rs. {fmt(totalNlb)}</p>
             <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>NLB winning tickets</p>
           </div>
-          <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #EA580C" }}>
+          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #EA580C" }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>DLB Winnings</p>
             <p className="text-2xl font-black" style={{ color: "#EA580C" }}>Rs. {fmt(totalDlb)}</p>
             <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>DLB winning tickets</p>
           </div>
-          <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #CF291D" }}>
+          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #CF291D" }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>Grand Total</p>
             <p className="text-2xl font-black" style={{ color: "#CF291D" }}>Rs. {fmt(grandTotal)}</p>
             <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>{collections.length} entr{collections.length !== 1 ? "ies" : "y"}</p>
@@ -377,7 +377,7 @@ export default function DailyCollectionView() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr style={{ borderBottom: "1px solid #F9F9F9" }}>
+                  <tr style={{ background: "#F9FAFB", borderBottom: "1px solid #E8E8E8" }}>
                     <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>#</th>
                     <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Agent</th>
                     <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Collector</th>
@@ -394,7 +394,8 @@ export default function DailyCollectionView() {
                   {collections.map((c, i) => {
                     const rowTotal = c.cash_amount + c.cheque_amount + c.nlb_winning + c.dlb_winning;
                     return (
-                      <tr key={c.id} className="hover:bg-gray-50/60 transition-colors" style={{ borderBottom: "1px solid #F9F9F9" }}>
+                      <tr key={c.id} className="hover:bg-red-50/20 transition-colors"
+                        style={{ background: i % 2 === 0 ? "#FFFFFF" : "#F9FAFB", borderBottom: "1px solid #F3F4F6" }}>
                         <td className="px-4 py-3 text-sm" style={{ color: "#9CA3AF" }}>{i + 1}</td>
                         <td className="px-4 py-3 text-sm font-semibold" style={{ color: "#1D1D1D" }}>{c.agent_name}</td>
                         <td className="px-4 py-3 text-sm" style={{ color: "#6B7280" }}>{c.collector_name || "—"}</td>
