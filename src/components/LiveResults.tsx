@@ -452,6 +452,11 @@ export default function LiveResults() {
   const [nlbGames, setNlbGames]     = useState<GameInfo[]>(() => dedupeBySlug(NLB_GAMES));
   const [dlbGames, setDlbGames]     = useState<GameInfo[]>(() => dedupeBySlug(DLB_GAMES));
 
+  // ── Result lock: once a live fetch succeeds, block background/SQLite overwrites ──
+  // Using ref (not state) so the value is always current inside async event callbacks.
+  const confirmedRef = useRef(false);   // true = result was confirmed live
+  const confirmedSlugRef = useRef(""); // which slug is locked
+
   const games = board === "NLB" ? nlbGames : dlbGames;
 
   // ── Game lists: use hardcoded NLB_GAMES / DLB_GAMES as the single source of truth.
@@ -476,7 +481,12 @@ export default function LiveResults() {
     // ── Supabase realtime: push any cloud edits into local SQLite live ─────────
     const unsubCloud = subscribeToCloudUpdates(async (r, slug) => {
       try { await saveLotteryResult(r, slug); } catch { /* non-fatal */ }
-      if (slug === selectedGame.slug) setResult(r);
+      if (slug !== selectedGame.slug) return;
+      // Only update display if we don't have a confirmed live result locked for this slug
+      if (confirmedRef.current && confirmedSlugRef.current === slug) return;
+      if (r && !r.error && (r.winning_numbers?.length > 0 || r.winning_letter)) {
+        setResult(r);
+      }
     });
 
     // ── Rust background worker: result fetched → save local + push to cloud ────
@@ -485,9 +495,11 @@ export default function LiveResults() {
       if (!r || r.error) return;
       const slug = r.game_slug || r.game_name.toLowerCase().replace(/\s+/g, "-");
       try { await saveLotteryResult(r, slug); } catch { /* non-fatal */ }
-      // Non-blocking cloud push
       pushResultToCloud(r, slug).then(() => setCloudSynced(true)).catch(() => {});
-      if (slug === selectedGame.slug) {
+      if (slug !== selectedGame.slug) return;
+      // Block background result from overwriting a confirmed live fetch for this slug
+      if (confirmedRef.current && confirmedSlugRef.current === slug) return;
+      if (r.winning_numbers?.length > 0 || r.winning_letter) {
         setResult(r);
         setSaved(true); setTimeout(() => setSaved(false), 3000);
       }
@@ -507,20 +519,25 @@ export default function LiveResults() {
 
   // ── SQLite-first: load result by date on game or date change ─────────────────
   useEffect(() => {
+    // Clear the lock whenever the user switches game or date — the new context needs a fresh fetch
+    confirmedRef.current      = false;
+    confirmedSlugRef.current  = "";
     setResult(null);
     setDateNotFound(false);
     const today = new Date().toISOString().split("T")[0];
     const isToday = selectedDate === today;
 
     const load = isToday
-      ? getLatestLotteryResult(selectedGame.slug)          // latest for today/any
-      : getLotteryResultByDate(selectedGame.slug, selectedDate); // specific date
+      ? getLatestLotteryResult(selectedGame.slug)
+      : getLotteryResultByDate(selectedGame.slug, selectedDate);
 
     load.then(saved => {
+        // Don't overwrite if a confirmed live fetch already happened while we were loading
+        if (confirmedRef.current && confirmedSlugRef.current === selectedGame.slug) return;
         if (saved && !saved.error) {
           setResult(saved);
         } else if (!isToday) {
-          setDateNotFound(true); // historical date with no record
+          setDateNotFound(true);
         }
       })
       .catch(() => {});
@@ -561,6 +578,8 @@ export default function LiveResults() {
       const hasData = r && !r.error && (r.winning_numbers.length > 0 || r.winning_letter);
       if (hasData) {
         setResult(r);
+        confirmedRef.current     = true;   // lock this result
+        confirmedSlugRef.current = game.slug;
         await saveLotteryResult(r, game.slug).catch(() => {});
         pushResultToCloud(r, game.slug).catch(() => {});
         setSaved(true); setTimeout(() => setSaved(false), 3000);
@@ -595,23 +614,24 @@ export default function LiveResults() {
       const hasData = r && !r.error && (r.winning_numbers.length > 0 || r.winning_letter);
       if (hasData) {
         setResult(r);
+        confirmedRef.current     = true;   // lock this result
+        confirmedSlugRef.current = selectedGame.slug;
         await saveLotteryResult(r, selectedGame.slug).catch(() => {});
         pushResultToCloud(r, selectedGame.slug).catch(() => {});
         setSaved(true); setTimeout(() => setSaved(false), 3000);
         setCloudSynced(true);
       } else {
-        // Live failed — load from SQLite
+        // Live failed — load from SQLite (don't lock — this is a fallback)
         const saved = await getLatestLotteryResult(selectedGame.slug).catch(() => null);
         if (saved) {
           setResult(saved);
         } else {
-          // Truly no data — show the error message
-          setResult(r); // shows error state
+          setResult(r);
         }
       }
     } catch (e) {
       const saved = await getLatestLotteryResult(selectedGame.slug).catch(() => null);
-      setResult(saved); // never leave blank if we have SQLite data
+      setResult(saved);
     } finally {
       setLoading(false);
     }
@@ -619,11 +639,12 @@ export default function LiveResults() {
 
   async function saveAndDisplay(r: LotteryResult) {
     setResult(r);
+    confirmedRef.current     = true;   // manual entry = user-confirmed, lock it
+    confirmedSlugRef.current = selectedGame.slug;
     try {
       await saveLotteryResult(r, selectedGame.slug);
       setSaved(true); setTimeout(() => setSaved(false), 3000);
     } catch { /* non-fatal */ }
-    // Push to Supabase cloud (non-blocking)
     pushResultToCloud(r, selectedGame.slug).then(() => setCloudSynced(true)).catch(() => {});
   }
 
