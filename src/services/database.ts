@@ -94,6 +94,7 @@ async function initSchema() {
   const CANONICAL_GAMES: { name: string; unit_price: number; cost_price: number; board: string }[] = [
     // ── NLB — National Lottery Board ──────────────────────────────────────────
     { name: "Ada Sampatha",        unit_price: 650.00, cost_price: 650.00, board: "NLB" },
+    { name: "Ayubo",               unit_price:  32.50, cost_price:  32.50, board: "NLB" },
     { name: "Dhana Nidhanaya",     unit_price:  32.50, cost_price:  32.50, board: "NLB" },
     { name: "Govi Setha",          unit_price:  32.50, cost_price:  32.50, board: "NLB" },
     { name: "Hada Hana",           unit_price: 325.00, cost_price: 325.00, board: "NLB" },

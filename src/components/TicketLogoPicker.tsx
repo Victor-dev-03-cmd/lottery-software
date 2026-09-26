@@ -4,6 +4,7 @@ import { X, Search } from "lucide-react";
 // All available logos — filename maps to display name
 const NLB_LOGOS: { name: string; file: string }[] = [
   { name: "Ada Sampatha",       file: "Ada Sampatha.png" },
+  { name: "Ayubo",              file: "Ayubo.png" },
   { name: "Dhana Nidhanaya",    file: "Dhana Nidhanaya.png" },
   { name: "Govi Setha",         file: "Govi Setha.png" },
   { name: "Hada Hana",          file: "Hada Hana.png" },
@@ -27,6 +28,7 @@ const DLB_LOGOS: { name: string; file: string }[] = [
 // ── Shared logo resolver — usable by any page ─────────────────────────────────
 const LOGO_MAP: Record<string, [string, string]> = {
   "ada sampatha":         ["Ada Sampatha.png",         "nlb_logos"],
+  "ayubo":                ["Ayubo.png",                "nlb_logos"],
   "dhana nidhanaya":      ["Dhana Nidhanaya.png",       "nlb_logos"],
   "govi setha":           ["Govi Setha.png",            "nlb_logos"],
   "hada hana":            ["Hada Hana.png",             "nlb_logos"],

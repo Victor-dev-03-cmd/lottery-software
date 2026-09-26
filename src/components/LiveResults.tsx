@@ -18,9 +18,10 @@ interface GameInfo {
   jackpot?: string;
 }
 
-// ── NLB games — 8 active games from nlb.lk ───────────────────────────────────
+// ── NLB games — 9 active games from nlb.lk ───────────────────────────────────
 const NLB_GAMES: GameInfo[] = [
   { slug:"ada-sampatha",      name:"Ada Sampatha",      nameLocal:"අද සම්පත",    days:"Daily",   gradient:"linear-gradient(135deg,#831843,#ec4899)", glow:"#ec4899", board:"NLB", hasLetter:true, numberCount:6, hasSuperNum:false, jackpot:"Rs. 4M"   },
+  { slug:"ayubo",             name:"Ayubo",             nameLocal:"ආයුබෝ",        days:"Daily",   gradient:"linear-gradient(135deg,#064e3b,#10b981)", glow:"#10b981", board:"NLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 2M"   },
   { slug:"govisetha",         name:"Govisetha",         nameLocal:"ගොවිසෙත",     days:"Thu",     gradient:"linear-gradient(135deg,#14532d,#22c55e)", glow:"#22c55e", board:"NLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 3M"   },
   { slug:"mega-power",        name:"Mega Power",        nameLocal:"මෙගා පවර්",    days:"Daily",   gradient:"linear-gradient(135deg,#7f1d1d,#CF291D)",  glow:"#CF291D", board:"NLB", hasLetter:true, numberCount:5, hasSuperNum:false, jackpot:"Rs. 304M" },
   { slug:"nlb-jaya",          name:"NLB Jaya",          nameLocal:"NLB ජය",       days:"Tue",     gradient:"linear-gradient(135deg,#1f2937,#6b7280)", glow:"#9ca3af", board:"NLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 500k" },

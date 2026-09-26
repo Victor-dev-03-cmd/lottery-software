@@ -16,6 +16,7 @@ import type { InventoryBatch, LotteryGame } from "../types";
 // ── All 16 known NLB/DLB games ────────────────────────────────────────────────
 const ALL_GAMES: { name: string; board: "NLB" | "DLB" }[] = [
   { name: "Ada Sampatha",         board: "NLB" },
+  { name: "Ayubo",                board: "NLB" },
   { name: "Dhana Nidhanaya",      board: "NLB" },
   { name: "Govi Setha",           board: "NLB" },
   { name: "Hada Hana",            board: "NLB" },
