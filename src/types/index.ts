@@ -210,6 +210,7 @@ export interface TicketReturn {
   notes: string;
   created_at?: string;
   return_reason?: ReturnReason;
+  purchase_batch_id?: number | null; // which inventory batch these tickets came from
 }
 
 // ── Daily Collections ─────────────────────────────────────────────────────────

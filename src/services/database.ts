@@ -523,8 +523,9 @@ async function initSchema() {
     "ALTER TABLE inventory_batches ADD COLUMN nlb_dlb_category TEXT DEFAULT ''",
   ]) { try { await d.execute(col); } catch {} }
 
-  // ticket_returns — reason categorization
+  // ticket_returns — reason categorization + batch tracking
   try { await d.execute("ALTER TABLE ticket_returns ADD COLUMN return_reason TEXT DEFAULT 'unsold'"); } catch {}
+  try { await d.execute("ALTER TABLE ticket_returns ADD COLUMN purchase_batch_id INTEGER DEFAULT NULL"); } catch {}
 
   // payments — cheque / bank details
   for (const col of [
@@ -1074,7 +1075,14 @@ export async function getBatchesForGame(gameName: string): Promise<{
       [b.game_name, b.barcode_start]
     );
     const realTotal = (purchRow?.purchased ?? 0) > 0 ? purchRow!.purchased : b.total_qty;
-    const remaining = realTotal - sold;
+
+    // Settled agent returns restore stock — add them back to remaining
+    const [retRow] = await d.select<{ returned: number }[]>(
+      `SELECT COALESCE(SUM(qty),0) as returned FROM ticket_returns WHERE purchase_batch_id=? AND status='settled'`,
+      [b.id]
+    );
+    const settledReturns = retRow?.returned ?? 0;
+    const remaining = realTotal - sold + settledReturns;
     return { ...b, total_qty: realTotal, sold_from_invoices: sold, next_start_barcode: nextStart, remaining_qty: remaining };
   }));
 }
@@ -1097,6 +1105,27 @@ export async function getBatchSalesDetail(batchId: number): Promise<{
     JOIN agents a ON a.id = i.agent_id
     WHERE ii.purchase_batch_id = ?
     ORDER BY ii.barcode_start ASC
+  `, [batchId]);
+}
+
+/**
+ * Agent returns linked to a specific batch (for the Stock Management popup).
+ */
+export async function getBatchReturns(batchId: number): Promise<{
+  id: number; agent_name: string; return_date: string;
+  barcode_start: string; barcode_end: string; qty: number;
+  return_reason: string; status: string;
+}[]> {
+  const d = await getDb();
+  return d.select(`
+    SELECT tr.id, a.name as agent_name, tr.return_date,
+           tr.barcode_start, tr.barcode_end, tr.qty,
+           COALESCE(tr.return_reason,'unsold') as return_reason,
+           tr.status
+    FROM ticket_returns tr
+    JOIN agents a ON a.id = tr.agent_id
+    WHERE tr.purchase_batch_id = ?
+    ORDER BY tr.return_date DESC
   `, [batchId]);
 }
 
@@ -1488,32 +1517,32 @@ export async function getTicketReturns(agentId?: number) {
 
 export async function saveTicketReturn(ret: import("../types").TicketReturn): Promise<number> {
   const d = await getDb();
+  const batchId = ret.purchase_batch_id ?? null;
   const payload = {
     agent_id: ret.agent_id, invoice_id: ret.invoice_id ?? null, return_date: ret.return_date,
     game_name: ret.game_name, barcode_start: ret.barcode_start, barcode_end: ret.barcode_end,
     qty: ret.qty, unit_price: ret.unit_price, total_value: ret.total_value, status: ret.status,
-    notes: ret.notes, return_reason: ret.return_reason ?? "unsold",
+    notes: ret.notes, return_reason: ret.return_reason ?? "unsold", purchase_batch_id: batchId,
   };
   if (ret.id) {
     await d.execute(
       `UPDATE ticket_returns SET agent_id=?,invoice_id=?,return_date=?,game_name=?,
-       barcode_start=?,barcode_end=?,qty=?,unit_price=?,total_value=?,status=?,notes=?,return_reason=? WHERE id=?`,
+       barcode_start=?,barcode_end=?,qty=?,unit_price=?,total_value=?,status=?,notes=?,return_reason=?,purchase_batch_id=? WHERE id=?`,
       [ret.agent_id,ret.invoice_id??null,ret.return_date,ret.game_name,
        ret.barcode_start,ret.barcode_end,ret.qty,ret.unit_price,ret.total_value,ret.status,ret.notes,
-       ret.return_reason??'unsold', ret.id]
+       ret.return_reason??'unsold', batchId, ret.id]
     );
     enqueueSync("ticket_returns","upsert",{ id:ret.id,...payload },"id").catch(()=>{});
-    // If the status was changed to 'settled' via an edit, sync the invoice balance (H-11)
     if (ret.invoice_id) await syncInvoiceLiveBalance(d, ret.invoice_id);
     return ret.id;
   }
   const r = await d.execute(
     `INSERT INTO ticket_returns
-     (agent_id,invoice_id,return_date,game_name,barcode_start,barcode_end,qty,unit_price,total_value,status,notes,return_reason)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+     (agent_id,invoice_id,return_date,game_name,barcode_start,barcode_end,qty,unit_price,total_value,status,notes,return_reason,purchase_batch_id)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [ret.agent_id,ret.invoice_id??null,ret.return_date,ret.game_name,
      ret.barcode_start,ret.barcode_end,ret.qty,ret.unit_price,ret.total_value,ret.status,ret.notes,
-     ret.return_reason??'unsold']
+     ret.return_reason??'unsold', batchId]
   );
   const id = r.lastInsertId as number;
   enqueueSync("ticket_returns","upsert",{ id,...payload },"id").catch(()=>{});
@@ -1522,17 +1551,21 @@ export async function saveTicketReturn(ret: import("../types").TicketReturn): Pr
 
 export async function settleTicketReturn(id: number): Promise<void> {
   const d = await getDb();
-  // Read the invoice_id before settling so we can check if it's now fully paid
-  const rows = await d.select<{ invoice_id: number | null }[]>(
-    "SELECT invoice_id FROM ticket_returns WHERE id=?", [id]
+  const rows = await d.select<{ invoice_id: number | null; purchase_batch_id: number | null; qty: number }[]>(
+    "SELECT invoice_id, purchase_batch_id, qty FROM ticket_returns WHERE id=?", [id]
   );
   await d.execute("UPDATE ticket_returns SET status='settled' WHERE id=?", [id]);
-  // Auto-advance invoice to 'paid' if this return clears the outstanding balance
-  if (rows.length) await autoMarkPaidIfSettled(d, rows[0].invoice_id);
-  // NOTE: Returned tickets are NOT automatically added back to inventory.
-  // Ajith Rohana manually scans returned tickets, separates winners/cash-value tickets,
-  // and discards the rest. Stock adjustments are made manually via the Inventory page
-  // or via "Sync Stock" if needed.
+  if (rows.length) {
+    await autoMarkPaidIfSettled(d, rows[0].invoice_id);
+    // Restore stock: if return is linked to a batch, reduce distributed_qty so remaining goes back up
+    if (rows[0].purchase_batch_id) {
+      await d.execute(
+        "UPDATE inventory_batches SET distributed_qty = MAX(0, distributed_qty - ?) WHERE id=?",
+        [rows[0].qty, rows[0].purchase_batch_id]
+      );
+      await enqueueBatchSync(d, rows[0].purchase_batch_id);
+    }
+  }
 }
 
 export async function deleteTicketReturn(id: number): Promise<void> {

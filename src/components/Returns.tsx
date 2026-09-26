@@ -129,13 +129,14 @@ export default function Returns() {
     if (!form) return;
     if (!form.game_name.trim()) { alert("Game name required."); return; }
     if (form.qty <= 0) { alert("Quantity must be > 0."); return; }
-    await saveTicketReturn(form);
+    // Attach the selected batch so stock can be restored when settled
+    await saveTicketReturn({ ...form, purchase_batch_id: selectedBatchId ?? undefined });
     resetForm();
     load();
   }
 
   async function handleSettle(id: number) {
-    if (!confirm("Mark this return as settled? This will credit the agent's outstanding balance. Stock must be adjusted manually after Ajith inspects the returned tickets.")) return;
+    if (!confirm("Mark this return as settled? This will restore the returned quantity back to the original batch and credit the agent's outstanding balance.")) return;
     setAuthError(null);
     try {
       await settleTicketReturn(id);

@@ -10,6 +10,7 @@ import {
   syncInventoryFromTransactions,
   getBatchesForGame,
   getBatchSalesDetail,
+  getBatchReturns,
 } from "../services/database";
 import type { InventoryBatch, LotteryGame } from "../types";
 
@@ -874,7 +875,8 @@ function BatchDetailPopup({
   onClose: () => void;
 }) {
   const [batchData, setBatchData] = React.useState<Awaited<ReturnType<typeof getBatchesForGame>>>([]);
-  const [salesRows, setSalesRows] = React.useState<Record<number, any[]>>({});
+  const [salesRows,  setSalesRows]  = React.useState<Record<number, any[]>>({});
+  const [returnRows, setReturnRows] = React.useState<Record<number, any[]>>({});
   const [expandedBatch, setExpandedBatch] = React.useState<number | null>(null);
   const fmt = (n: number) => n.toLocaleString();
 
@@ -884,8 +886,12 @@ function BatchDetailPopup({
 
   async function loadSales(batchId: number) {
     if (salesRows[batchId]) { setExpandedBatch(expandedBatch===batchId?null:batchId); return; }
-    const rows = await getBatchSalesDetail(batchId).catch(()=>[]);
-    setSalesRows(p=>({...p,[batchId]:rows}));
+    const [sales, returns] = await Promise.all([
+      getBatchSalesDetail(batchId).catch(()=>[]),
+      getBatchReturns(batchId).catch(()=>[]),
+    ]);
+    setSalesRows(p => ({...p, [batchId]: sales}));
+    setReturnRows(p => ({...p, [batchId]: returns}));
     setExpandedBatch(batchId);
   }
 
@@ -1013,6 +1019,50 @@ function BatchDetailPopup({
                         </tr>
                       </tfoot>
                     </table>
+                  )}
+                  {/* ── Agent Returns for this batch ── */}
+                  {expandedBatch===b.id && (returnRows[b.id]??[]).length > 0 && (
+                    <div style={{ padding:"0 16px 14px" }}>
+                      <div style={{ fontSize:10, fontWeight:700, color:"#D97706", textTransform:"uppercase",
+                        letterSpacing:"0.06em", padding:"6px 0 4px", borderTop:"1px solid #FDE68A",
+                        marginTop:4, display:"flex", alignItems:"center", gap:6 }}>
+                        ↩ Agent Returns from this batch
+                        <span style={{ background:"#FEF9C3", border:"1px solid #FDE68A",
+                          borderRadius:20, padding:"1px 8px", fontSize:9 }}>
+                          {(returnRows[b.id]??[]).reduce((s:number,r:any)=>s+r.qty,0).toLocaleString()} tickets back in stock
+                        </span>
+                      </div>
+                      <table style={{ width:"100%", fontSize:11, borderCollapse:"collapse" }}>
+                        <thead>
+                          <tr style={{ background:"#FFFBEB" }}>
+                            {["Agent","Date","Barcode Start","Barcode End","Qty","Reason","Status"].map(h => (
+                              <th key={h} style={{ padding:"4px 8px", textAlign:"left", fontWeight:700,
+                                color:"#92400E", fontSize:9, textTransform:"uppercase",
+                                borderBottom:"1px solid #FDE68A" }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(returnRows[b.id]??[]).map((r:any,i:number) => (
+                            <tr key={i} style={{ borderBottom:"1px solid #FFFBEB" }}>
+                              <td style={{ padding:"5px 8px", fontWeight:600, color:"#92400E" }}>{r.agent_name}</td>
+                              <td style={{ padding:"5px 8px", color:"#6B7280" }}>{r.return_date}</td>
+                              <td style={{ padding:"5px 8px", fontFamily:"monospace", color:"#2563EB", fontSize:10 }}>{r.barcode_start}</td>
+                              <td style={{ padding:"5px 8px", fontFamily:"monospace", color:"#7C3AED", fontSize:10 }}>{r.barcode_end}</td>
+                              <td style={{ padding:"5px 8px", fontWeight:700, color:"#16A34A" }}>{r.qty.toLocaleString()}</td>
+                              <td style={{ padding:"5px 8px", color:"#6B7280", textTransform:"capitalize" }}>{r.return_reason}</td>
+                              <td style={{ padding:"5px 8px" }}>
+                                <span style={{ padding:"1px 7px", borderRadius:20, fontSize:9, fontWeight:700,
+                                  background:r.status==="settled"?"#DCFCE7":"#FEF9C3",
+                                  color:r.status==="settled"?"#16A34A":"#92400E" }}>
+                                  {r.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
               )}
