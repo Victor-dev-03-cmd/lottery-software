@@ -17,28 +17,29 @@ interface GameInfo {
   gradient: string; glow: string; board: "NLB" | "DLB";
   hasLetter: boolean; numberCount: number; hasSuperNum: boolean;
   jackpot?: string;
+  logoName?: string; // canonical name for resolveLogoUrl when display name differs
 }
 
 // ── NLB games — 9 active games from nlb.lk ───────────────────────────────────
 const NLB_GAMES: GameInfo[] = [
   { slug:"ada-sampatha",      name:"Ada Sampatha",      nameLocal:"අද සම්පත",    days:"Daily",   gradient:"linear-gradient(135deg,#831843,#ec4899)", glow:"#ec4899", board:"NLB", hasLetter:true, numberCount:6, hasSuperNum:false, jackpot:"Rs. 4M"   },
   { slug:"ayubo",             name:"Ayubo",             nameLocal:"ආයුබෝ",        days:"Daily",   gradient:"linear-gradient(135deg,#064e3b,#10b981)", glow:"#10b981", board:"NLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 2M"   },
-  { slug:"govisetha",         name:"Govisetha",         nameLocal:"ගොවිසෙත",     days:"Thu",     gradient:"linear-gradient(135deg,#14532d,#22c55e)", glow:"#22c55e", board:"NLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 3M"   },
+  { slug:"govisetha",         name:"Govisetha",         nameLocal:"ගොවිසෙත",     days:"Thu",     gradient:"linear-gradient(135deg,#14532d,#22c55e)", glow:"#22c55e", board:"NLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 3M",   logoName:"Govi Setha"          },
   { slug:"mega-power",        name:"Mega Power",        nameLocal:"මෙගා පවර්",    days:"Daily",   gradient:"linear-gradient(135deg,#7f1d1d,#CF291D)",  glow:"#CF291D", board:"NLB", hasLetter:true, numberCount:5, hasSuperNum:false, jackpot:"Rs. 304M" },
   { slug:"nlb-jaya",          name:"NLB Jaya",          nameLocal:"NLB ජය",       days:"Tue",     gradient:"linear-gradient(135deg,#1f2937,#6b7280)", glow:"#9ca3af", board:"NLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 500k" },
-  { slug:"handahana",         name:"Handahana",         nameLocal:"හද හන",       days:"Tue",     gradient:"linear-gradient(135deg,#78350f,#fb923c)", glow:"#fb923c", board:"NLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 2M"   },
+  { slug:"handahana",         name:"Handahana",         nameLocal:"හද හන",       days:"Tue",     gradient:"linear-gradient(135deg,#78350f,#fb923c)", glow:"#fb923c", board:"NLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 2M",   logoName:"Hada Hana"           },
   { slug:"mahajana-sampatha", name:"Mahajana Sampatha", nameLocal:"මහජන සම්පත",  days:"Tue/Sat", gradient:"linear-gradient(135deg,#1e40af,#3b82f6)", glow:"#3b82f6", board:"NLB", hasLetter:true, numberCount:6, hasSuperNum:true,  jackpot:"Rs. 10M"  },
   { slug:"dhana-nidhanaya",   name:"Dhana Nidhanaya",   nameLocal:"ධන නිධානය",    days:"Thu",     gradient:"linear-gradient(135deg,#92400e,#f59e0b)", glow:"#f59e0b", board:"NLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 5M"   },
-  { slug:"suba-dawasak",      name:"Suba Dawasak",      nameLocal:"සුබ දවසක",    days:"Daily",   gradient:"linear-gradient(135deg,#064e3b,#34d399)", glow:"#34d399", board:"NLB", hasLetter:true, numberCount:3, hasSuperNum:false, jackpot:"Rs. 1M"   },
+  { slug:"suba-dawasak",      name:"Suba Dawasak",      nameLocal:"සුබ දවසක",    days:"Daily",   gradient:"linear-gradient(135deg,#064e3b,#34d399)", glow:"#34d399", board:"NLB", hasLetter:true, numberCount:3, hasSuperNum:false, jackpot:"Rs. 1M",   logoName:"Suba Dasawak"        },
 ];
 
 // ── DLB games — 8 active games from dlb.lk ───────────────────────────────────
 const DLB_GAMES: GameInfo[] = [
   { slug:"dlb-sasiri",                name:"Sasiri",                nameLocal:"සාසිරි",          days:"Thu",     gradient:"linear-gradient(135deg,#064e3b,#22c55e)", glow:"#22c55e", board:"DLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 3M"   },
-  { slug:"dlb-lagna-wasana",          name:"Lagna Wasana",          nameLocal:"ලග්න වාසන",       days:"Wed",     gradient:"linear-gradient(135deg,#1e3a5f,#3b82f6)", glow:"#3b82f6", board:"DLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 4M"   },
-  { slug:"dlb-shanida",               name:"Shanida",               nameLocal:"ශනිද",             days:"Sat",     gradient:"linear-gradient(135deg,#4c1d95,#a78bfa)", glow:"#a78bfa", board:"DLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 8M"   },
+  { slug:"dlb-lagna-wasana",          name:"Lagna Wasana",          nameLocal:"ලග්න වාසන",       days:"Wed",     gradient:"linear-gradient(135deg,#1e3a5f,#3b82f6)", glow:"#3b82f6", board:"DLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 4M",   logoName:"Lagna Wasanawa"      },
+  { slug:"dlb-shanida",               name:"Shanida",               nameLocal:"ශනිද",             days:"Sat",     gradient:"linear-gradient(135deg,#4c1d95,#a78bfa)", glow:"#a78bfa", board:"DLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 8M",   logoName:"Shanida Wasanawa"    },
   { slug:"dlb-ada-kotipathi",         name:"Ada Kotipathi",         nameLocal:"අද කෝටිපති",      days:"Daily",   gradient:"linear-gradient(135deg,#991b1b,#ef4444)", glow:"#ef4444", board:"DLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 50M"  },
-  { slug:"dlb-supiri-dhana-sampatha", name:"Supiri Dhana Sampatha", nameLocal:"සුපිරි ධන සම්පත",  days:"Sat",     gradient:"linear-gradient(135deg,#831843,#ec4899)", glow:"#ec4899", board:"DLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 10M"  },
+  { slug:"dlb-supiri-dhana-sampatha", name:"Supiri Dhana Sampatha", nameLocal:"සුපිරි ධන සම්පත",  days:"Sat",     gradient:"linear-gradient(135deg,#831843,#ec4899)", glow:"#ec4899", board:"DLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 10M",  logoName:"Supiri Dana Sampatha"},
   { slug:"dlb-super-ball",            name:"Super Ball",            nameLocal:"සුපර් බෝල",        days:"Sat",     gradient:"linear-gradient(135deg,#1e40af,#6366f1)", glow:"#6366f1", board:"DLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 6M"   },
   { slug:"dlb-kapruka",               name:"Kapruka",               nameLocal:"කප්රුක",           days:"Tue",     gradient:"linear-gradient(135deg,#134e4a,#14b8a6)", glow:"#14b8a6", board:"DLB", hasLetter:true, numberCount:5, hasSuperNum:false, jackpot:"Rs. 5M"   },
   { slug:"dlb-jaya-sampatha",         name:"Jaya Sampatha",         nameLocal:"ජය සම්පත",         days:"Mon",     gradient:"linear-gradient(135deg,#78350f,#f59e0b)", glow:"#f59e0b", board:"DLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 2M"   },
@@ -653,7 +654,7 @@ export default function LiveResults() {
     .map((p,i) => ({ ...p, medal:["🥇","🥈","🥉","4️⃣","5️⃣","⭐"][i]??"⭐", highlight:i===0 }));
 
   return (
-    <div style={{ background:"#F0F0F0", minHeight:"100%" }}>
+    <div style={{ background:"#F5F7FA", minHeight:"100%" }}>
 
       {/* Manual entry modal */}
       {showModal && (
@@ -676,58 +677,61 @@ export default function LiveResults() {
       <div className="px-6 pb-8 space-y-5">
 
         {/* ── HERO HEADER ── */}
-        <div className="rounded-2xl overflow-hidden"
-          style={{ background:"linear-gradient(135deg,#0F172A 0%,#1E293B 60%,#0F172A 100%)",
-            border:"1px solid #1E293B",
-            boxShadow:"0 4px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(207,41,29,0.15)" }}>
-          <div style={{ display:"flex", alignItems:"center", padding:"20px 28px", gap:20 }}>
+        <div style={{ background:"#fff", borderRadius:16, border:"1px solid #E5E7EB",
+          boxShadow:"0 2px 12px rgba(0,0,0,0.06)", overflow:"hidden" }}>
+          {/* Top banner */}
+          <div style={{ background:"linear-gradient(135deg,#CF291D 0%,#991B1B 100%)",
+            padding:"18px 28px", display:"flex", alignItems:"center", gap:20 }}>
             {/* NLB logo */}
-            <div style={{ flexShrink:0, background:"rgba(255,255,255,0.07)", borderRadius:12,
-              padding:"8px 14px", border:"1px solid rgba(255,255,255,0.08)" }}>
-              <img src="/NLB.png" alt="NLB" style={{ height:44, objectFit:"contain", display:"block" }}
+            <div style={{ flexShrink:0, background:"rgba(255,255,255,0.15)", borderRadius:12,
+              padding:"8px 16px", border:"1px solid rgba(255,255,255,0.25)",
+              display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+              <img src="/NLB.png" alt="NLB" style={{ height:48, objectFit:"contain", display:"block" }}
                 onError={e=>{(e.target as HTMLImageElement).style.display="none";}}/>
-              <p style={{ fontSize:8, color:"#475569", marginTop:4, textAlign:"center",
-                fontWeight:600, textTransform:"uppercase", letterSpacing:"0.06em" }}>NLB</p>
+              <span style={{ fontSize:9, color:"rgba(255,255,255,0.75)", fontWeight:700,
+                textTransform:"uppercase", letterSpacing:"0.08em" }}>NLB</span>
             </div>
-            {/* Centre text */}
+            {/* Centre */}
             <div style={{ flex:1, textAlign:"center" }}>
-              <p style={{ fontSize:11, color:"#475569", marginBottom:6, fontWeight:500 }}>
+              <p style={{ fontSize:12, color:"rgba(255,255,255,0.7)", marginBottom:4, fontWeight:500 }}>
                 ජයග්‍රාහී ප්‍රතිඵල &nbsp;·&nbsp; வெற்றி முடிவுகள்
               </p>
-              <h1 style={{ fontSize:24, fontWeight:900, color:"#F1F5F9", margin:0,
-                display:"flex", alignItems:"center", justifyContent:"center", gap:10 }}>
-                <Trophy size={22} style={{ color:"#CF291D" }}/>
+              <h1 style={{ fontSize:26, fontWeight:900, color:"#FFFFFF", margin:0,
+                display:"flex", alignItems:"center", justifyContent:"center", gap:10,
+                textShadow:"0 2px 8px rgba(0,0,0,0.2)" }}>
+                <Trophy size={24} style={{ color:"#FCD34D" }}/>
                 Live Lottery Results
               </h1>
-              <div style={{ marginTop:8, display:"inline-block", padding:"4px 14px",
-                borderRadius:20, fontSize:11, fontWeight:600,
-                background:"rgba(207,41,29,0.12)", border:"1px solid rgba(207,41,29,0.25)",
-                color:"#CF291D" }}>
+              <div style={{ marginTop:8, display:"inline-block", padding:"4px 16px",
+                borderRadius:20, fontSize:11, fontWeight:700,
+                background:"rgba(255,255,255,0.18)", color:"#fff",
+                border:"1px solid rgba(255,255,255,0.3)" }}>
                 {new Date().toLocaleDateString("en-LK",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}
               </div>
             </div>
             {/* DLB logo */}
-            <div style={{ flexShrink:0, background:"rgba(255,255,255,0.07)", borderRadius:12,
-              padding:"8px 14px", border:"1px solid rgba(255,255,255,0.08)" }}>
-              <img src="/BLB.jpeg" alt="DLB" style={{ height:44, objectFit:"contain", display:"block" }}
+            <div style={{ flexShrink:0, background:"rgba(255,255,255,0.15)", borderRadius:12,
+              padding:"8px 16px", border:"1px solid rgba(255,255,255,0.25)",
+              display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+              <img src="/BLB.jpeg" alt="DLB" style={{ height:48, objectFit:"contain", display:"block" }}
                 onError={e=>{(e.target as HTMLImageElement).style.display="none";}}/>
-              <p style={{ fontSize:8, color:"#475569", marginTop:4, textAlign:"center",
-                fontWeight:600, textTransform:"uppercase", letterSpacing:"0.06em" }}>DLB</p>
+              <span style={{ fontSize:9, color:"rgba(255,255,255,0.75)", fontWeight:700,
+                textTransform:"uppercase", letterSpacing:"0.08em" }}>DLB</span>
             </div>
           </div>
           {/* Board tabs */}
-          <div style={{ display:"flex", borderTop:"1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ display:"flex", borderTop:"1px solid #E5E7EB", background:"#FAFAFA" }}>
             {(["NLB","DLB"] as const).map((b,i) => (
               <button key={b} onClick={()=>switchBoard(b)}
                 style={{
-                  flex:1, padding:"11px 0", fontSize:13, fontWeight:700,
-                  background: board===b
-                    ? `linear-gradient(90deg,${b==="NLB"?"#CF291D,#991B1B":"#1d4ed8,#1e40af"})`
-                    : "transparent",
-                  color: board===b ? "#fff" : "#475569",
+                  flex:1, padding:"12px 0", fontSize:13, fontWeight:700,
+                  background: board===b ? "#fff" : "transparent",
+                  color: board===b ? (b==="NLB"?"#CF291D":"#1d4ed8") : "#9CA3AF",
                   border:"none", cursor:"pointer",
-                  borderRight: i===0 ? "1px solid rgba(255,255,255,0.06)" : undefined,
+                  borderBottom: board===b ? `3px solid ${b==="NLB"?"#CF291D":"#1d4ed8"}` : "3px solid transparent",
+                  borderRight: i===0 ? "1px solid #E5E7EB" : undefined,
                   transition:"all 0.15s",
+                  boxShadow: board===b ? "0 2px 8px rgba(0,0,0,0.06)" : "none",
                 }}>
                 {b==="NLB" ? "🇱🇰  National Lotteries Board" : "🎯  Development Lotteries Board"}
               </button>
@@ -737,73 +741,78 @@ export default function LiveResults() {
 
         {/* ── GAME SELECTOR ── */}
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color:"#9CA3AF" }}>
-              {board} Games · {games.length} Available
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+            <p style={{ fontSize:11, fontWeight:700, color:"#6B7280", textTransform:"uppercase", letterSpacing:"0.06em" }}>
+              {board} · {games.length} Games
             </p>
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
-              style={{ background: board==="NLB" ? "#EFF6FF" : "#FFF7ED",
-                color: board==="NLB" ? "#1d4ed8" : "#c2410c" }}>
+            <span style={{ fontSize:10, padding:"3px 10px", borderRadius:20, fontWeight:600,
+              background: board==="NLB" ? "#EFF6FF" : "#FFF7ED",
+              color: board==="NLB" ? "#1d4ed8" : "#c2410c",
+              border: `1px solid ${board==="NLB"?"#BFDBFE":"#FED7AA"}` }}>
               {board==="NLB" ? "📘 National Lotteries Board" : "📙 Development Lotteries Board"}
             </span>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
             {games.map(g => {
               const isActive = selectedGame.slug===g.slug;
               const isHov    = hoveredGame===g.slug;
-              const logoUrl  = resolveLogoUrl(g.name);
+              const logoUrl  = resolveLogoUrl(g.logoName ?? g.name);
               return (
                 <button key={g.slug} onClick={()=>selectGame(g)}
                   onMouseEnter={()=>setHovered(g.slug)} onMouseLeave={()=>setHovered(null)}
                   style={{
                     display:"flex", flexDirection:"column", alignItems:"center",
-                    gap:8, padding:"14px 10px", borderRadius:14, textAlign:"center",
-                    background: isActive ? "#111827" : "#FFFFFF",
-                    border: `2px solid ${isActive ? g.glow : isHov ? g.glow+"80" : "#E8E8E8"}`,
+                    gap:10, padding:"18px 12px 14px", borderRadius:16, textAlign:"center",
+                    background: isActive
+                      ? `linear-gradient(145deg,${g.gradient.replace("linear-gradient(135deg,","").replace(")","").split(",").join(",")}`
+                      : "#FFFFFF",
+                    border: `2px solid ${isActive ? g.glow : isHov ? g.glow+"60" : "#E8E8E8"}`,
                     boxShadow: isActive
-                      ? `0 0 0 1px ${g.glow}50, 0 8px 24px ${g.glow}35`
-                      : isHov ? `0 4px 12px ${g.glow}25` : "0 1px 4px rgba(0,0,0,0.06)",
-                    transform: isHov && !isActive ? "translateY(-2px)" : "none",
-                    cursor:"pointer", transition:"all 0.15s", position:"relative",
-                    minHeight:150,
+                      ? `0 8px 28px ${g.glow}50, 0 0 0 1px ${g.glow}30`
+                      : isHov ? `0 4px 16px ${g.glow}20, 0 0 0 1px ${g.glow}20` : "0 1px 6px rgba(0,0,0,0.06)",
+                    transform: isHov && !isActive ? "translateY(-3px)" : "none",
+                    cursor:"pointer", transition:"all 0.18s", position:"relative",
+                    minHeight:165,
                   }}>
                   {/* Days badge */}
                   <span style={{
-                    position:"absolute", top:8, right:8,
-                    fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:20,
-                    background: isActive ? `${g.glow}30` : "#F3F4F6",
-                    color: isActive ? g.glow : "#9CA3AF",
+                    position:"absolute", top:10, right:10,
+                    fontSize:9, fontWeight:700, padding:"2px 7px", borderRadius:20,
+                    background: isActive ? "rgba(255,255,255,0.25)" : "#F3F4F6",
+                    color: isActive ? "#fff" : "#9CA3AF",
                   }}>{g.days}</span>
 
-                  {/* Ticket logo */}
+                  {/* Ticket logo — large */}
                   <div style={{
-                    width:64, height:64, borderRadius:12, overflow:"hidden",
-                    background: isActive ? "rgba(255,255,255,0.08)" : "#F3F4F6",
+                    width:82, height:82, borderRadius:14, overflow:"hidden",
+                    background: isActive ? "rgba(255,255,255,0.95)" : "#fff",
                     display:"flex", alignItems:"center", justifyContent:"center",
-                    border: isActive ? `1px solid ${g.glow}40` : "1px solid #E5E7EB",
+                    border: `2px solid ${isActive ? "rgba(255,255,255,0.6)" : "#E5E7EB"}`,
+                    boxShadow: isActive ? "0 4px 14px rgba(0,0,0,0.2)" : "0 2px 6px rgba(0,0,0,0.06)",
                     flexShrink:0,
                   }}>
                     <img src={logoUrl} alt={g.name}
-                      style={{ width:56, height:56, objectFit:"contain" }}
+                      style={{ width:72, height:72, objectFit:"contain" }}
                       onError={e => {
                         const el = e.currentTarget as HTMLImageElement;
                         el.style.display="none";
                         const parent = el.parentElement;
                         if (parent) {
                           parent.style.background = g.gradient;
-                          parent.innerHTML = `<span style="font-size:22px">🎫</span>`;
+                          parent.innerHTML = `<span style="font-size:28px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))">🎫</span>`;
                         }
                       }}/>
                   </div>
 
                   {/* Name */}
-                  <div>
-                    <p style={{ fontSize:11, fontWeight:800, lineHeight:1.2,
-                      color: isActive ? "#FFFFFF" : "#111827" }}>
+                  <div style={{ flex:1 }}>
+                    <p style={{ fontSize:11, fontWeight:800, lineHeight:1.3,
+                      color: isActive ? "#FFFFFF" : "#111827",
+                      textShadow: isActive ? "0 1px 4px rgba(0,0,0,0.3)" : "none" }}>
                       {g.name}
                     </p>
                     <p style={{ fontSize:9, marginTop:2,
-                      color: isActive ? g.glow : "#9CA3AF" }}>
+                      color: isActive ? "rgba(255,255,255,0.75)" : "#9CA3AF" }}>
                       {g.nameLocal}
                     </p>
                   </div>
@@ -811,10 +820,10 @@ export default function LiveResults() {
                   {/* Jackpot */}
                   {g.jackpot && (
                     <span style={{
-                      fontSize:9, fontWeight:700, padding:"3px 8px", borderRadius:20,
-                      background: isActive ? `${g.glow}25` : "#F0FDF4",
-                      color: isActive ? g.glow : "#16a34a",
-                      border: isActive ? `1px solid ${g.glow}40` : "1px solid #BBF7D0",
+                      fontSize:9, fontWeight:700, padding:"3px 9px", borderRadius:20,
+                      background: isActive ? "rgba(255,255,255,0.22)" : "#F0FDF4",
+                      color: isActive ? "#fff" : "#16a34a",
+                      border: isActive ? "1px solid rgba(255,255,255,0.35)" : "1px solid #BBF7D0",
                     }}>
                       🏆 {g.jackpot}
                     </span>
