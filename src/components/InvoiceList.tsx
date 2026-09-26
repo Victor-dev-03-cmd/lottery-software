@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { Printer, Trash2, RefreshCw, Plus, Home, ChevronRight, FileText } from "lucide-react";
-import { getInvoices, deleteInvoice } from "../services/database";
-import { usePinGuardContext } from "../App";
+import { Printer, RefreshCw, Plus, Home, ChevronRight, FileText, Lock } from "lucide-react";
+import { getInvoices } from "../services/database";
 import type { Invoice, View } from "../types";
 
 interface Props {
@@ -14,7 +13,6 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | "outstanding" | "settled">("");
-  const { requireAdminPin } = usePinGuardContext();
 
   async function load() {
     setLoading(true);
@@ -28,15 +26,13 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
 
   useEffect(() => { load(); }, [refreshKey]);
 
-  async function handleDelete(id: number, invoiceNumber: string) {
-    const ok = await requireAdminPin(
-      "Delete Invoice",
-      `Admin PIN required to delete invoice #${invoiceNumber}`
+  function handleDeleteAttempt(invoiceNumber: string) {
+    alert(
+      `🔒 Invoice #${invoiceNumber} is PAID and permanently locked.\n\n` +
+      `Paid invoices cannot be deleted — they are protected financial records ` +
+      `needed for audits, balance history, and agent statements.\n\n` +
+      `If you need to reverse this invoice, use Cancel instead of Delete.`
     );
-    if (!ok) return;
-    if (!confirm(`Delete invoice #${invoiceNumber}? This cannot be undone.`)) return;
-    await deleteInvoice(id);
-    load();
   }
 
   const fmt = (n: number) =>
@@ -244,14 +240,14 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
                           >
                             <Printer size={14} />
                           </button>
-                          {/* Edit removed — paid invoices are final and cannot be modified */}
+                          {/* Paid invoices are fully locked — no deletion allowed */}
                           <button
-                            onClick={() => handleDelete(inv.id!, inv.invoice_number)}
-                            title="Delete"
-                            className="p-1.5 rounded-lg transition-all hover:opacity-80"
-                            style={{ background: "#FFF1F0", color: "#CF291D" }}
+                            onClick={() => handleDeleteAttempt(inv.invoice_number)}
+                            title="Paid invoices are locked and cannot be deleted"
+                            className="p-1.5 rounded-lg transition-all"
+                            style={{ background: "#F3F4F6", color: "#9CA3AF", cursor: "not-allowed" }}
                           >
-                            <Trash2 size={14} />
+                            <Lock size={14} />
                           </button>
                         </div>
                       </td>
