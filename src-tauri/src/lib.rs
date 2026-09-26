@@ -984,7 +984,13 @@ fn fetch_via_python(board: String, game_slug: String, draw_number: String, date:
         std::fs::write(&script_path, PYTHON_SCRAPER).ok()?;
     }
 
-    let mut cmd = std::process::Command::new("python3");
+    // Windows uses "python" not "python3"; try both so it works cross-platform
+    let python_exe = if cfg!(target_os = "windows") { "python" } else { "python3" };
+    let mut cmd = std::process::Command::new(python_exe);
+    // Fallback: if "python" also fails on Windows, try "python3" (some installs have both)
+    if cfg!(target_os = "windows") && cmd.output().is_err() {
+        cmd = std::process::Command::new("python3");
+    }
     cmd.arg(&script_path)
         .arg("--board").arg(&board)
         .arg("--game").arg(&game_slug);

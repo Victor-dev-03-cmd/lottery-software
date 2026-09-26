@@ -30,7 +30,7 @@ reqwest    = { version = "0.12", features = ["json", "multipart"] }
 scraper    = "0.21"
 tokio      = { version = "1", features = ["time", "sync"] }
 regex-lite      = "0.1"
-headless_chrome = { version = "1.0", default-features = false }
+headless_chrome = { version = "1.0" }
 axum            = { version = "0.7", features = ["tokio"] }
 rusqlite        = { version = "0.31", features = ["bundled"] }
 uuid            = { version = "1",   features = ["v4"] }

@@ -1166,7 +1166,7 @@ function SupabaseConfigCard() {
         await invoke("save_supabase_config_secure", {
           token,
           supabaseUrl: url.trim(),
-          supabaseAnonymousKey: key.trim(),
+          supabaseAnonKey: key.trim(),
         });
       });
       setSaved(true); setTimeout(() => setSaved(false), 3000);
