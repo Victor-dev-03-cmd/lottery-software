@@ -12,7 +12,6 @@ import {
   getInvoiceWithItems,
   getInventoryBatches,
   getBatchesForGame,
-  getAgentGameDiscount,
 } from "../services/database";
 import type { Agent, LotteryGame, Invoice, InvoiceItem, View } from "../types";
 import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode } from "../utils/barcode";
@@ -120,24 +119,6 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
     } else {
       setCreditWarning(null);
     }
-    // Re-apply agent-wise discounts to any already-selected ticket lines
-    setItems(prev => {
-      const next = [...prev];
-      prev.forEach((item, i) => {
-        if (!item.ticket_name) return;
-        getAgentGameDiscount(id, item.ticket_name).then(discount => {
-          if (!discount || discount.discount_pct <= 0) return;
-          setItems(cur => cur.map((row, ri) => {
-            if (ri !== i) return row;
-            // discount_pct stores Rs. discount amount (e.g. 5.00 = Rs. 5 off per ticket)
-            const discAmt = discount.discount_pct;
-            const effectivePrice = Math.max(0, Math.round((row.unit_price - discAmt) * 100) / 100);
-            return { ...row, unit_price: effectivePrice, discount_amt: discAmt, value: Math.round(row.qty * effectivePrice * 100) / 100 };
-          }));
-        }).catch(() => {});
-      });
-      return next;
-    });
   }
 
   function updateItem(index: number, field: keyof InvoiceItem, value: string | number) {
@@ -147,29 +128,6 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
       getBatchesForGame(String(value))
         .then(batches => setBatchOptions(prev => ({ ...prev, [index]: batches })))
         .catch(() => setBatchOptions(prev => ({ ...prev, [index]: [] })));
-      // Auto-apply agent discount when ticket is selected (if agent already chosen)
-      if (agentId) {
-        getAgentGameDiscount(agentId, String(value)).then(discount => {
-          if (!discount || discount.discount_pct <= 0) return;
-          setItems(prev => prev.map((item, i) => {
-            if (i !== index) return item;
-            // discount_pct stores Rs. discount amount
-            const discAmt = discount.discount_pct;
-            const basePrice = item.unit_price;
-            const effectivePrice = Math.max(0, Math.round((basePrice - discAmt) * 100) / 100);
-            const discPct = basePrice > 0
-              ? Math.round((discAmt / basePrice) * 100 * 10) / 10
-              : discount.discount_pct;
-            return {
-              ...item,
-              unit_price: effectivePrice,
-              discount_pct: discPct,
-              discount_amt: discAmt,
-              value: Math.round(item.qty * effectivePrice * 100) / 100,
-            };
-          }));
-        }).catch(() => {});
-      }
     }
 
     setItems((prev) => {

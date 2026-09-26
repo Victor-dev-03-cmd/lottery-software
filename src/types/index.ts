@@ -384,8 +384,7 @@ export type View =
   | "distribution"
   | "payroll"
   | "ai-analytics"
-  | "print-export"
-  | "agent-discounts";
+  | "print-export";
 
 // ── Payroll ───────────────────────────────────────────────────────────────────
 
