@@ -451,6 +451,17 @@ async function initSchema() {
   try {
     await d.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_ws_worker_month ON worker_salaries(worker_id, month)");
   } catch {}
+  // workers — salary type and daily rate columns
+  for (const col of [
+    "ALTER TABLE workers ADD COLUMN salary_type TEXT DEFAULT 'monthly'",
+    "ALTER TABLE workers ADD COLUMN daily_rate REAL DEFAULT 0",
+  ]) { try { await d.execute(col); } catch {} }
+  // worker_salaries — days worked and daily rate snapshot
+  for (const col of [
+    "ALTER TABLE worker_salaries ADD COLUMN salary_type TEXT DEFAULT 'monthly'",
+    "ALTER TABLE worker_salaries ADD COLUMN days_worked INTEGER DEFAULT 0",
+    "ALTER TABLE worker_salaries ADD COLUMN daily_rate REAL DEFAULT 0",
+  ]) { try { await d.execute(col); } catch {} }
 
   // ── Supplier Returns table ────────────────────────────────────────────────
   await d.execute(`
@@ -2300,15 +2311,19 @@ export async function getWorkers(): Promise<import("../types").Worker[]> {
 
 export async function saveWorker(w: import("../types").Worker): Promise<number> {
   const d = await getDb();
+  const salaryType = w.salary_type ?? "monthly";
+  const dailyRate  = w.daily_rate  ?? 0;
   const vals = [
-    w.name, w.role, w.basic_salary, w.bank_name, w.bank_account, w.nic_number,
+    w.name, w.role, salaryType, w.basic_salary, dailyRate,
+    w.bank_name, w.bank_account, w.nic_number,
     w.photo, w.work_start_date, w.work_end_date,
     w.transport_allowance, w.meal_allowance, w.other_allowances,
     w.is_active, w.notes,
   ];
   if (w.id) {
     await d.execute(
-      `UPDATE workers SET name=?,role=?,basic_salary=?,bank_name=?,bank_account=?,nic_number=?,
+      `UPDATE workers SET name=?,role=?,salary_type=?,basic_salary=?,daily_rate=?,
+       bank_name=?,bank_account=?,nic_number=?,
        photo=?,work_start_date=?,work_end_date=?,transport_allowance=?,meal_allowance=?,
        other_allowances=?,is_active=?,notes=? WHERE id=?`,
       [...vals, w.id]
@@ -2316,9 +2331,9 @@ export async function saveWorker(w: import("../types").Worker): Promise<number> 
     return w.id;
   }
   const r = await d.execute(
-    `INSERT INTO workers (name,role,basic_salary,bank_name,bank_account,nic_number,
+    `INSERT INTO workers (name,role,salary_type,basic_salary,daily_rate,bank_name,bank_account,nic_number,
      photo,work_start_date,work_end_date,transport_allowance,meal_allowance,
-     other_allowances,is_active,notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+     other_allowances,is_active,notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     vals
   );
   return r.lastInsertId as number;
@@ -2344,16 +2359,22 @@ export async function getWorkerSalaries(month?: string): Promise<import("../type
 
 export async function saveWorkerSalary(s: import("../types").WorkerSalary): Promise<number> {
   const d = await getDb();
-  const totalEarnings = s.basic_salary + s.transport_allowance + s.meal_allowance +
+  // For daily-wage workers, recompute basic_salary from days_worked × daily_rate
+  const daysWorked = s.days_worked ?? 0;
+  const dailyRate  = s.daily_rate  ?? 0;
+  const salaryType = s.salary_type ?? "monthly";
+  const effectiveBasic = salaryType === "daily" ? daysWorked * dailyRate : s.basic_salary;
+  const totalEarnings  = effectiveBasic + s.transport_allowance + s.meal_allowance +
     s.overtime_pay + s.other_allowances;
   const net = totalEarnings - s.deductions - s.advance_paid;
 
-  // Try update first (worker_id + month unique)
   const upd = await d.execute(
-    `UPDATE worker_salaries SET basic_salary=?,transport_allowance=?,meal_allowance=?,
+    `UPDATE worker_salaries SET salary_type=?,days_worked=?,daily_rate=?,
+     basic_salary=?,transport_allowance=?,meal_allowance=?,
      overtime_pay=?,other_allowances=?,total_earnings=?,deductions=?,advance_paid=?,
      net_salary=?,status=?,paid_date=?,notes=? WHERE worker_id=? AND month=?`,
-    [s.basic_salary, s.transport_allowance, s.meal_allowance, s.overtime_pay,
+    [salaryType, daysWorked, dailyRate,
+     effectiveBasic, s.transport_allowance, s.meal_allowance, s.overtime_pay,
      s.other_allowances, totalEarnings, s.deductions, s.advance_paid, net,
      s.status, s.paid_date, s.notes, s.worker_id, s.month]
   );
@@ -2361,10 +2382,12 @@ export async function saveWorkerSalary(s: import("../types").WorkerSalary): Prom
 
   const r = await d.execute(
     `INSERT INTO worker_salaries
-     (worker_id,month,basic_salary,transport_allowance,meal_allowance,overtime_pay,
-      other_allowances,total_earnings,deductions,advance_paid,net_salary,status,paid_date,notes)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    [s.worker_id, s.month, s.basic_salary, s.transport_allowance, s.meal_allowance,
+     (worker_id,month,salary_type,days_worked,daily_rate,basic_salary,transport_allowance,
+      meal_allowance,overtime_pay,other_allowances,total_earnings,deductions,advance_paid,
+      net_salary,status,paid_date,notes)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [s.worker_id, s.month, salaryType, daysWorked, dailyRate,
+     effectiveBasic, s.transport_allowance, s.meal_allowance,
      s.overtime_pay, s.other_allowances, totalEarnings, s.deductions, s.advance_paid,
      net, s.status, s.paid_date, s.notes]
   );
@@ -2402,24 +2425,31 @@ export async function getPayrollSummary(month: string): Promise<{
   };
 }
 
-/** Prefill a payroll month from worker base salaries */
+/** Prefill a payroll month from worker base salaries.
+ *  Monthly workers: use fixed basic_salary.
+ *  Daily workers:   pre-fill with days_worked=0 (staff enter actual days later). */
 export async function generateMonthlyPayroll(month: string): Promise<void> {
   const d = await getDb();
   const workers = await getWorkers();
   for (const w of workers) {
     if (!w.is_active) continue;
-    // Skip if already exists
     const exists = await d.select<{ id: number }[]>(
       "SELECT id FROM worker_salaries WHERE worker_id=? AND month=?", [w.id, month]
     );
     if (exists.length) continue;
-    const total = w.basic_salary + w.transport_allowance + w.meal_allowance + w.other_allowances;
+    const salaryType = w.salary_type ?? "monthly";
+    const dailyRate  = w.daily_rate  ?? 0;
+    // For daily-wage workers, basic starts at 0 until days_worked is entered
+    const effectiveBasic = salaryType === "daily" ? 0 : w.basic_salary;
+    const total = effectiveBasic + w.transport_allowance + w.meal_allowance + w.other_allowances;
     await d.execute(
       `INSERT INTO worker_salaries
-       (worker_id,month,basic_salary,transport_allowance,meal_allowance,overtime_pay,
-        other_allowances,total_earnings,deductions,advance_paid,net_salary,status,paid_date,notes)
-       VALUES (?,?,?,?,?,?,?,?,0,0,?,  'pending','','')`,
-      [w.id, month, w.basic_salary, w.transport_allowance, w.meal_allowance, 0,
+       (worker_id,month,salary_type,days_worked,daily_rate,basic_salary,transport_allowance,
+        meal_allowance,overtime_pay,other_allowances,total_earnings,deductions,advance_paid,
+        net_salary,status,paid_date,notes)
+       VALUES (?,?,?,?,?,?,?,?,0,?,?,0,0,?,'pending','','')`,
+      [w.id, month, salaryType, 0, dailyRate,
+       effectiveBasic, w.transport_allowance, w.meal_allowance,
        w.other_allowances, total, total]
     );
   }

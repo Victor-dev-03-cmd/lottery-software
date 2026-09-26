@@ -10,8 +10,9 @@ import {
   generateMonthlyPayroll, getPayrollSummary,
   getPeriodStats,
 } from "../services/database";
-import type { Worker, WorkerRole, WorkerSalary } from "../types";
+import type { Worker, WorkerRole, WorkerSalary, SalaryType } from "../types";
 import { useAuth } from "../contexts/AuthContext";
+// SI imported for bilingual string access (used inline in JSX)
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 const fmt = (n: number) =>
@@ -58,7 +59,7 @@ const SL_BANKS = [
 ];
 
 const EMPTY_WORKER: Worker = {
-  name: "", role: "Cashier", basic_salary: 0,
+  name: "", role: "Cashier", salary_type: "monthly", basic_salary: 0, daily_rate: 0,
   bank_name: "", bank_account: "", nic_number: "",
   photo: "", work_start_date: "", work_end_date: "",
   transport_allowance: 0, meal_allowance: 0, other_allowances: 0,
@@ -75,7 +76,8 @@ type PeriodStatsData = {
   total_outstanding: number; total_tickets: number;
 };
 type SalaryEdit = {
-  overtime_pay: number; deductions: number; advance_paid: number; notes: string;
+  overtime_pay: number; deductions: number; advance_paid: number;
+  days_worked: number; notes: string;
 };
 
 // ─── FormField helper ────────────────────────────────────────────────────────
@@ -97,9 +99,10 @@ function FormField({ label, required = false, children }: {
 export default function Payroll() {
   const { withAdminToken } = useAuth();
 
-  const [tab, setTab]     = useState<"workers" | "payroll">("workers");
-  const [loading, setLoading] = useState(true);
+  const [tab, setTab]           = useState<"workers" | "payroll">("workers");
+  const [loading, setLoading]   = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [workerFilter, setWorkerFilter] = useState<"all" | SalaryType>("all");
 
   // Workers
   const [workers, setWorkers]   = useState<Worker[]>([]);
@@ -201,6 +204,7 @@ export default function Payroll() {
       overtime_pay: s.overtime_pay,
       deductions:   s.deductions,
       advance_paid: s.advance_paid,
+      days_worked:  s.days_worked ?? 0,
       notes:        s.notes,
     };
 
@@ -215,7 +219,12 @@ export default function Payroll() {
 
   const handleSaveSalary = async (salary: WorkerSalary) => {
     const edits = getSalaryEdit(salary);
-    await saveWorkerSalary({ ...salary, ...edits });
+    const daysWorked = edits.days_worked ?? salary.days_worked ?? 0;
+    // For daily workers, recompute basic_salary from days × rate
+    const updatedBasic = (salary.salary_type ?? "monthly") === "daily"
+      ? daysWorked * (salary.daily_rate ?? 0)
+      : salary.basic_salary;
+    await saveWorkerSalary({ ...salary, ...edits, days_worked: daysWorked, basic_salary: updatedBasic });
     await loadPayrollData(payrollMonth);
   };
 
@@ -417,9 +426,30 @@ export default function Payroll() {
                 </button>
               </div>
             ) : (
-              /* Worker cards grid */
+              /* Worker type filter + grid */
+              <>
+              <div style={{ display:"flex", gap:8, marginBottom:12, alignItems:"center" }}>
+                {([
+                  ["all",     "All Workers",       "සියලු",        "#374151"],
+                  ["monthly", "Monthly Salaried",  "මාසික",        "#16A34A"],
+                  ["daily",   "Daily Wage",         "දෛනික",       "#2563EB"],
+                ] as [typeof workerFilter, string, string, string][]).map(([v,en,si,col]) => (
+                  <button key={v} onClick={() => setWorkerFilter(v)}
+                    style={{
+                      padding:"5px 14px", borderRadius:20, fontSize:11, fontWeight:700,
+                      border:`1px solid ${workerFilter===v?col:"#E5E7EB"}`,
+                      background: workerFilter===v?col:"#fff",
+                      color: workerFilter===v?"#fff":col, cursor:"pointer",
+                    }}>
+                    {en} <span className="si" style={{ fontWeight:400 }}>· {si}</span>
+                  </button>
+                ))}
+                <span style={{ marginLeft:"auto", fontSize:11, color:"#9CA3AF" }}>
+                  {workers.filter(w => workerFilter==="all" || (w.salary_type??'monthly')===workerFilter).length} workers
+                </span>
+              </div>
               <div className="grid grid-cols-3 gap-4">
-                {workers.map(w => {
+                {workers.filter(w => workerFilter==="all" || (w.salary_type??'monthly')===workerFilter).map(w => {
                   const rc = ROLE_COLORS[w.role];
                   return (
                     <div key={w.id}
@@ -464,10 +494,30 @@ export default function Payroll() {
                         </div>
                       </div>
 
-                      {/* Basic salary */}
+                      {/* Salary type badge + amount */}
                       <div className="rounded-xl p-3" style={{ background: "#F9FAFB" }}>
-                        <p className="text-xs" style={{ color: "#9CA3AF" }}>Basic Salary</p>
-                        <p className="text-base font-bold" style={{ color: "#1D1D1D" }}>{fmt(w.basic_salary)}</p>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                          <p className="text-xs" style={{ color: "#9CA3AF" }}>
+                            {(w.salary_type ?? "monthly") === "monthly" ? "Monthly Salary" : "Daily Wage"}
+                            <span className="si" style={{ marginLeft:4, fontSize:9 }}>
+                              {(w.salary_type ?? "monthly") === "monthly" ? "· මාසික" : "· දෛනික"}
+                            </span>
+                          </p>
+                          <span style={{
+                            padding:"1px 7px", borderRadius:20, fontSize:9, fontWeight:700,
+                            background: (w.salary_type ?? "monthly") === "monthly" ? "#DCFCE7" : "#EFF6FF",
+                            color:       (w.salary_type ?? "monthly") === "monthly" ? "#16A34A" : "#2563EB",
+                          }}>
+                            {(w.salary_type ?? "monthly") === "monthly" ? "Monthly" : "Daily"}
+                          </span>
+                        </div>
+                        {(w.salary_type ?? "monthly") === "monthly" ? (
+                          <p className="text-base font-bold" style={{ color: "#1D1D1D" }}>{fmt(w.basic_salary)}</p>
+                        ) : (
+                          <p className="text-base font-bold" style={{ color: "#2563EB" }}>
+                            {fmt(w.daily_rate ?? 0)} <span style={{ fontSize:11, fontWeight:400, color:"#9CA3AF" }}>/ day</span>
+                          </p>
+                        )}
                       </div>
 
                       {/* Allowances compact */}
@@ -528,6 +578,7 @@ export default function Payroll() {
                   );
                 })}
               </div>
+              </>
             )}
           </div>
         )}
@@ -686,8 +737,27 @@ export default function Payroll() {
                                 {s.worker_role ?? "—"}
                               </span>
                             </td>
-                            <td className="px-3 py-3 whitespace-nowrap" style={{ color: "#374151" }}>
-                              {fmt(s.basic_salary)}
+                            <td className="px-3 py-3 whitespace-nowrap">
+                              {(s.salary_type ?? "monthly") === "daily" ? (
+                                <div>
+                                  <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                                    <input type="number" min="0" max="31"
+                                      value={edit.days_worked || ""}
+                                      placeholder="0"
+                                      onChange={e => updateSalaryEdit(s, "days_worked", Number(e.target.value))}
+                                      className="w-14 px-2 py-1 rounded-lg outline-none"
+                                      style={{ border:"2px solid #2563EB", background:"#EFF6FF", color:"#1D4ED8", fontSize:"11px", fontWeight:700 }}
+                                      onFocus={e => e.target.select()} />
+                                    <span style={{ fontSize:10, color:"#6B7280" }}>days</span>
+                                  </div>
+                                  <div style={{ fontSize:9, color:"#2563EB", marginTop:2 }}>
+                                    {fmt((edit.days_worked||0) * (s.daily_rate||0))}
+                                    <span className="si" style={{ marginLeft:3, color:"#9CA3AF" }}>· {s.daily_rate}/day</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <span style={{ color: "#374151" }}>{fmt(s.basic_salary)}</span>
+                              )}
                             </td>
                             <td className="px-3 py-3 whitespace-nowrap" style={{ color: "#374151" }}>
                               {fmt(s.transport_allowance)}
@@ -921,16 +991,53 @@ export default function Payroll() {
                 <p className="text-xs font-bold uppercase tracking-wide flex items-center gap-1.5"
                   style={{ color: "#9CA3AF" }}>
                   <Banknote size={13} /> Salary &amp; Allowances
+                  <span className="si" style={{ fontWeight:400, textTransform:"none" }}>· වේතනය සහ දීමනා</span>
                 </p>
+
+                {/* Salary type toggle */}
+                <div>
+                  <label className="text-xs font-semibold block mb-1.5" style={{ color:"#374151" }}>
+                    Payment Type / <span className="si" style={{ fontWeight:400 }}>ගෙවීම් වර්ගය</span> *
+                  </label>
+                  <div style={{ display:"flex", gap:6 }}>
+                    {([["monthly","Monthly Salary","මාසික වේතනය"],["daily","Daily Wage","දෛනික වේතනය"]] as [SalaryType,string,string][]).map(([v,en,si]) => (
+                      <button key={v} type="button" onClick={() => setForm(p=>({...p, salary_type:v}))}
+                        style={{
+                          flex:1, padding:"8px 10px", borderRadius:8, border:"2px solid",
+                          borderColor: form.salary_type===v ? "#CF291D" : "#E5E7EB",
+                          background: form.salary_type===v ? "#FEF2F2" : "#fff",
+                          cursor:"pointer", textAlign:"center",
+                        }}>
+                        <div style={{ fontSize:12, fontWeight:700, color: form.salary_type===v?"#CF291D":"#374151" }}>{en}</div>
+                        <div className="si" style={{ fontSize:9, color:"#9CA3AF" }}>{si}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
-                  <FormField label="Basic Salary (Rs.)" required>
-                    <input type="number" min="0" value={form.basic_salary || ""}
-                      placeholder="0"
-                      onChange={e => setForm(p => ({ ...p, basic_salary: Number(e.target.value) }))}
-                      className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                      style={{ border: "1px solid #E8E8E8", background: "#FFFFFF", color: "#1D1D1D" }}
-                      onFocus={(e) => e.target.select()} />
-                  </FormField>
+                  {form.salary_type === "monthly" ? (
+                    <FormField label={`Basic Salary (Rs.) · මාසික මූලික වේතනය`} required>
+                      <input type="number" min="0" value={form.basic_salary || ""}
+                        placeholder="0"
+                        onChange={e => setForm(p => ({ ...p, basic_salary: Number(e.target.value) }))}
+                        className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                        style={{ border: "1px solid #E8E8E8", background: "#FFFFFF", color: "#1D1D1D" }}
+                        onFocus={(e) => e.target.select()} />
+                    </FormField>
+                  ) : (
+                    <FormField label={`Daily Rate (Rs./day) · දෛනික ගාස්තු`} required>
+                      <input type="number" min="0" step="0.01" value={form.daily_rate || ""}
+                        placeholder="e.g. 1500"
+                        onChange={e => setForm(p => ({ ...p, daily_rate: Number(e.target.value) }))}
+                        className="w-full px-3 py-2 rounded-lg text-sm outline-none font-bold"
+                        style={{ border: "2px solid #2563EB", background: "#EFF6FF", color: "#1D4ED8" }}
+                        onFocus={(e) => e.target.select()} />
+                      <p style={{ fontSize:10, color:"#2563EB", marginTop:2 }}>
+                        Salary = Rate × Days Worked <span className="si">· ගෙවීම = ගාස්තු × දින</span>
+                      </p>
+                    </FormField>
+                  )}
                   <FormField label="Transport Allowance (Rs.)">
                     <input type="number" min="0" value={form.transport_allowance || ""}
                       placeholder="0"

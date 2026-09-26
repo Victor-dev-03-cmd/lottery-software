@@ -392,11 +392,15 @@ export type View =
 
 export type WorkerRole = "Cashier" | "Driver" | "Warehouse Keeper" | "Sales Rep" | "Ticket Checker" | "Manager" | "Other";
 
+export type SalaryType = "monthly" | "daily";
+
 export interface Worker {
   id?: number;
   name: string;
   role: WorkerRole;
-  basic_salary: number;
+  salary_type: SalaryType;  // "monthly" = fixed, "daily" = daily_rate × days_worked
+  basic_salary: number;     // monthly salary (used when salary_type = "monthly")
+  daily_rate: number;       // rate per day (used when salary_type = "daily")
   bank_name: string;
   bank_account: string;
   nic_number: string;
@@ -416,8 +420,11 @@ export interface WorkerSalary {
   worker_id: number;
   worker_name?: string;
   worker_role?: string;
+  salary_type?: SalaryType;
   month: string;           // YYYY-MM
-  basic_salary: number;
+  days_worked: number;     // relevant for daily-wage workers
+  daily_rate: number;      // snapshot of the daily rate at time of payroll
+  basic_salary: number;    // for monthly = fixed; for daily = daily_rate * days_worked
   transport_allowance: number;
   meal_allowance: number;
   overtime_pay: number;
