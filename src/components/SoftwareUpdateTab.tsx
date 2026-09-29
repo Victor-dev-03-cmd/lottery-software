@@ -281,33 +281,31 @@ export default function SoftwareUpdateTab() {
                 </div>
               )}
 
-              {/* Yellow notice about in-app install not available */}
-              <div style={{ padding:"10px 14px", background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:8, fontSize:11 }}>
-                <p style={{ fontWeight:700, color:"#92400E", margin:"0 0 4px" }}>
-                  ⚠ Silent install not available for this release
+              {/* Info — latest.json not yet uploaded for this release (builds still running) */}
+              <div style={{ padding:"10px 14px", background:"#EFF6FF", border:"1px solid #BFDBFE", borderRadius:8, fontSize:11 }}>
+                <p style={{ fontWeight:700, color:"#1E40AF", margin:"0 0 4px" }}>
+                  ℹ️ Latest.json is being generated — try again in a few minutes
                 </p>
-                <p style={{ color:"#78350F", margin:0 }}>
-                  The automatic in-app installer requires a signed update manifest (<code>latest.json</code>) which is missing from this release.
-                  Set <strong>TAURI_SIGNING_PRIVATE_KEY</strong> in GitHub Secrets and rebuild to enable one-click updates.
-                  For now, download the installer below and run it manually.
+                <p style={{ color:"#1E3A8A", margin:0 }}>
+                  The CI build is still running. Once it finishes, going back to
+                  <strong> Settings → Software Updates → Check for Updates</strong> will trigger
+                  a fully silent background install with automatic restart.
+                  For now you can download the installer manually below.
                 </p>
               </div>
 
-              {/* Download button */}
+              {/* Fallback download button */}
               {primaryAsset ? (
                 <div style={{ display:"flex", gap:12, alignItems:"center", flexWrap:"wrap" }}>
                   <a href={primaryAsset.browser_download_url} target="_blank" rel="noreferrer"
                     style={{ display:"flex", alignItems:"center", gap:8, padding:"11px 22px",
-                      borderRadius:10, background:"#CF291D", color:"#fff",
-                      fontSize:13, fontWeight:800, textDecoration:"none",
-                      boxShadow:"0 4px 14px rgba(207,41,29,0.35)" }}>
+                      borderRadius:10, background:"#374151", color:"#fff",
+                      fontSize:13, fontWeight:700, textDecoration:"none" }}>
                     <Download size={15}/>
-                    Download {primaryLabel} ({(primaryAsset.size / 1024 / 1024).toFixed(1)} MB)
+                    Manual Download — {primaryLabel} ({(primaryAsset.size / 1024 / 1024).toFixed(1)} MB)
                   </a>
                   <p style={{ fontSize:11, color:"#9CA3AF", margin:0 }}>
-                    {isWindows
-                      ? "Run the .exe — it will upgrade your existing installation."
-                      : "Install the package to upgrade your existing installation."}
+                    Or wait ~5 min and click Check for Updates again for silent install.
                   </p>
                 </div>
               ) : (
