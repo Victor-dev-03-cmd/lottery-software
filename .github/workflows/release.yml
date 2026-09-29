@@ -6,7 +6,6 @@ on:
       - 'v*'
 
 jobs:
-  # ── Build Windows + Linux installers ────────────────────────────────────────
   publish-tauri:
     permissions:
       contents: write
@@ -54,29 +53,22 @@ jobs:
           releaseBody: |
             ## Lottery Manager ${{ github.ref_name }}
 
-            ### Installation
-            - **Windows**: Download `Lottery.Manager_*_x64-setup.exe`
-            - **Linux (Debian)**: Download `lottery-manager_*_amd64.deb`
+            **Windows**: Download `Lottery.Manager_*_x64-setup.exe`
+            **Linux**: Download `lottery-manager_*_amd64.deb`
 
-            ### In-App Silent Update
-            Open **Settings → Software Updates** and click **Check for Updates** — the app will download and restart automatically.
-
-            ---
-            *Download the appropriate installer for your platform below.*
+            **In-App Update**: Open Settings → Software Updates → Check for Updates
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
 
-  # ── Ensure latest.json exists with real signatures ───────────────────────────
-  # tauri-action generates latest.json when TAURI_SIGNING_PRIVATE_KEY is set.
-  # This job only uploads a fallback if tauri-action did NOT create one.
+  # Ensure latest.json exists — only uploads if tauri-action did NOT already create one
   upload-manifest:
     needs: publish-tauri
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Check / upload latest.json
+      - name: Check and upload latest.json if missing
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}
@@ -85,88 +77,41 @@ jobs:
           BASE="https://github.com/Victor-dev-03-cmd/lottery-software/releases/download/${TAG}"
           PUB_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-          # ── Check if tauri-action already uploaded latest.json ──────────────
+          # Check if tauri-action already uploaded latest.json
           EXISTING=$(gh release view "${TAG}" \
             --repo "Victor-dev-03-cmd/lottery-software" \
-            --json assets --jq '.assets[].name' 2>/dev/null | grep '^latest\.json$' || true)
+            --json assets --jq '[.assets[].name] | contains(["latest.json"])' 2>/dev/null || echo "false")
 
-          if [ -n "$EXISTING" ]; then
-            echo "✅ latest.json already uploaded by tauri-action — skipping."
-            echo "Contents:"
-            curl -sL "${BASE}/latest.json" | python3 -m json.tool
+          if [ "$EXISTING" = "true" ]; then
+            echo "latest.json already exists — skipping upload"
             exit 0
           fi
 
-          echo "⚠️  latest.json not found — generating fallback (no signatures)."
-          echo "NOTE: Silent install will only work from the NEXT release onwards."
-          echo "      Users must manually install this version once."
+          echo "latest.json missing — generating fallback"
 
-          # ── Download .sig files if they were built ──────────────────────────
+          # Try to download .sig files
           mkdir -p sigs
           gh release download "${TAG}" \
             --repo "Victor-dev-03-cmd/lottery-software" \
-            --pattern "*.sig" \
-            --dir ./sigs/ 2>/dev/null || true
+            --pattern "*.sig" --dir ./sigs/ 2>/dev/null || true
 
-          # Read signatures (empty string if not found)
           WIN_SIG_FILE="sigs/Lottery.Manager_${VERSION}_x64-setup.exe.sig"
           LIN_SIG_FILE="sigs/lottery-manager_${VERSION}_amd64.AppImage.sig"
-          WIN_SIG=$( [ -f "$WIN_SIG_FILE" ] && cat "$WIN_SIG_FILE" || echo "" )
-          LIN_SIG=$( [ -f "$LIN_SIG_FILE" ] && cat "$LIN_SIG_FILE" || echo "" )
+          WIN_SIG=""
+          LIN_SIG=""
+          [ -f "$WIN_SIG_FILE" ] && WIN_SIG=$(cat "$WIN_SIG_FILE")
+          [ -f "$LIN_SIG_FILE" ] && LIN_SIG=$(cat "$LIN_SIG_FILE")
 
-          echo "Win sig found: $([ -f "$WIN_SIG_FILE" ] && echo yes || echo no)"
-          echo "Linux sig found: $([ -f "$LIN_SIG_FILE" ] && echo yes || echo no)"
+          # Write latest.json using a simple printf (avoids heredoc YAML issues)
+          printf '{\n  "version": "%s",\n  "notes": "Lottery Manager %s",\n  "pub_date": "%s",\n  "platforms": {\n    "windows-x86_64": { "signature": "%s", "url": "%s/Lottery.Manager_%s_x64-setup.exe" },\n    "linux-x86_64":   { "signature": "%s", "url": "%s/lottery-manager_%s_amd64.AppImage" }\n  }\n}\n' \
+            "$VERSION" "$TAG" "$PUB_DATE" \
+            "$WIN_SIG" "$BASE" "$VERSION" \
+            "$LIN_SIG" "$BASE" "$VERSION" > latest.json
 
-          python3 - <<PYEOF
-import json
-data = {
-  "version": "${VERSION}",
-  "notes": "Lottery Manager ${TAG} — open Settings > Software Updates to install.",
-  "pub_date": "${PUB_DATE}",
-  "platforms": {
-    "windows-x86_64": {
-      "signature": """${WIN_SIG}""",
-      "url": "${BASE}/Lottery.Manager_${VERSION}_x64-setup.exe"
-    },
-    "linux-x86_64": {
-      "signature": """${LIN_SIG}""",
-      "url": "${BASE}/lottery-manager_${VERSION}_amd64.AppImage"
-    },
-    "darwin-x86_64": {
-      "signature": "",
-      "url": "${BASE}/Lottery.Manager_${VERSION}_x64.dmg"
-    }
-  }
-}
-print(json.dumps(data, indent=2))
-PYEOF
-          python3 - > latest.json <<PYEOF
-import json
-data = {
-  "version": "${VERSION}",
-  "notes": "Lottery Manager ${TAG} — open Settings > Software Updates to install.",
-  "pub_date": "${PUB_DATE}",
-  "platforms": {
-    "windows-x86_64": {
-      "signature": open("${WIN_SIG_FILE}").read().strip() if __import__("os").path.exists("${WIN_SIG_FILE}") else "",
-      "url": "${BASE}/Lottery.Manager_${VERSION}_x64-setup.exe"
-    },
-    "linux-x86_64": {
-      "signature": open("${LIN_SIG_FILE}").read().strip() if __import__("os").path.exists("${LIN_SIG_FILE}") else "",
-      "url": "${BASE}/lottery-manager_${VERSION}_amd64.AppImage"
-    },
-    "darwin-x86_64": {
-      "signature": "",
-      "url": "${BASE}/Lottery.Manager_${VERSION}_x64.dmg"
-    }
-  }
-}
-print(json.dumps(data, indent=2))
-PYEOF
+          cat latest.json
 
-          # Upload WITHOUT --clobber so we never overwrite a good manifest
+          # Upload WITHOUT --clobber so we never destroy a valid manifest
           gh release upload "${TAG}" latest.json \
             --repo "Victor-dev-03-cmd/lottery-software"
 
-          echo "✅ Fallback latest.json uploaded."
-          cat latest.json
+          echo "Fallback latest.json uploaded"
