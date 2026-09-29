@@ -230,7 +230,23 @@ export default function SoftwareUpdateTab() {
 
       {/* ── Manual download fallback (latest.json not yet available) ── */}
       {phase === "available-manual" && ghRelease && (() => {
+        // Detect OS — Tauri exposes platform via navigator.userAgent on Windows/macOS/Linux
+        const platform = navigator.userAgent.toLowerCase();
+        const isWindows = platform.includes("windows");
+        const isMac     = platform.includes("mac");
+
         const winAsset = ghRelease.assets.find(a => a.name.includes("x64-setup.exe") && !a.name.endsWith(".sig"));
+        const debAsset = ghRelease.assets.find(a => a.name.endsWith("_amd64.deb"));
+        const appAsset = ghRelease.assets.find(a => a.name.endsWith("_amd64.AppImage"));
+
+        // Pick the right installer for the current OS
+        const primaryAsset = isWindows ? winAsset
+          : isMac ? null
+          : (debAsset ?? appAsset);
+        const primaryLabel = isWindows ? "Windows Installer (.exe)"
+          : debAsset ? "Linux Installer (.deb)"
+          : appAsset ? "Linux AppImage"
+          : "Installer";
         const latestVer = ghRelease.tag_name.replace(/^v/, "");
         return (
           <div style={{ ...card }}>
@@ -278,18 +294,20 @@ export default function SoftwareUpdateTab() {
               </div>
 
               {/* Download button */}
-              {winAsset ? (
+              {primaryAsset ? (
                 <div style={{ display:"flex", gap:12, alignItems:"center", flexWrap:"wrap" }}>
-                  <a href={winAsset.browser_download_url} target="_blank" rel="noreferrer"
+                  <a href={primaryAsset.browser_download_url} target="_blank" rel="noreferrer"
                     style={{ display:"flex", alignItems:"center", gap:8, padding:"11px 22px",
                       borderRadius:10, background:"#CF291D", color:"#fff",
                       fontSize:13, fontWeight:800, textDecoration:"none",
                       boxShadow:"0 4px 14px rgba(207,41,29,0.35)" }}>
                     <Download size={15}/>
-                    Download Windows Installer ({(winAsset.size / 1024 / 1024).toFixed(1)} MB)
+                    Download {primaryLabel} ({(primaryAsset.size / 1024 / 1024).toFixed(1)} MB)
                   </a>
                   <p style={{ fontSize:11, color:"#9CA3AF", margin:0 }}>
-                    Run the .exe — it will upgrade your existing installation.
+                    {isWindows
+                      ? "Run the .exe — it will upgrade your existing installation."
+                      : "Install the package to upgrade your existing installation."}
                   </p>
                 </div>
               ) : (

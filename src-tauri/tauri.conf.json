@@ -1,16 +1,18 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "lottery-manager",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "identifier": "com.ajithrohana.lotterymanager",
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY5RDNCRjZENkNFOUQ5QTEKUldTaDJlbHNiYi9UYVVEWDd1M2Z3RlRQZVpQcVh0NjdlWE5uK1U1L3Q3YjBidkxROVN6dUtRN0sK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDE0NTFBN0NFRDdEODcxMTYKUldRV2Nkalh6cWRSRk1Ja3RLNnhHbXl5Z1BNcWpSc2tCbzYzYm1rNkZqMVJsd2s4S1YwcDF3WkMK",
       "endpoints": [
         "https://github.com/Victor-dev-03-cmd/lottery-software/releases/latest/download/latest.json"
       ],
       "dialog": false,
-      "windows": { "installMode": "passive" }
+      "windows": {
+        "installMode": "passive"
+      }
     }
   },
   "build": {
@@ -22,7 +24,7 @@
   "app": {
     "windows": [
       {
-        "title": "Ajith Rohana Enterprise — Lottery Manager",
+        "title": "Ajith Rohana Enterprise \u2014 Lottery Manager",
         "width": 1280,
         "height": 800,
         "minWidth": 1024,
@@ -46,7 +48,7 @@
       "icons/icon.ico"
     ],
     "publisher": "Ajith Rohana Enterprise",
-    "copyright": "© 2026 Ajith Rohana Enterprise. Powered by Asroz.",
+    "copyright": "\u00a9 2026 Ajith Rohana Enterprise. Powered by Asroz.",
     "category": "Utility",
     "shortDescription": "Professional Lottery Ticket Distribution Manager",
     "resources": [],
@@ -56,13 +58,18 @@
       },
       "nsis": {
         "installMode": "currentUser",
-        "languages": ["English"],
+        "languages": [
+          "English"
+        ],
         "displayLanguageSelector": false
       }
     },
     "linux": {
       "deb": {
-        "depends": ["libwebkit2gtk-4.1-0", "libssl3"]
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libssl3"
+        ]
       },
       "appimage": {
         "bundleMediaFramework": false
