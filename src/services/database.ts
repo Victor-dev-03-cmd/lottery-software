@@ -78,7 +78,9 @@ async function initSchema() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       unit_price REAL NOT NULL DEFAULT 32.50,
-      board TEXT NOT NULL DEFAULT 'NLB'
+      cost_price REAL NOT NULL DEFAULT 0,
+      board TEXT NOT NULL DEFAULT 'NLB',
+      is_enabled INTEGER DEFAULT 1
     )
   `);
 

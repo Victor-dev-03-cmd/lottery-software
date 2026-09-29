@@ -1111,6 +1111,49 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
         </div>
       </div>
 
+      {/* ── Clear All Data / Factory Reset ── */}
+      <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "2px solid #FECACA" }}>
+        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #FEE2E2", background: "#FFF1F0" }}>
+          <p className="font-semibold text-sm flex items-center gap-2" style={{ color: "#DC2626" }}>
+            <AlertTriangle size={15} /> Clear All Data / Factory Reset
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
+            Wipe all invoices, agents, stock, and records — start fresh without deleting the app.
+            Use this instead of manually deleting database files.
+          </p>
+        </div>
+        <div className="p-5">
+          <button
+            onClick={async () => {
+              if (!confirm(
+                "⚠ CLEAR ALL DATA?\n\n" +
+                "This will permanently delete ALL:\n" +
+                "• Invoices & payments\n• Agents\n• Stock & purchases\n" +
+                "• Returns & collections\n• Workers & salaries\n\n" +
+                "The app will restart with a clean, empty database.\n\n" +
+                "Make sure you have a backup if you need the data!"
+              )) return;
+              if (!confirm("Are you absolutely sure? This cannot be undone.")) return;
+              try {
+                const { closeAndResetDb } = await import("../services/database");
+                await closeAndResetDb();
+                window.location.reload();
+              } catch (e) {
+                alert("Reset failed: " + String(e));
+              }
+            }}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold text-white hover:opacity-90 transition-all"
+            style={{ background: "#DC2626" }}>
+            <RotateCcw size={15} />
+            Clear All Data &amp; Start Fresh
+          </button>
+          <p className="text-xs mt-2" style={{ color: "#9CA3AF" }}>
+            Use this instead of manually deleting <code>ajith_rohana.db</code>.
+            The app restarts automatically with an empty database.
+          </p>
+        </div>
+      </div>
+
       {/* ── Supabase Cloud Sync ── */}
       <SupabaseConfigCard />
     </div>
