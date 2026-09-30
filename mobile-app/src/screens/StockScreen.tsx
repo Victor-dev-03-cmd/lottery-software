@@ -42,7 +42,7 @@ function statusLabelSi(status: StockFilter): string {
   return 'ඇත';
 }
 
-export function StockScreen() {
+function StockScreen() {
   const [items, setItems] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -313,3 +313,5 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingVertical: 48, gap: 12 },
   emptyText: { fontSize: 14, color: '#9CA3AF' },
 });
+
+export default StockScreen;

@@ -17,7 +17,7 @@ import { StatCard } from '../components/StatCard';
 
 const ACCENT = '#CF291D';
 
-export function HomeScreen() {
+function HomeScreen() {
   const navigation = useNavigation<any>();
   const { ip, connected, connecting, lastChecked, refresh } = useConnection();
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -310,3 +310,5 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
 });
+
+export default HomeScreen;

@@ -19,7 +19,7 @@ const ACCENT = '#CF291D';
 
 type TestStatus = 'idle' | 'testing' | 'ok' | 'fail';
 
-export function ConnectionScreen() {
+function ConnectionScreen() {
   const { ip: savedIp, connected, setIP } = useConnection();
   const [inputIp, setInputIp] = useState<string>(savedIp);
   const [testStatus, setTestStatus] = useState<TestStatus>('idle');
@@ -423,3 +423,5 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
   },
 });
+
+export default ConnectionScreen;

@@ -29,7 +29,7 @@ function todayISO(): string {
   return new Date().toISOString().split('T')[0];
 }
 
-export function PurchasesScreen() {
+function PurchasesScreen() {
   const [gameName, setGameName] = useState('');
   const [barcodeStart, setBarcodeStart] = useState('');
   const [barcodeEnd, setBarcodeEnd] = useState('');
@@ -453,3 +453,5 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
 });
+
+export default PurchasesScreen;

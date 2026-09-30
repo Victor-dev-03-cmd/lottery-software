@@ -36,7 +36,7 @@ function todayISO(): string {
   return new Date().toISOString().split('T')[0];
 }
 
-export function ReturnsScreen() {
+function ReturnsScreen() {
   const [gameName, setGameName] = useState('');
   const [barcodeStart, setBarcodeStart] = useState('');
   const [barcodeEnd, setBarcodeEnd] = useState('');
@@ -428,3 +428,5 @@ const styles = StyleSheet.create({
   sheetItemText: { fontSize: 15, color: '#1D1D1D' },
   sheetItemSi: { fontSize: 11, color: '#9CA3AF', marginTop: 2 },
 });
+
+export default ReturnsScreen;

@@ -27,7 +27,7 @@ const STATUS_LABELS_SI: Record<string, string> = {
   paid: 'ගෙවූ',
 };
 
-export function InvoicesScreen() {
+function InvoicesScreen() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -370,3 +370,5 @@ const detailStyles = StyleSheet.create({
   lineTotal: { fontSize: 14, fontWeight: '700', color: ACCENT },
   lineDetail: { fontSize: 12, color: '#6B7280', marginTop: 2 },
 });
+
+export default InvoicesScreen;
