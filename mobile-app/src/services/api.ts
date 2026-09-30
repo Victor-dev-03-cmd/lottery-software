@@ -3,7 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const STORAGE_KEY = 'desktop_ip';
 const PORT = 7423;
-const API_KEY = 'mobile';
+// Must match COMPANION_KEY constant in src-tauri/src/lib.rs
+const API_KEY = 'LOTTERY_COMPANION';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

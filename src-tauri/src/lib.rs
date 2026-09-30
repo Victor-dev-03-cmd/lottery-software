@@ -1795,6 +1795,9 @@ async fn start_api_server(app: tauri::AppHandle) {
         #[derive(Clone)]
         struct ApiState { db_path: String, api_key: String }
 
+        // Fixed companion key accepted from mobile app — no user configuration needed
+        const COMPANION_KEY: &str = "LOTTERY_COMPANION";
+
         async fn auth_check(
             State(s): State<Arc<ApiState>>,
             headers: HeaderMap,
@@ -1802,10 +1805,16 @@ async fn start_api_server(app: tauri::AppHandle) {
             next: axum::middleware::Next,
         ) -> impl IntoResponse {
             let key = headers.get("x-api-key").and_then(|v| v.to_str().ok()).unwrap_or("");
-            if s.api_key.is_empty() || key == s.api_key {
+            let allowed = s.api_key.is_empty()        // no key configured → open
+                || key == s.api_key                    // main UUID key
+                || key == COMPANION_KEY;               // fixed mobile companion key
+            if allowed {
                 Ok(next.run(req).await)
             } else {
-                Err((StatusCode::UNAUTHORIZED, Json(serde_json::json!({"error":"Invalid API key"}))))
+                Err((StatusCode::UNAUTHORIZED, Json(serde_json::json!({
+                    "error": "Unauthorized",
+                    "hint": "Mobile app: use x-api-key: LOTTERY_COMPANION"
+                }))))
             }
         }
 
@@ -2027,8 +2036,9 @@ async fn start_api_server(app: tauri::AppHandle) {
 
         let state = Arc::new(ApiState { db_path, api_key });
 
-        let app = Router::new()
-            .route("/api/v1/health",    get(health))
+        // /api/v1/health is public (used for discovery pings — reveals no data)
+        // All other endpoints require x-api-key: LOTTERY_COMPANION (or the main UUID)
+        let protected = Router::new()
             .route("/api/v1/results",   get(results_handler))
             .route("/api/v1/stock",     get(stock_handler))
             .route("/api/v1/agents",    get(agents_handler))
@@ -2036,6 +2046,11 @@ async fn start_api_server(app: tauri::AppHandle) {
             .route("/api/v1/purchases", axum::routing::post(purchases_post))
             .route("/api/v1/returns",   axum::routing::post(returns_post))
             .layer(axum::middleware::from_fn_with_state(state.clone(), auth_check))
+            .with_state(state.clone());
+
+        let app = Router::new()
+            .route("/api/v1/health", get(health))   // public — no auth
+            .merge(protected)
             .layer(cors)
             .with_state(state);
 
