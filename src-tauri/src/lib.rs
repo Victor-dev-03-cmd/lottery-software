@@ -1774,7 +1774,7 @@ async fn get_api_key(app: tauri::AppHandle) -> String {
     new_key
 }
 
-/// Start the local REST API server on 127.0.0.1:7423 (fire-and-forget).
+/// Start the local REST API server on 0.0.0.0:7423 — accessible from mobile on same WiFi.
 #[tauri::command]
 async fn start_api_server(app: tauri::AppHandle) {
     let db_path = find_db(&app)

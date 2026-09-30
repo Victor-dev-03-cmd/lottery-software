@@ -105,6 +105,9 @@ export default function App() {
         setDbReady(true);
         // 4. Start offline-first background sync (non-blocking)
         startSyncWorker();
+        // 5. Start mobile companion API server (non-blocking) — binds to 0.0.0.0:7423
+        invoke("start_api_server").catch(() => {});
+        invoke("start_background_sync").catch(() => {});
 
         // 4. Ensure min splash time for branding
         const elapsed = Date.now() - splashStart;
