@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useConnection } from '../services/connection';
-import { checkHealth } from '../services/api';
+import { checkHealth, parseNetworkError } from '../services/api';
 
 const ACCENT = '#CF291D';
 
@@ -42,22 +42,16 @@ function ConnectionScreen() {
     setTestStatus('testing');
     setTestMessage('');
 
-    // Temporarily save to test
-    await setIP(trimmed);
-
     try {
-      const health = await checkHealth();
+      // Test connection using the typed IP directly — no AsyncStorage race condition
+      const health = await checkHealth(trimmed);
+      // Only save IP after successful connection test
+      await setIP(trimmed);
       setTestStatus('ok');
-      setTestMessage(`Connected! Server status: ${health.status ?? 'ok'}`);
+      setTestMessage(`✓ Connected to ${trimmed}:7423 — ${health.status ?? 'ok'}`);
     } catch (err: any) {
       setTestStatus('fail');
-      const msg =
-        err?.code === 'ECONNREFUSED'
-          ? 'Connection refused. Is the desktop app running?'
-          : err?.code === 'ETIMEDOUT'
-          ? 'Timed out. Check that both devices are on the same WiFi.'
-          : err?.message ?? 'Could not connect.';
-      setTestMessage(msg);
+      setTestMessage(parseNetworkError(err));
     }
   };
 
@@ -123,13 +117,22 @@ function ConnectionScreen() {
           </View>
         </View>
 
+        {/* Live URL preview */}
+        {inputIp.trim().length > 0 && (
+          <View style={styles.urlPreview}>
+            <Text style={styles.urlLabel}>Will connect to:</Text>
+            <Text style={styles.urlValue}>http://{inputIp.trim()}:7423/api/v1/health</Text>
+          </View>
+        )}
+
         {/* Hint */}
         <View style={styles.hint}>
           <Feather name="info" size={14} color="#6B7280" />
           <Text style={styles.hintText}>
-            Find the desktop IP: open desktop app → Settings → "Server Info", or run{' '}
-            <Text style={styles.mono}>ipconfig</Text> (Windows) /{' '}
-            <Text style={styles.mono}>ifconfig</Text> (Linux).
+            Find desktop IP: open a terminal on the desktop computer and run{' '}
+            <Text style={styles.mono}>ip addr</Text> (Linux) or{' '}
+            <Text style={styles.mono}>ipconfig</Text> (Windows). Look for the IP on your WiFi adapter.
+            The desktop Lottery app must be open and running.
           </Text>
         </View>
 
@@ -330,6 +333,24 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     backgroundColor: '#DBEAFE',
     fontSize: 11,
+  },
+  urlPreview: {
+    backgroundColor: '#1D1D1D',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 12,
+  },
+  urlLabel: {
+    fontSize: 9,
+    color: '#9CA3AF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 3,
+  },
+  urlValue: {
+    fontSize: 12,
+    color: '#4ADE80',
+    fontFamily: 'monospace',
   },
   testResult: {
     flexDirection: 'row',

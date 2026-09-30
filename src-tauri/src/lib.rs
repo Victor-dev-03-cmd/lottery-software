@@ -2667,6 +2667,21 @@ async fn execute_ai_action(
 // ── Entry point ────────────────────────────────────────────────────────────────
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+/// Returns the best non-loopback LAN IP address for the mobile companion app
+#[tauri::command]
+fn get_local_ip() -> String {
+    // Connect a UDP socket to a public address (no actual data sent)
+    // to discover which local interface the OS would use
+    if let Ok(socket) = std::net::UdpSocket::bind("0.0.0.0:0") {
+        if socket.connect("8.8.8.8:80").is_ok() {
+            if let Ok(addr) = socket.local_addr() {
+                return addr.ip().to_string();
+            }
+        }
+    }
+    "127.0.0.1".to_string()
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -2704,6 +2719,7 @@ pub fn run() {
             ai_query,
             save_ai_api_key,
             execute_ai_action,
+            get_local_ip,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

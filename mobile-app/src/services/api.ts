@@ -108,10 +108,28 @@ async function client(): Promise<AxiosInstance> {
   return createClient(ip);
 }
 
+// ─── Error helper ─────────────────────────────────────────────────────────────
+
+export function parseNetworkError(err: any): string {
+  // Axios on React Native wraps all network failures as "Network Error"
+  // with no error code — must check message string
+  const msg: string = err?.message ?? '';
+  const code: string = err?.code ?? '';
+  if (msg === 'Network Error' || code === 'ECONNREFUSED') {
+    return 'Connection refused — make sure the Lottery desktop app is running and both devices are on the same WiFi.';
+  }
+  if (code === 'ECONNABORTED' || msg.toLowerCase().includes('timeout')) {
+    return 'Timed out — check that both devices are on the same WiFi network.';
+  }
+  if (msg.includes('IP not configured')) return msg;
+  return `Error: ${msg || 'Unknown network error'}`;
+}
+
 // ─── API calls ────────────────────────────────────────────────────────────────
 
-export async function checkHealth(): Promise<HealthResponse> {
-  const c = await client();
+/** Pass ip directly to skip AsyncStorage read — avoids race conditions */
+export async function checkHealth(directIp?: string): Promise<HealthResponse> {
+  const c = directIp ? createClient(directIp) : await client();
   const res = await c.get<HealthResponse>('/api/v1/health');
   return res.data;
 }

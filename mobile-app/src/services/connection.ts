@@ -32,12 +32,13 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
 
   const ping = useCallback(async (targetIp?: string) => {
-    const resolvedIp = targetIp ?? ip;
+    const resolvedIp = (targetIp ?? ip).trim();
     if (!resolvedIp) return;
 
     setConnecting(true);
     try {
-      await checkHealth();
+      // Pass IP directly — avoids AsyncStorage race condition
+      await checkHealth(resolvedIp);
       setConnected(true);
     } catch {
       setConnected(false);
