@@ -165,14 +165,14 @@ export default function BarcodeScanner({ onScanned, onClose, label, labelSi }: P
             onCameraReady={() => setCameraReady(true)}
             onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
             barcodeScannerSettings={{
-              // All formats used on Sri Lankan lottery tickets:
-              // code128: most NLB barcodes  |  itf14: DLB ITF codes (3125-130631350-2-09 style)
-              // codabar: some older tickets  |  ean13/ean8: standard retail barcodes
+              // Valid BarcodeType values for expo-camera SDK 57:
+              // itf14: DLB tickets (3125-130631350-2-09 = 16 digits)
+              // code128: NLB tickets (11 digits, e.g. 62900474690)
+              // codabar/code39/code93: older & alternative lottery formats
               barcodeTypes: [
-                'code128', 'code39', 'codabar',
+                'code128', 'code39', 'code93', 'codabar',
                 'ean13', 'ean8', 'upc_a', 'upc_e',
-                'itf14', 'interleaved2of5',
-                'qr', 'pdf417',
+                'itf14', 'pdf417', 'datamatrix', 'qr',
               ],
             }}
           />
