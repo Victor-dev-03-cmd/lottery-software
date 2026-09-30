@@ -114,7 +114,7 @@ fn current_timestamp() -> String {
 /// Checks PATH on Linux/Mac and fixed install paths on Windows.
 fn chrome_available() -> bool {
     use std::process::Command;
-    use std::path::Path;
+#[allow(unused_imports)] use std::path::Path;
 
     // Windows: check common fixed install locations first (Chrome is rarely in PATH on Windows)
     #[cfg(target_os = "windows")]
@@ -2018,7 +2018,7 @@ async fn start_api_server(app: tauri::AppHandle) {
         }
 
         // ── CORS middleware for React Native ──────────────────────────────────
-        use axum::http::{header, Method};
+        use axum::http::Method;
         use tower_http::cors::{CorsLayer, Any};
         let cors = CorsLayer::new()
             .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
@@ -2725,7 +2725,7 @@ fn start_discovery_beacon() {
             Ok(d)  => d,
             Err(_) => return,
         };
-        let host_ip: std::net::Ipv4Addr = ip.parse().unwrap_or(std::net::Ipv4Addr::LOCALHOST);
+        // mdns-sd 0.12 accepts &str / String / IpAddr for the host param — not Ipv4Addr directly
         let props = std::collections::HashMap::from([
             ("version".to_string(), "1".to_string()),
             ("app".to_string(),     "ajith-rohana-lottery".to_string()),
@@ -2734,7 +2734,7 @@ fn start_discovery_beacon() {
             "_lottery._tcp.local.",
             "LotteryDesktop",
             "lottery-desktop.local.",
-            host_ip,
+            ip.as_str(),   // &str implements AsIpAddrs
             port,
             props,
         ) {
