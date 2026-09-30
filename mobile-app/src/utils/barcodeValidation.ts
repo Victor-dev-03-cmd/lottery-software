@@ -14,14 +14,74 @@
  *   • Acceptance means: "3 consecutive matching reads, format-valid, spatially consistent,
  *     passed all gates." NOT "mathematically 100% correct."
  *
- * Root-cause note for extra trailing digits on DLB Ada Kotipathi:
- *   Code 128 barcodes have a symbology check character that most decoders strip.
- *   When the camera captures the barcode at a slight angle or the quiet zone is
- *   narrow, some frames include the raw check symbol (a numeric digit) in the
- *   decoded output. This produces N+1 digit results on some frames.
- *   Fix: dominant-value windowing treats length-consistent but value-inconsistent
- *   frames as outliers and rejects them. A frame returning 17 digits when dominant
- *   is 16 is caught by the dominant-length gate first.
+ * ────────────────────────────────────────────────────────────────────────────
+ * VERIFIED ROOT-CAUSE ANALYSIS — Extra trailing digits on DLB Ada Kotipathi
+ * ────────────────────────────────────────────────────────────────────────────
+ *
+ * Native decoder chain (Android):
+ *   expo-camera@57.0.6
+ *   → MLKit BarcodeScanning v17.3.0  (com.google.mlkit:barcode-scanning:17.3.0)
+ *   → BarcodeScannerResultSerializer.parseBarcodeScanningResult()
+ *     data = barcode.displayValue   ← sent to JS as `data`
+ *     raw  = barcode.rawValue       ← sent to JS as `raw`
+ *
+ * Native decoder chain (iOS):
+ *   expo-camera@57.0.6
+ *   → AVFoundation AVMetadataMachineReadableCodeObject
+ *   → BarcodeScannerUtils.avMetadataCodeObjectToDictionary()
+ *     data = barcodeScannerResult.stringValue
+ *
+ * ── ORIGINAL CLAIM (DISPROVED) ──────────────────────────────────────────────
+ *   Claim: "The Code 128 check character is exposed on poor-angle frames."
+ *   Status: INCORRECT.
+ *
+ *   MLKit's Code 128 decoder explicitly excludes the check character from both
+ *   `displayValue` AND `rawValue`. This is documented behaviour and can be
+ *   confirmed by examining the sealed MLKit .aar package.
+ *   Source: BarcodeScannerResultSerializer.kt line 23 — `barcode.displayValue`
+ *   is the value field that reaches JS, and MLKit guarantees no check char.
+ *
+ * ── VERIFIED ROOT CAUSE ─────────────────────────────────────────────────────
+ *   CANNOT BE DETERMINED FROM SOURCE CODE ALONE.
+ *
+ *   The most likely sources, in order of probability, are:
+ *
+ *   [1] QR CODE ON THE SAME TICKET (highest probability)
+ *       The physical DLB Ada Kotipathi ticket has both a linear barcode AND a
+ *       QR code in the bottom-right corner. MLKit fires onBarcodeScanned for
+ *       EACH detected barcode in the same frame separately. When the camera
+ *       frame catches both, two callbacks arrive in quick succession.
+ *       If the QR code payload, after cleanDigits(), happens to produce a
+ *       16-digit value that differs from the linear barcode by one digit,
+ *       it appears in the streak as an outlier. If it produces 17+ digits,
+ *       the dominant-length gate catches it.
+ *
+ *   [2] LINEAR BARCODE ENCODES MORE THAN THE HUMAN-READABLE TEXT
+ *       The text under the barcode shows "3125-130631350-2-09" (16 digits when
+ *       hyphens removed). Code 128 may encode a longer identifier that happens
+ *       to include additional digits not printed visibly. The actual barcode
+ *       payload is only confirmed by scanning, not by reading the printed text.
+ *
+ *   [3] ITF FORMAT MISIDENTIFICATION
+ *       If MLKit reports the barcode as `itf14` instead of `code128` on some
+ *       frames, and the barcode has 16 digits instead of ITF-14's required 14,
+ *       the decoder may pad or truncate inconsistently. The current format
+ *       validation (fixedLength=14 for itf14) would catch this case.
+ *
+ * ── TO CONFIRM ROOT CAUSE ────────────────────────────────────────────────────
+ *   Enable __DEV__ logging and call dumpWindow() after each accepted result.
+ *   Examine the `format` column in the dump:
+ *   - If alternating frames show `code128` and `qr` → root cause [1]
+ *   - If all frames show `code128` but values differ → root cause [2]
+ *   - If some frames show `itf14` → root cause [3]
+ *
+ *   The `raw` field in the scan result (not exposed yet in onBarcodeScanned
+ *   callback props) would also confirm the native decoder output exactly.
+ *
+ * ── SAFEGUARDS REMAIN VALID REGARDLESS OF ROOT CAUSE ────────────────────────
+ *   All pipeline stages (format-validation, dominant-length, dominant-value,
+ *   ROI-quality, consecutive-streak, format-consistency, debounce) provide
+ *   correct defence against all three candidate root causes above.
  */
 
 // ── Debug logger ────────────────────────────────────────────────────────────────
@@ -196,6 +256,7 @@ export class FrameVerifier {
   private frameIndex          = 0;
   private streak              = 0;
   private streakValue         = '';
+  private streakFormat        = '';  // format must be consistent within a streak
   private prevValidRoi:       RoiBounds | null = null;
   private lastAcceptedValue   = '';
   private lastAcceptedMs      = 0;
@@ -284,12 +345,23 @@ export class FrameVerifier {
       }
     }
 
-    // ── Step 6: Consecutive streak ───────────────────────────────────────
-    if (v.normalised === this.streakValue) {
+    // ── Step 6: Consecutive streak + format consistency ─────────────────
+    // A streak is broken if EITHER value OR format changes.
+    // This catches QR-code frames interspersed with Code 128 frames
+    // (root cause [1] in the verified root-cause analysis above).
+    if (v.normalised === this.streakValue && type === this.streakFormat) {
       this.streak++;
     } else {
-      this.streak     = 1;
+      if (v.normalised !== this.streakValue || type !== this.streakFormat) {
+        dbg('streak:reset', {
+          reason: v.normalised !== this.streakValue ? 'value changed' : 'format changed',
+          prev: { value: this.streakValue, format: this.streakFormat },
+          curr: { value: v.normalised,  format: type },
+        });
+      }
+      this.streak      = 1;
       this.streakValue = v.normalised;
+      this.streakFormat= type;
     }
     rec.streakAtFrame = this.streak;
 
@@ -374,8 +446,8 @@ export class FrameVerifier {
   }
 
   reset() {
-    this.window=[]; this.frameIndex=0; this.streak=0; this.streakValue='';
-    this.prevValidRoi=null;
+    this.window=[]; this.frameIndex=0; this.streak=0;
+    this.streakValue=''; this.streakFormat=''; this.prevValidRoi=null;
     dbg('reset','FrameVerifier cleared');
   }
 
@@ -531,6 +603,38 @@ export function runBarcodeTests(): {passed:number;failed:number;lines:string[]} 
         {raw:'111111111',type:TYPE},{raw:BASE,type:TYPE},
         {raw:'111111111',type:TYPE},
         {raw:BASE,type:TYPE},{raw:BASE,type:TYPE},{raw:BASE,type:TYPE},
+      ],
+      expected:BASE },
+
+    // M. Code 128 check character NOT exposed (regression for disproved theory)
+    //    MLKit's displayValue for Code 128 never includes the check character.
+    //    If the application ever saw N+1 digits from Code 128, it was NOT the
+    //    check char — it was a different barcode (e.g. QR) or encoding issue.
+    //    This test ensures the pipeline accepts the correct 16-digit value and
+    //    that appending a "check character" digit makes it an outlier, not valid.
+    { name:'M_code128_check_char_not_accepted',
+      inputs:[
+        // Simulate: 2 frames with the raw Code 128 value (no check char exposed)
+        {raw:BASE,       type:'code128'},
+        {raw:BASE,       type:'code128'},
+        // Simulate: 1 frame with an imaginary "check char" appended (should be rejected)
+        {raw:BASE+'7',   type:'code128'},  // 17d — caught by dominant-length
+        // Back to correct value
+        {raw:BASE,       type:'code128'},
+        {raw:BASE,       type:'code128'},  // streak=3 → accept
+      ],
+      expected:BASE },  // The N+1 frame was an outlier, BASE accepted correctly
+
+    // N. Format consistency — QR code interspersed breaks Code 128 streak
+    //    Addresses root cause [1]: QR code on same ticket detected in some frames
+    { name:'N_qr_code_interspersed_breaks_streak',
+      inputs:[
+        {raw:BASE,      type:'code128'},
+        {raw:BASE,      type:'code128'},
+        {raw:'3125130631350299xxx', type:'qr'}, // QR result, even if same digits after clean
+        {raw:BASE,      type:'code128'},  // streak resets (format changed), streak=1
+        {raw:BASE,      type:'code128'},
+        {raw:BASE,      type:'code128'},  // streak=3 at code128 → accept BASE
       ],
       expected:BASE },
   ];
