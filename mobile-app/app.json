@@ -3,17 +3,11 @@
     "name": "Lottery Scanner",
     "slug": "lottery-scanner",
     "version": "1.0.0",
+    "sdkVersion": "57.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#CF291D"
-    },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#CF291D"
       },
       "permissions": [
@@ -22,9 +16,12 @@
       ]
     },
     "plugins": [
-      "expo-camera",
-      "expo-router"
-    ],
-    "scheme": "lottery-scanner"
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Lottery Scanner to access your camera for barcode scanning."
+        }
+      ]
+    ]
   }
 }
