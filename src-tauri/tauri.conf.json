@@ -11,7 +11,8 @@
       "dialog": false,
       "windows": {
         "installMode": "passive"
-      }
+      },
+      "pubkey": ""
     }
   },
   "build": {
