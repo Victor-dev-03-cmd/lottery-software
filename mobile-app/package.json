@@ -5,10 +5,8 @@
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
-    "build": "eas build --platform android --profile preview",
-    "install": "bun install"
+    "build": "eas build --platform android --profile preview"
   },
-  "packageManager": "bun",
   "dependencies": {
     "expo": "~51.0.0",
     "expo-router": "~3.5.0",
