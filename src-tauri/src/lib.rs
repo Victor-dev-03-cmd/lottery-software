@@ -1870,15 +1870,177 @@ async fn start_api_server(app: tauri::AppHandle) {
             Json(res).into_response()
         }
 
+        // ── Mobile API handlers ───────────────────────────────────────────────
+
+        async fn stock_handler(State(s): State<Arc<ApiState>>) -> impl IntoResponse {
+            let res = tokio::task::spawn_blocking({
+                let db = s.db_path.clone();
+                move || -> Result<serde_json::Value, String> {
+                    let conn = rusqlite::Connection::open(&db).map_err(|e| e.to_string())?;
+                    let mut stmt = conn.prepare(
+                        "SELECT game_name, SUM(total_qty) as total, SUM(distributed_qty) as dist,
+                                SUM(total_qty - distributed_qty) as remaining
+                         FROM inventory_batches GROUP BY game_name ORDER BY game_name ASC"
+                    ).map_err(|e| e.to_string())?;
+                    let rows: Vec<serde_json::Value> = stmt.query_map([], |r| {
+                        Ok(serde_json::json!({
+                            "game_name": r.get::<_,String>(0).unwrap_or_default(),
+                            "total":     r.get::<_,i64>(1).unwrap_or(0),
+                            "sold":      r.get::<_,i64>(2).unwrap_or(0),
+                            "remaining": r.get::<_,i64>(3).unwrap_or(0),
+                        }))
+                    }).map_err(|e| e.to_string())?.filter_map(|r| r.ok()).collect();
+                    Ok(serde_json::json!({"success":true,"data":rows}))
+                }
+            }).await.unwrap_or_else(|_| Ok(serde_json::json!({"error":"thread error"}))).unwrap_or_else(|e| serde_json::json!({"error":e}));
+            Json(res).into_response()
+        }
+
+        async fn agents_handler(State(s): State<Arc<ApiState>>) -> impl IntoResponse {
+            let res = tokio::task::spawn_blocking({
+                let db = s.db_path.clone();
+                move || -> Result<serde_json::Value, String> {
+                    let conn = rusqlite::Connection::open(&db).map_err(|e| e.to_string())?;
+                    let mut stmt = conn.prepare(
+                        "SELECT id, name, nlb_reg, dlb_reg, phone FROM agents ORDER BY name ASC"
+                    ).map_err(|e| e.to_string())?;
+                    let rows: Vec<serde_json::Value> = stmt.query_map([], |r| {
+                        Ok(serde_json::json!({
+                            "id":      r.get::<_,i64>(0).unwrap_or(0),
+                            "name":    r.get::<_,String>(1).unwrap_or_default(),
+                            "nlb_reg": r.get::<_,String>(2).unwrap_or_default(),
+                            "dlb_reg": r.get::<_,String>(3).unwrap_or_default(),
+                            "phone":   r.get::<_,String>(4).unwrap_or_default(),
+                        }))
+                    }).map_err(|e| e.to_string())?.filter_map(|r| r.ok()).collect();
+                    Ok(serde_json::json!({"success":true,"data":rows}))
+                }
+            }).await.unwrap_or_else(|_| Ok(serde_json::json!({"error":"thread error"}))).unwrap_or_else(|e| serde_json::json!({"error":e}));
+            Json(res).into_response()
+        }
+
+        async fn invoices_handler(
+            State(s): State<Arc<ApiState>>,
+            Query(params): Query<HashMap<String, String>>,
+        ) -> impl IntoResponse {
+            let res = tokio::task::spawn_blocking({
+                let db = s.db_path.clone();
+                let agent_id = params.get("agent_id").and_then(|v| v.parse::<i64>().ok());
+                move || -> Result<serde_json::Value, String> {
+                    let conn = rusqlite::Connection::open(&db).map_err(|e| e.to_string())?;
+                    let sql = if agent_id.is_some() {
+                        "SELECT i.id, i.invoice_number, a.name, i.invoice_date, i.invoice_total,
+                                i.outstanding_balance, COALESCE(i.invoice_status,'paid') as status
+                         FROM invoices i LEFT JOIN agents a ON a.id=i.agent_id
+                         WHERE i.agent_id=?1 ORDER BY i.invoice_date DESC LIMIT 50"
+                    } else {
+                        "SELECT i.id, i.invoice_number, a.name, i.invoice_date, i.invoice_total,
+                                i.outstanding_balance, COALESCE(i.invoice_status,'paid') as status
+                         FROM invoices i LEFT JOIN agents a ON a.id=i.agent_id
+                         ORDER BY i.invoice_date DESC LIMIT 50"
+                    };
+                    let mut stmt = conn.prepare(sql).map_err(|e| e.to_string())?;
+                    let mapper = |r: &rusqlite::Row<'_>| Ok(serde_json::json!({
+                        "id":             r.get::<_,i64>(0).unwrap_or(0),
+                        "invoice_number": r.get::<_,String>(1).unwrap_or_default(),
+                        "agent_name":     r.get::<_,String>(2).unwrap_or_default(),
+                        "invoice_date":   r.get::<_,String>(3).unwrap_or_default(),
+                        "invoice_total":  r.get::<_,f64>(4).unwrap_or(0.0),
+                        "outstanding":    r.get::<_,f64>(5).unwrap_or(0.0),
+                        "status":         r.get::<_,String>(6).unwrap_or_default(),
+                    }));
+                    let rows: Vec<serde_json::Value> = if let Some(aid) = agent_id {
+                        stmt.query_map(rusqlite::params![aid], mapper)
+                    } else {
+                        stmt.query_map([], mapper)
+                    }.map_err(|e| e.to_string())?.filter_map(|r| r.ok()).collect();
+                    Ok(serde_json::json!({"success":true,"data":rows}))
+                }
+            }).await.unwrap_or_else(|_| Ok(serde_json::json!({"error":"thread error"}))).unwrap_or_else(|e| serde_json::json!({"error":e}));
+            Json(res).into_response()
+        }
+
+        use axum::extract::Json as BodyJson;
+
+        async fn purchases_post(
+            State(s): State<Arc<ApiState>>,
+            BodyJson(body): BodyJson<serde_json::Value>,
+        ) -> impl IntoResponse {
+            let res = tokio::task::spawn_blocking({
+                let db = s.db_path.clone();
+                move || -> Result<serde_json::Value, String> {
+                    let game  = body["game_name"].as_str().unwrap_or("").to_string();
+                    let bs    = body["barcode_start"].as_str().unwrap_or("").to_string();
+                    let be    = body["barcode_end"].as_str().unwrap_or("").to_string();
+                    let qty   = body["qty"].as_i64().unwrap_or(0);
+                    let price = body["unit_price"].as_f64().unwrap_or(32.5);
+                    let date  = body["purchase_date"].as_str().unwrap_or("").to_string();
+                    if game.is_empty() || qty <= 0 { return Err("game_name and qty required".into()); }
+                    let conn = rusqlite::Connection::open(&db).map_err(|e| e.to_string())?;
+                    // Insert into inventory_batches directly for mobile quick-add
+                    conn.execute(
+                        "INSERT INTO inventory_batches (game_name,batch_date,barcode_start,barcode_end,total_qty,distributed_qty,unit_price,low_stock_threshold,notes) VALUES (?1,?2,?3,?4,?5,0,?6,100,'From mobile scanner')",
+                        rusqlite::params![game, date, bs, be, qty, price]
+                    ).map_err(|e| e.to_string())?;
+                    Ok(serde_json::json!({"success":true,"message":"Stock added successfully"}))
+                }
+            }).await.unwrap_or_else(|_| Ok(serde_json::json!({"error":"thread error"}))).unwrap_or_else(|e| serde_json::json!({"error":e}));
+            (if res["success"].as_bool().unwrap_or(false) { StatusCode::CREATED } else { StatusCode::BAD_REQUEST },
+             Json(res)).into_response()
+        }
+
+        async fn returns_post(
+            State(s): State<Arc<ApiState>>,
+            BodyJson(body): BodyJson<serde_json::Value>,
+        ) -> impl IntoResponse {
+            let res = tokio::task::spawn_blocking({
+                let db = s.db_path.clone();
+                move || -> Result<serde_json::Value, String> {
+                    let game   = body["game_name"].as_str().unwrap_or("").to_string();
+                    let bs     = body["barcode_start"].as_str().unwrap_or("").to_string();
+                    let be     = body["barcode_end"].as_str().unwrap_or("").to_string();
+                    let qty    = body["qty"].as_i64().unwrap_or(0);
+                    let reason = body["reason"].as_str().unwrap_or("unsold").to_string();
+                    let date   = body["return_date"].as_str().unwrap_or("").to_string();
+                    let price  = body["unit_price"].as_f64().unwrap_or(32.5);
+                    if game.is_empty() || qty <= 0 { return Err("game_name and qty required".into()); }
+                    let total  = qty as f64 * price;
+                    let conn = rusqlite::Connection::open(&db).map_err(|e| e.to_string())?;
+                    conn.execute(
+                        "INSERT INTO supplier_returns (return_date,game_name,barcode_start,barcode_end,qty,unit_price,total_value,return_reason,status,notes) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,'pending','From mobile scanner')",
+                        rusqlite::params![date, game, bs, be, qty, price, total, reason]
+                    ).map_err(|e| e.to_string())?;
+                    Ok(serde_json::json!({"success":true,"message":"Return recorded successfully"}))
+                }
+            }).await.unwrap_or_else(|_| Ok(serde_json::json!({"error":"thread error"}))).unwrap_or_else(|e| serde_json::json!({"error":e}));
+            (if res["success"].as_bool().unwrap_or(false) { StatusCode::CREATED } else { StatusCode::BAD_REQUEST },
+             Json(res)).into_response()
+        }
+
+        // ── CORS middleware for React Native ──────────────────────────────────
+        use axum::http::{header, Method};
+        use tower_http::cors::{CorsLayer, Any};
+        let cors = CorsLayer::new()
+            .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+            .allow_headers(Any)
+            .allow_origin(Any);
+
         let state = Arc::new(ApiState { db_path, api_key });
 
         let app = Router::new()
-            .route("/api/v1/health",  get(health))
-            .route("/api/v1/results", get(results_handler))
+            .route("/api/v1/health",    get(health))
+            .route("/api/v1/results",   get(results_handler))
+            .route("/api/v1/stock",     get(stock_handler))
+            .route("/api/v1/agents",    get(agents_handler))
+            .route("/api/v1/invoices",  get(invoices_handler))
+            .route("/api/v1/purchases", axum::routing::post(purchases_post))
+            .route("/api/v1/returns",   axum::routing::post(returns_post))
             .layer(axum::middleware::from_fn_with_state(state.clone(), auth_check))
+            .layer(cors)
             .with_state(state);
 
-        if let Ok(listener) = tokio::net::TcpListener::bind("127.0.0.1:7423").await {
+        // Bind to 0.0.0.0 so mobile devices on the same WiFi can connect
+        if let Ok(listener) = tokio::net::TcpListener::bind("0.0.0.0:7423").await {
             let _ = axum::serve(listener, app).await;
         }
     });
