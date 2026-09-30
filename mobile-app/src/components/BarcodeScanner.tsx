@@ -72,44 +72,36 @@ export default function BarcodeScanner({ onScanned, onClose, label, labelSi }: P
 
   // ── Core scan handler ─────────────────────────────────────────────────────
   const handleBarcodeScanned = useCallback(
-    ({ data, type }: { data: string; type: string }) => {
+    (scanResult: { data: string; type: string; bounds?: { origin?: { x?: number; y?: number }; size?: { width?: number; height?: number } } | null }) => {
       if (accepted) return;
+      const { data, type, bounds } = scanResult;
 
-      dbg('camera:raw', { data, type });
+      dbg('camera:raw', { data, type, bounds });
 
       // Reset idle timer
       if (resetTimer.current) clearTimeout(resetTimer.current);
       resetTimer.current = setTimeout(() => {
         verifier.current.reset();
-        setConfidence(0);
-        setLiveCode('');
-        setLiveType('');
-        setPipelineMsg('');
+        setConfidence(0); setLiveCode(''); setLiveType(''); setPipelineMsg('');
         dbg('idle:reset', 'No scan for 4s, verifier cleared');
       }, 4000);
 
-      const {
-        confidence:   conf,
-        ready,
-        acceptedCode,
-        rejectedReason,
-      } = verifier.current.feed(data, type);
+      // Feed full scan result into pipeline (bounds used for ROI quality gate)
+      const { confidence:conf, ready, acceptedCode, rejectedReason } =
+        verifier.current.feed(data, type, bounds ?? null);
 
-      // Update live display (shows current candidate even before accept)
-      const cleanedData = cleanDigits(data);
-      setLiveCode(cleanedData);
+      setLiveCode(cleanDigits(data));
       setLiveType(type);
       setConfidence(conf);
       setPipelineMsg(rejectedReason ?? '');
 
       if (ready && acceptedCode) {
-        dbg('ACCEPTED', { code: acceptedCode, type, streak: verifier.current.currentStreak });
+        // Dump 30-frame diagnostic table in dev mode
+        verifier.current.dumpWindow();
+        dbg('ACCEPTED', { code:acceptedCode, type, streak:verifier.current.currentStreak });
         setAccepted(true);
         Vibration.vibrate(80);
-        setTimeout(() => {
-          onScanned(acceptedCode);
-          handleClose();
-        }, 600);
+        setTimeout(() => { onScanned(acceptedCode); handleClose(); }, 600);
       }
     },
     [accepted, onScanned]
@@ -269,7 +261,7 @@ export default function BarcodeScanner({ onScanned, onClose, label, labelSi }: P
 
               {accepted && (
                 <View style={s.acceptedBadge}>
-                  <Text style={s.acceptedTxt}>✓  VERIFIED</Text>
+                  <Text style={s.acceptedTxt}>✓  Verified (3/3 reads)</Text>
                 </View>
               )}
             </Animated.View>
@@ -311,7 +303,8 @@ export default function BarcodeScanner({ onScanned, onClose, label, labelSi }: P
             {/* Confidence detail */}
             {liveCode !== '' && !accepted && confidence > 0 && (
               <Text style={s.confScore}>
-                {Math.round(confidence * 100)}% · {verifier.current.currentStreak}/3 consistent frames
+                {verifier.current.currentStreak}/3 matching reads · format-valid
+                {liveCode.length > 0 ? ` · ${liveCode.length}d` : ''}
               </Text>
             )}
           </View>
