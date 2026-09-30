@@ -115,14 +115,12 @@ function ReturnsScreen() {
   // ── Scanner modal ──────────────────────────────────────────────────────────
   if (scanTarget) {
     return (
-      <Modal visible animationType="slide" onRequestClose={() => setScanTarget(null)}>
-        <BarcodeScanner
-          label={scanTarget.label}
-          labelSi={scanTarget.labelSi}
-          onScanned={handleScanned}
-          onClose={() => setScanTarget(null)}
-        />
-      </Modal>
+      <BarcodeScanner
+        label={scanTarget.label}
+        labelSi={scanTarget.labelSi}
+        onScanned={handleScanned}
+        onClose={() => setScanTarget(null)}
+      />
     );
   }
 

@@ -1,199 +1,266 @@
-import React, { useState, useRef } from "react";
+/**
+ * BarcodeScanner — full-screen camera component (no internal Modal).
+ * The parent is responsible for showing/hiding this component in a Modal.
+ *
+ * Usage:
+ *   if (showScanner) {
+ *     return <BarcodeScanner onScanned={handleScanned} onClose={() => setShow(false)} />;
+ *   }
+ */
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Modal, ActivityIndicator, TextInput,
-} from "react-native";
-import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
+  TextInput, ActivityIndicator, StatusBar,
+} from 'react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 
+// ── Props ─────────────────────────────────────────────────────────────────────
 interface Props {
-  visible: boolean;
   onScanned: (code: string) => void;
-  onClose: () => void;
-  label?: string;
+  onClose:   () => void;
+  label?:    string;
+  labelSi?:  string;
+  // Legacy prop — accepted but ignored (parent handles modal visibility)
+  visible?:  boolean;
 }
 
-export default function BarcodeScanner({ visible, onScanned, onClose, label }: Props) {
+// ── Component ─────────────────────────────────────────────────────────────────
+export default function BarcodeScanner({ onScanned, onClose, label, labelSi }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
-  const [scanned, setScanned]     = useState<string | null>(null);
-  const [scanning, setScanning]   = useState(false);
-  const [manualMode, setManual]   = useState(false);
-  const [manualValue, setManualValue] = useState("");
-  const cameraRef = useRef<CameraView>(null);
+  const [scanned,     setScanned]       = useState<string | null>(null);
+  const [manualMode,  setManual]        = useState(false);
+  const [manualValue, setManualValue]   = useState('');
+  const [cameraReady, setCameraReady]   = useState(false);
 
-  function handleBarcodeScanned({ data }: { data: string }) {
-    if (scanning) {
-      setScanning(false);
-      // Keep only digits, trim to 11 chars
-      const cleaned = data.replace(/\D/g, "").slice(0, 11);
-      setScanned(cleaned || data);
+  // Request permission on mount
+  useEffect(() => {
+    if (permission !== null && !permission.granted && permission.canAskAgain) {
+      requestPermission();
     }
+  }, [permission]);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────────
+  function handleBarcodeScanned({ data }: { data: string }) {
+    if (scanned) return;                          // already have one, wait for confirm
+    const cleaned = data.replace(/\D/g, '').slice(0, 11);
+    setScanned(cleaned || data);
   }
 
   function handleConfirm() {
-    if (scanned) {
-      onScanned(scanned);
-      setScanned(null);
-      setScanning(false);
-    }
-  }
-
-  function handleRetry() {
-    setScanned(null);
-    setScanning(false);
+    if (!scanned) return;
+    onScanned(scanned);
+    reset();
   }
 
   function handleManualSubmit() {
-    const cleaned = manualValue.replace(/\D/g, "").slice(0, 11);
-    if (cleaned) {
-      onScanned(cleaned);
-      setManualValue("");
-      setManual(false);
-      setScanned(null);
-    }
+    const cleaned = manualValue.replace(/\D/g, '').slice(0, 11);
+    if (!cleaned) return;
+    onScanned(cleaned);
+    reset();
+  }
+
+  function reset() {
+    setScanned(null);
+    setManual(false);
+    setManualValue('');
   }
 
   function handleClose() {
-    setScanned(null);
-    setScanning(false);
-    setManual(false);
-    setManualValue("");
+    reset();
     onClose();
   }
 
+  // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-      <View style={s.container}>
+    <View style={s.root}>
+      <StatusBar barStyle="light-content" backgroundColor="#000" />
 
-        {/* Header */}
-        <View style={s.header}>
-          <Text style={s.headerTitle}>📷 {label ?? "Scan Barcode"}</Text>
-          <TouchableOpacity onPress={handleClose} style={s.closeBtn}>
-            <Text style={s.closeTxt}>✕</Text>
+      {/* ── Header ── */}
+      <View style={s.header}>
+        <View>
+          <Text style={s.headerTitle}>📷 {label ?? 'Scan Barcode'}</Text>
+          {labelSi && <Text style={s.headerSi}>{labelSi}</Text>}
+        </View>
+        <TouchableOpacity onPress={handleClose} style={s.closeBtn} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
+          <Text style={s.closeTxt}>✕  Close</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ── Permission gate ── */}
+      {permission === null ? (
+        <View style={s.center}>
+          <ActivityIndicator size="large" color="#CF291D" />
+          <Text style={s.infoTxt}>Checking camera permission…</Text>
+        </View>
+
+      ) : !permission.granted ? (
+        <View style={s.center}>
+          <Text style={s.emoji}>📷</Text>
+          <Text style={s.permTitle}>Camera Access Required</Text>
+          <Text style={s.infoTxt}>
+            Camera permission is needed to scan lottery barcodes.
+          </Text>
+          {permission.canAskAgain ? (
+            <TouchableOpacity style={s.btn} onPress={requestPermission}>
+              <Text style={s.btnTxt}>Grant Camera Permission</Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={[s.infoTxt, { color: '#EF4444', marginTop: 8 }]}>
+              Permission denied. Please enable camera access in your device Settings app.
+            </Text>
+          )}
+          <TouchableOpacity style={s.outlineBtn} onPress={() => setManual(true)}>
+            <Text style={s.outlineTxt}>Enter barcode manually instead</Text>
           </TouchableOpacity>
         </View>
 
-        {!permission?.granted ? (
-          <View style={s.permBox}>
-            <Text style={s.permText}>Camera permission is required for barcode scanning.</Text>
-            <TouchableOpacity style={s.btn} onPress={requestPermission}>
-              <Text style={s.btnTxt}>Grant Permission</Text>
-            </TouchableOpacity>
-          </View>
-        ) : manualMode ? (
-          /* ── Manual entry ── */
-          <View style={s.manualBox}>
-            <Text style={s.label}>Enter barcode manually:</Text>
-            <TextInput
-              style={s.manualInput}
-              value={manualValue}
-              onChangeText={setManualValue}
-              keyboardType="numeric"
-              placeholder="e.g. 62900474690"
-              autoFocus
-              maxLength={11}
-            />
-            <TouchableOpacity
-              style={[s.btn, !manualValue && s.btnDisabled]}
-              onPress={handleManualSubmit}
-              disabled={!manualValue}>
-              <Text style={s.btnTxt}>Use This Barcode</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={s.outlineBtn} onPress={() => setManual(false)}>
-              <Text style={s.outlineTxt}>Back to Camera</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          /* ── Camera view ── */
-          <View style={{ flex: 1 }}>
-            <CameraView
-              ref={cameraRef}
-              style={StyleSheet.absoluteFill}
-              facing={"back" as CameraType}
-              onBarcodeScanned={scanning ? handleBarcodeScanned : undefined}
-              barcodeScannerSettings={{ barcodeTypes: ["code128", "code39", "ean13", "ean8", "qr"] }}
-            />
+      ) : manualMode ? (
+        /* ── Manual entry ── */
+        <View style={s.manualBox}>
+          <Text style={s.permTitle}>Manual Barcode Entry</Text>
+          <Text style={[s.infoTxt, { marginBottom: 16 }]}>
+            Type the barcode number (11 digits)
+          </Text>
+          <TextInput
+            style={s.manualInput}
+            value={manualValue}
+            onChangeText={setManualValue}
+            keyboardType="numeric"
+            placeholder="e.g. 62900474690"
+            placeholderTextColor="#9CA3AF"
+            autoFocus
+            maxLength={11}
+            returnKeyType="done"
+            onSubmitEditing={handleManualSubmit}
+          />
+          <Text style={s.charCount}>{manualValue.length} / 11 digits</Text>
+          <TouchableOpacity
+            style={[s.btn, !manualValue && s.btnOff]}
+            onPress={handleManualSubmit}
+            disabled={!manualValue}>
+            <Text style={s.btnTxt}>✓  Use This Barcode</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.outlineBtn} onPress={() => setManual(false)}>
+            <Text style={s.outlineTxt}>← Back to Camera</Text>
+          </TouchableOpacity>
+        </View>
 
-            {/* Corner overlay */}
-            <View style={s.overlay}>
-              <View style={s.frame}>
-                <View style={[s.corner, s.tl]} />
-                <View style={[s.corner, s.tr]} />
-                <View style={[s.corner, s.bl]} />
-                <View style={[s.corner, s.br]} />
-                <Text style={s.frameHint}>
-                  {scanning ? "Point at barcode…" : "Press 'Scan Now' to capture"}
-                </Text>
+      ) : (
+        /* ── Camera live view ── */
+        <View style={{ flex: 1 }}>
+          {/* Camera fills screen */}
+          <CameraView
+            style={StyleSheet.absoluteFill}
+            facing="back"
+            onCameraReady={() => setCameraReady(true)}
+            onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+            barcodeScannerSettings={{
+              barcodeTypes: ['code128', 'code39', 'ean13', 'ean8', 'itf14', 'qr'],
+            }}
+          />
+
+          {/* Loading overlay until camera is ready */}
+          {!cameraReady && (
+            <View style={[StyleSheet.absoluteFill, s.camLoading]}>
+              <ActivityIndicator size="large" color="#fff" />
+              <Text style={s.infoTxt}>Starting camera…</Text>
+            </View>
+          )}
+
+          {/* Target frame overlay */}
+          <View style={s.overlay} pointerEvents="none">
+            <View style={s.frameBorder}>
+              <View style={[s.corner, s.tl]} />
+              <View style={[s.corner, s.tr]} />
+              <View style={[s.corner, s.bl]} />
+              <View style={[s.corner, s.br]} />
+            </View>
+            <Text style={s.frameHint}>
+              {scanned ? '' : 'Align barcode inside the frame'}
+            </Text>
+          </View>
+
+          {/* Scanned result banner */}
+          {scanned ? (
+            <View style={s.resultBox}>
+              <Text style={s.resultLbl}>Barcode Captured ✓</Text>
+              <Text style={s.resultCode}>{scanned}</Text>
+              <View style={s.row}>
+                <TouchableOpacity style={[s.btn, { flex: 1, marginRight: 8 }]} onPress={handleConfirm}>
+                  <Text style={s.btnTxt}>✓  Use</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[s.outlineBtn, { flex: 1 }]} onPress={reset}>
+                  <Text style={s.outlineTxt}>↩  Retry</Text>
+                </TouchableOpacity>
               </View>
             </View>
-
-            {/* Scanned result */}
-            {scanned ? (
-              <View style={s.resultBox}>
-                <Text style={s.resultLabel}>Scanned:</Text>
-                <Text style={s.resultCode}>{scanned}</Text>
-                <View style={s.row}>
-                  <TouchableOpacity style={[s.btn, { flex: 1, marginRight: 6 }]} onPress={handleConfirm}>
-                    <Text style={s.btnTxt}>✓ Use</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[s.outlineBtn, { flex: 1 }]} onPress={handleRetry}>
-                    <Text style={s.outlineTxt}>↩ Retry</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : (
-              <View style={s.ctrlBox}>
-                <TouchableOpacity
-                  style={[s.scanBtn, scanning && s.scanBtnActive]}
-                  onPress={() => setScanning(true)}>
-                  {scanning
-                    ? <ActivityIndicator color="#fff" />
-                    : <Text style={s.scanBtnTxt}>📷  Scan Now</Text>}
-                </TouchableOpacity>
-                <TouchableOpacity style={s.manualLink} onPress={() => setManual(true)}>
-                  <Text style={s.manualLinkTxt}>Enter manually</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        )}
-      </View>
-    </Modal>
+          ) : (
+            /* Bottom controls */
+            <View style={s.ctrlBox}>
+              <Text style={s.scanHint}>
+                {cameraReady ? 'Camera active — point at barcode' : 'Initialising…'}
+              </Text>
+              <TouchableOpacity style={s.manualLink} onPress={() => setManual(true)}>
+                <Text style={s.manualLinkTxt}>⌨  Enter manually</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      )}
+    </View>
   );
 }
 
-const RED  = "#CF291D";
+// ── Styles ────────────────────────────────────────────────────────────────────
+const RED = '#CF291D';
+
 const s = StyleSheet.create({
-  container:    { flex: 1, backgroundColor: "#000" },
-  header:       { flexDirection:"row", alignItems:"center", justifyContent:"space-between", padding:16, backgroundColor:"#1D1D1D" },
-  headerTitle:  { color:"#fff", fontSize:16, fontWeight:"700" },
-  closeBtn:     { padding:6 },
-  closeTxt:     { color:"#9CA3AF", fontSize:18, fontWeight:"700" },
-  permBox:      { flex:1, alignItems:"center", justifyContent:"center", padding:24 },
-  permText:     { color:"#fff", textAlign:"center", marginBottom:20, fontSize:14 },
-  overlay:      { ...StyleSheet.absoluteFillObject, alignItems:"center", justifyContent:"center" },
-  frame:        { width:260, height:180, alignItems:"center", justifyContent:"center" },
-  frameHint:    { color:"rgba(255,255,255,0.75)", fontSize:12, marginTop:8 },
-  corner:       { position:"absolute", width:24, height:24, borderColor:"#fff", borderWidth:3 },
-  tl:           { top:0, left:0,  borderBottomWidth:0, borderRightWidth:0  },
-  tr:           { top:0, right:0, borderBottomWidth:0, borderLeftWidth:0   },
-  bl:           { bottom:0, left:0,  borderTopWidth:0, borderRightWidth:0  },
-  br:           { bottom:0, right:0, borderTopWidth:0, borderLeftWidth:0   },
-  resultBox:    { position:"absolute", bottom:100, left:16, right:16, backgroundColor:"rgba(0,0,0,0.85)", borderRadius:12, padding:16 },
-  resultLabel:  { color:"#9CA3AF", fontSize:11, marginBottom:4 },
-  resultCode:   { color:"#4ADE80", fontSize:20, fontWeight:"900", fontFamily:"monospace", marginBottom:12 },
-  ctrlBox:      { position:"absolute", bottom:40, left:0, right:0, alignItems:"center" },
-  scanBtn:      { backgroundColor:RED, paddingVertical:14, paddingHorizontal:40, borderRadius:30, flexDirection:"row", alignItems:"center" },
-  scanBtnActive:{ backgroundColor:"#991B1B" },
-  scanBtnTxt:   { color:"#fff", fontSize:16, fontWeight:"800" },
-  manualLink:   { marginTop:14 },
-  manualLinkTxt:{ color:"#9CA3AF", fontSize:13, textDecorationLine:"underline" },
-  manualBox:    { flex:1, backgroundColor:"#fff", padding:24 },
-  label:        { fontSize:13, fontWeight:"600", color:"#374151", marginBottom:8 },
-  manualInput:  { borderWidth:2, borderColor:RED, borderRadius:8, padding:12, fontSize:16, fontFamily:"monospace", marginBottom:16 },
-  btn:          { backgroundColor:RED, padding:14, borderRadius:8, alignItems:"center", marginBottom:8 },
-  btnDisabled:  { backgroundColor:"#D1D5DB" },
-  btnTxt:       { color:"#fff", fontWeight:"700", fontSize:14 },
-  outlineBtn:   { borderWidth:1, borderColor:"#E5E7EB", padding:12, borderRadius:8, alignItems:"center", marginBottom:8 },
-  outlineTxt:   { color:"#374151", fontWeight:"600", fontSize:14 },
-  row:          { flexDirection:"row" },
+  root:         { flex: 1, backgroundColor: '#000' },
+  header:       { flexDirection:'row', alignItems:'center', justifyContent:'space-between',
+                  paddingHorizontal:16, paddingVertical:14, backgroundColor:'#111827' },
+  headerTitle:  { color:'#F1F5F9', fontSize:16, fontWeight:'700' },
+  headerSi:     { color:'#64748B', fontSize:10, marginTop:2 },
+  closeBtn:     { padding:4 },
+  closeTxt:     { color:'#EF4444', fontSize:14, fontWeight:'700' },
+
+  center:       { flex:1, alignItems:'center', justifyContent:'center', padding:32, backgroundColor:'#111827' },
+  emoji:        { fontSize:48, marginBottom:16 },
+  permTitle:    { color:'#F1F5F9', fontSize:18, fontWeight:'800', textAlign:'center', marginBottom:8 },
+  infoTxt:      { color:'#94A3B8', fontSize:13, textAlign:'center', lineHeight:20 },
+
+  btn:          { backgroundColor:RED, padding:15, borderRadius:10, alignItems:'center', marginBottom:10, width:'100%' },
+  btnOff:       { backgroundColor:'#374151' },
+  btnTxt:       { color:'#fff', fontWeight:'800', fontSize:15 },
+  outlineBtn:   { borderWidth:1, borderColor:'#374151', padding:13, borderRadius:10,
+                  alignItems:'center', marginBottom:8, width:'100%' },
+  outlineTxt:   { color:'#94A3B8', fontWeight:'600', fontSize:14 },
+
+  manualBox:    { flex:1, backgroundColor:'#111827', padding:24, paddingTop:32 },
+  manualInput:  { borderWidth:2, borderColor:RED, borderRadius:10, padding:14,
+                  fontSize:20, fontFamily:'monospace', color:'#F1F5F9',
+                  backgroundColor:'#1E293B', marginBottom:4, letterSpacing:2 },
+  charCount:    { color:'#64748B', fontSize:11, textAlign:'right', marginBottom:16 },
+
+  overlay:      { ...StyleSheet.absoluteFillObject, alignItems:'center', justifyContent:'center' },
+  frameBorder:  { width:260, height:160, position:'relative' },
+  corner:       { position:'absolute', width:28, height:28, borderColor:'#fff', borderWidth:3 },
+  tl:           { top:0,    left:0,   borderBottomWidth:0, borderRightWidth:0  },
+  tr:           { top:0,    right:0,  borderBottomWidth:0, borderLeftWidth:0   },
+  bl:           { bottom:0, left:0,   borderTopWidth:0,    borderRightWidth:0  },
+  br:           { bottom:0, right:0,  borderTopWidth:0,    borderLeftWidth:0   },
+  frameHint:    { color:'rgba(255,255,255,0.75)', fontSize:12, textAlign:'center', marginTop:12 },
+
+  camLoading:   { backgroundColor:'rgba(0,0,0,0.6)', alignItems:'center', justifyContent:'center', gap:12 },
+
+  resultBox:    { position:'absolute', bottom:0, left:0, right:0,
+                  backgroundColor:'rgba(0,0,0,0.92)', padding:20 },
+  resultLbl:    { color:'#4ADE80', fontSize:12, fontWeight:'700', marginBottom:4 },
+  resultCode:   { color:'#FFFFFF', fontSize:22, fontWeight:'900', fontFamily:'monospace',
+                  letterSpacing:2, marginBottom:14 },
+  row:          { flexDirection:'row' },
+
+  ctrlBox:      { position:'absolute', bottom:30, left:0, right:0, alignItems:'center' },
+  scanHint:     { color:'rgba(255,255,255,0.7)', fontSize:12, marginBottom:12 },
+  manualLink:   { paddingVertical:10, paddingHorizontal:20 },
+  manualLinkTxt:{ color:'#94A3B8', fontSize:14, textDecorationLine:'underline' },
 });
