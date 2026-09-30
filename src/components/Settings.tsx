@@ -1193,12 +1193,18 @@ function ToggleRow({ label, value, onChange }: { label: string; value: boolean; 
 
 function MobileServerCard() {
   const [serverIP, setServerIP] = useState<string>("checking…");
+  const [qrSvg,   setQrSvg]    = useState<string | null>(null);
+  const [showQR,  setShowQR]   = useState(false);
 
   useEffect(() => {
-    // Fetch local LAN IP via a small Tauri command
-    import("@tauri-apps/api/core")
-      .then(({ invoke }) => invoke<string>("get_local_ip").then(ip => setServerIP(ip)).catch(() => setServerIP("Not available")))
-      .catch(() => setServerIP("Not available"));
+    import("@tauri-apps/api/core").then(({ invoke }) => {
+      invoke<string>("get_local_ip")
+        .then(ip => setServerIP(ip))
+        .catch(() => setServerIP("Not available"));
+      invoke<string>("get_server_qr_code")
+        .then(b64 => setQrSvg(atob(b64)))
+        .catch(() => {});
+    }).catch(() => setServerIP("Not available"));
   }, []);
 
   return (
@@ -1206,34 +1212,54 @@ function MobileServerCard() {
       <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #2563EB" }}>
         <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>📱 Mobile Companion Server</p>
         <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
-          Enter this IP address in the mobile app Settings to connect
+          Scan the QR code with the mobile app for instant zero-config connection
         </p>
       </div>
       <div className="p-5 space-y-3">
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+        <div style={{ display:"flex", gap:14, alignItems:"flex-start" }}>
+          {/* IP info */}
           <div style={{ flex:1, background:"#1D1D1D", borderRadius:8, padding:"10px 14px" }}>
-            <div style={{ fontSize:10, color:"#9CA3AF", marginBottom:4, textTransform:"uppercase", letterSpacing:"0.05em" }}>
-              Desktop LAN IP — enter in mobile app
+            <div style={{ fontSize:10, color:"#9CA3AF", marginBottom:4, textTransform:"uppercase" as const, letterSpacing:"0.05em" }}>
+              Desktop LAN IP
             </div>
-            <div style={{ fontSize:18, fontWeight:900, fontFamily:"monospace", color:"#4ADE80" }}>
+            <div style={{ fontSize:20, fontWeight:900, fontFamily:"monospace", color:"#4ADE80" }}>
               {serverIP}
             </div>
             <div style={{ fontSize:10, color:"#6B7280", marginTop:2 }}>
-              Port: <strong style={{ color:"#94A3B8" }}>7423</strong> &nbsp;·&nbsp;
-              URL: <span style={{ color:"#94A3B8" }}>http://{serverIP}:7423/api/v1/health</span>
+              Port: <strong style={{ color:"#94A3B8" }}>7423</strong>
+            </div>
+            <div style={{ fontSize:9, color:"#4ADE80", marginTop:6, fontWeight:700 }}>
+              🔵 UDP beacon broadcasting every 5 s
             </div>
           </div>
+          {/* QR code */}
+          {qrSvg && (
+            <div style={{ cursor:"pointer", textAlign:"center" as const }} onClick={() => setShowQR(!showQR)}>
+              <div style={{ width:80, height:80, background:"#fff", border:"1px solid #E5E7EB", borderRadius:8, overflow:"hidden", padding:4 }}
+                dangerouslySetInnerHTML={{ __html: qrSvg }} />
+              <div style={{ fontSize:9, color:"#9CA3AF", marginTop:3 }}>
+                {showQR ? "Hide" : "Tap to expand"}
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* Expanded QR */}
+        {showQR && qrSvg && (
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:16, background:"#F9FAFB", borderRadius:10, border:"1px solid #E5E7EB" }}>
+            <div style={{ width:200, height:200, background:"#fff", padding:8, borderRadius:8 }}
+              dangerouslySetInnerHTML={{ __html: qrSvg }} />
+            <div style={{ marginTop:10, fontSize:11, color:"#374151", textAlign:"center" as const }}>
+              <strong>Scan with the Lottery Scanner app</strong><br/>
+              <span style={{ color:"#9CA3AF", fontSize:10 }}>Mobile app → Settings → Scan QR Code</span>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center gap-2 text-xs" style={{ color:"#16A34A", background:"#F0FDF4", borderRadius:8, padding:"8px 12px" }}>
           <span>✓</span>
-          <span>Server is running on port 7423 — make sure your phone is on the same WiFi network</span>
+          <span>Server on port 7423 · UDP beacon active · mDNS: _lottery._tcp.local.</span>
         </div>
-        <p className="text-xs" style={{ color:"#9CA3AF" }}>
-          If the IP shows "Not available", check your network connection or find the IP manually:
-          <code style={{ background:"#F3F4F6", padding:"1px 4px", borderRadius:3, marginLeft:4 }}>
-            ip addr | grep "inet "
-          </code>
-        </p>
       </div>
     </div>
   );

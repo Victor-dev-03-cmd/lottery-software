@@ -19,7 +19,7 @@ const ACCENT = '#CF291D';
 
 function HomeScreen() {
   const navigation = useNavigation<any>();
-  const { ip, connected, connecting, lastChecked, refresh } = useConnection();
+  const { ip, connected, connecting, lastChecked, refresh, scanning, autoDiscover } = useConnection();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
   const [refreshing, setRefreshing] = useState(false);

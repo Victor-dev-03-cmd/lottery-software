@@ -34,5 +34,8 @@ headless_chrome = { version = "1.0" }
 axum            = { version = "0.7", features = ["tokio"] }
 tower-http      = { version = "0.5", features = ["cors"] }
 rusqlite        = { version = "0.31", features = ["bundled"] }
+mdns-sd         = "0.12"
+qrcode          = "0.14"
+base64          = "0.22"
 uuid            = { version = "1",   features = ["v4"] }
 

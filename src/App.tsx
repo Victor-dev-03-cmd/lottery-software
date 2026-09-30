@@ -108,6 +108,8 @@ export default function App() {
         // 5. Start mobile companion API server (non-blocking) — binds to 0.0.0.0:7423
         invoke("start_api_server").catch(() => {});
         invoke("start_background_sync").catch(() => {});
+        // 6. Start UDP beacon + mDNS for zero-config mobile auto-discovery
+        invoke("start_discovery_beacon").catch(() => {});
 
         // 4. Ensure min splash time for branding
         const elapsed = Date.now() - splashStart;

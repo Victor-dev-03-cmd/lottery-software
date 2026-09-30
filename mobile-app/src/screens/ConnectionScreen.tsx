@@ -12,6 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useConnection } from '../services/connection';
 import { checkHealth, parseNetworkError } from '../services/api';
 
@@ -20,11 +21,14 @@ const ACCENT = '#CF291D';
 type TestStatus = 'idle' | 'testing' | 'ok' | 'fail';
 
 function ConnectionScreen() {
-  const { ip: savedIp, connected, setIP } = useConnection();
-  const [inputIp, setInputIp] = useState<string>(savedIp);
+  const { ip: savedIp, connected, setIP, autoDiscover, scanning } = useConnection();
+  const [inputIp, setInputIp]     = useState<string>(savedIp);
   const [testStatus, setTestStatus] = useState<TestStatus>('idle');
   const [testMessage, setTestMessage] = useState<string>('');
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]       = useState(false);
+  const [showQR, setShowQR]       = useState(false);
+  const [camPermission, requestCamPermission] = useCameraPermissions();
+  const [qrScanned, setQrScanned] = useState(false);
 
   const handleTest = async () => {
     const trimmed = inputIp.trim();
@@ -63,6 +67,82 @@ function ConnectionScreen() {
     setSaving(false);
     Alert.alert('Saved', `Desktop IP saved as ${trimmed}`);
   };
+
+  const handleAutoDiscover = async () => {
+    setTestStatus('testing');
+    setTestMessage('Scanning local network for Lottery desktop app…');
+    const found = await autoDiscover();
+    if (found) {
+      setInputIp(found);
+      setTestStatus('ok');
+      setTestMessage(`✓ Auto-discovered at ${found}:7423`);
+    } else {
+      setTestStatus('fail');
+      setTestMessage('No desktop found. Make sure the Lottery app is open on the desktop and both devices are on the same WiFi.');
+    }
+  };
+
+  function handleQrScanned({ data }: { data: string }) {
+    if (qrScanned) return;
+    // Expected format: lottery://IP:PORT
+    const match = data.match(/lottery:\/\/([\d.]+):(\d+)/);
+    if (match) {
+      const ip = match[1];
+      setQrScanned(true);
+      setShowQR(false);
+      setInputIp(ip);
+      setTestStatus('idle');
+      setTestMessage('');
+      // Auto-save and test
+      setIP(ip).then(() => {
+        setTestStatus('ok');
+        setTestMessage(`✓ QR scanned — connected to ${ip}:7423`);
+      });
+      Alert.alert('Connected!', `Desktop found at ${ip}:7423`);
+    }
+  }
+
+  // ── QR scanner modal ──────────────────────────────────────────────────────
+  if (showQR) {
+    if (!camPermission?.granted) {
+      return (
+        <View style={{ flex:1, alignItems:'center', justifyContent:'center', padding:24 }}>
+          <Text style={{ fontSize:14, color:'#374151', textAlign:'center', marginBottom:20 }}>
+            Camera permission needed to scan the QR code from the desktop app.
+          </Text>
+          <TouchableOpacity style={styles.testBtn} onPress={requestCamPermission}>
+            <Text style={styles.testBtnText}>Grant Camera Permission</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.saveBtn, { marginTop:10 }]} onPress={() => setShowQR(false)}>
+            <Text style={styles.saveBtnText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return (
+      <View style={{ flex:1, backgroundColor:'#000' }}>
+        <View style={{ padding:16, backgroundColor:'#1D1D1D', flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}>
+          <Text style={{ color:'#fff', fontSize:16, fontWeight:'800' }}>
+            📷 Scan QR from Desktop
+          </Text>
+          <TouchableOpacity onPress={() => { setShowQR(false); setQrScanned(false); }}>
+            <Text style={{ color:'#9CA3AF', fontSize:18, fontWeight:'700' }}>✕</Text>
+          </TouchableOpacity>
+        </View>
+        <CameraView
+          style={{ flex:1 }}
+          facing="back"
+          onBarcodeScanned={handleQrScanned}
+          barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+        />
+        <View style={{ padding:20, backgroundColor:'rgba(0,0,0,0.8)' }}>
+          <Text style={{ color:'rgba(255,255,255,0.7)', textAlign:'center', fontSize:13 }}>
+            Point at the QR code shown in{'\n'}Desktop Settings → Backup & Security
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -154,7 +234,32 @@ function ConnectionScreen() {
           </View>
         )}
 
-        {/* Buttons */}
+        {/* ── Auto-discover + QR row ── */}
+        <View style={{ flexDirection:'row', gap:10, marginBottom:10 }}>
+          <TouchableOpacity
+            style={[styles.discoverBtn, (scanning || testStatus === 'testing') && styles.btnDisabled]}
+            onPress={handleAutoDiscover}
+            disabled={scanning || testStatus === 'testing'}
+          >
+            <Feather name="search" size={16} color="#2563EB" />
+            <View>
+              <Text style={styles.discoverBtnText}>Auto-Discover</Text>
+              <Text style={{ fontSize:8, color:'#9CA3AF' }}>Scan WiFi network</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.qrBtn}
+            onPress={() => { setShowQR(true); setQrScanned(false); }}
+          >
+            <Feather name="camera" size={16} color="#7C3AED" />
+            <View>
+              <Text style={styles.qrBtnText}>Scan QR</Text>
+              <Text style={{ fontSize:8, color:'#9CA3AF' }}>From desktop</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Test + Save */}
         <TouchableOpacity
           style={[styles.testBtn, testStatus === 'testing' && styles.btnDisabled]}
           onPress={handleTest}
@@ -416,6 +521,40 @@ const styles = StyleSheet.create({
   },
   btnDisabled: {
     opacity: 0.5,
+  },
+  discoverBtn: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  discoverBtnText: {
+    color: '#2563EB',
+    fontSize: 13,
+    fontWeight: '700' as const,
+  },
+  qrBtn: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+    backgroundColor: '#F5F3FF',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  qrBtnText: {
+    color: '#7C3AED',
+    fontSize: 13,
+    fontWeight: '700' as const,
   },
   guide: {
     backgroundColor: '#FFFFFF',

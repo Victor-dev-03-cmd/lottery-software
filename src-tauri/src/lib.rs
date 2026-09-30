@@ -2670,8 +2670,6 @@ async fn execute_ai_action(
 /// Returns the best non-loopback LAN IP address for the mobile companion app
 #[tauri::command]
 fn get_local_ip() -> String {
-    // Connect a UDP socket to a public address (no actual data sent)
-    // to discover which local interface the OS would use
     if let Ok(socket) = std::net::UdpSocket::bind("0.0.0.0:0") {
         if socket.connect("8.8.8.8:80").is_ok() {
             if let Ok(addr) = socket.local_addr() {
@@ -2680,6 +2678,70 @@ fn get_local_ip() -> String {
         }
     }
     "127.0.0.1".to_string()
+}
+
+/// QR code containing lottery://IP:7423 — mobile scans once for zero-config setup
+#[tauri::command]
+fn get_server_qr_code() -> Result<String, String> {
+    use qrcode::QrCode;
+    use qrcode::render::svg;
+    use base64::Engine;
+    let ip  = get_local_ip();
+    let url = format!("lottery://{}:7423", ip);
+    let code = QrCode::new(url.as_bytes()).map_err(|e| e.to_string())?;
+    let svg_str = code.render::<svg::Color>()
+        .min_dimensions(220, 220)
+        .build();
+    Ok(base64::engine::general_purpose::STANDARD.encode(svg_str.as_bytes()))
+}
+
+/// UDP broadcast beacon every 5 s + mDNS advertisement for auto-discovery
+#[tauri::command]
+fn start_discovery_beacon() {
+    let ip   = get_local_ip();
+    let port: u16 = 7423;
+
+    // ── UDP broadcast beacon ────────────────────────────────────────────────
+    // Mobile app listens on 7422 for "LOTTERY_SERVER:<ip>:<port>"
+    let ip2 = ip.clone();
+    tauri::async_runtime::spawn(async move {
+        use tokio::net::UdpSocket;
+        use tokio::time::{sleep, Duration};
+        let payload = format!("LOTTERY_SERVER:{}:{}", ip2, port);
+        loop {
+            if let Ok(sock) = UdpSocket::bind("0.0.0.0:0").await {
+                let _ = sock.set_broadcast(true);
+                // Broadcast to subnet and explicit 255.255.255.255
+                let _ = sock.send_to(payload.as_bytes(), "255.255.255.255:7422").await;
+            }
+            sleep(Duration::from_secs(5)).await;
+        }
+    });
+
+    // ── mDNS advertisement (_lottery._tcp.local.) ─────────────────────────
+    tauri::async_runtime::spawn(async move {
+        use mdns_sd::{ServiceDaemon, ServiceInfo};
+        let mdns = match ServiceDaemon::new() {
+            Ok(d)  => d,
+            Err(_) => return,
+        };
+        let host_ip: std::net::Ipv4Addr = ip.parse().unwrap_or(std::net::Ipv4Addr::LOCALHOST);
+        let props = std::collections::HashMap::from([
+            ("version".to_string(), "1".to_string()),
+            ("app".to_string(),     "ajith-rohana-lottery".to_string()),
+        ]);
+        if let Ok(info) = ServiceInfo::new(
+            "_lottery._tcp.local.",
+            "LotteryDesktop",
+            "lottery-desktop.local.",
+            host_ip,
+            port,
+            props,
+        ) {
+            let _ = mdns.register(info);
+            loop { tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
+        }
+    });
 }
 
 pub fn run() {
@@ -2720,6 +2782,8 @@ pub fn run() {
             save_ai_api_key,
             execute_ai_action,
             get_local_ip,
+            get_server_qr_code,
+            start_discovery_beacon,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
