@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "App.tsx",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
+    "start": "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK=1 expo start",
+    "android": "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK=1 expo start --android",
     "build": "eas build --platform android --profile preview"
   },
   "dependencies": {
