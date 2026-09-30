@@ -176,9 +176,17 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
   // ── setIP ────────────────────────────────────────────────────────────────────
   const setIP = useCallback(async (newIp: string) => {
     const trimmed = newIp.trim();
+    // Cancel any existing heartbeat immediately so the old IP stops pinging
+    if (heartbeatRef.current) {
+      clearInterval(heartbeatRef.current);
+      heartbeatRef.current = null;
+    }
+    // Save to AsyncStorage and update React state
     await setDesktopIP(trimmed);
     setIpState(trimmed);
+    // Ping the new IP directly (pass explicitly — never reads from stale closure)
     const ok = await ping(trimmed);
+    // Restart heartbeat on the new IP
     startHeartbeat(trimmed, ok);
   }, [ping, startHeartbeat]);
 

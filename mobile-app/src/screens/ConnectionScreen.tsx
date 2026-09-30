@@ -82,23 +82,36 @@ function ConnectionScreen() {
     }
   };
 
-  function handleQrScanned({ data }: { data: string }) {
+  // Async QR handler — ping the discovered IP first, then save on success
+  async function handleQrScanned({ data }: { data: string }) {
     if (qrScanned) return;
-    // Expected format: lottery://IP:PORT
     const match = data.match(/lottery:\/\/([\d.]+):(\d+)/);
-    if (match) {
-      const ip = match[1];
-      setQrScanned(true);
-      setShowQR(false);
-      setInputIp(ip);
-      setTestStatus('idle');
-      setTestMessage('');
-      // Auto-save and test
-      setIP(ip).then(() => {
-        setTestStatus('ok');
-        setTestMessage(`✓ QR scanned — connected to ${ip}:7423`);
-      });
-      Alert.alert('Connected!', `Desktop found at ${ip}:7423`);
+    if (!match) return;
+
+    const scannedIp = match[1];
+    setQrScanned(true);
+    setShowQR(false);
+    setInputIp(scannedIp);
+    setTestStatus('testing');
+    setTestMessage(`Connecting to ${scannedIp}:7423…`);
+
+    try {
+      // 1. Test connection directly with the scanned IP
+      await checkHealth(scannedIp);
+
+      // 2. Connection confirmed — save to context + AsyncStorage + restart heartbeat
+      await setIP(scannedIp);
+
+      // 3. Update UI with success
+      setTestStatus('ok');
+      setTestMessage(`✓ QR scanned — connected to ${scannedIp}:7423`);
+    } catch (err: any) {
+      // Save the IP anyway so user can retry manually, but show the real error
+      await setIP(scannedIp);
+      setTestStatus('fail');
+      setTestMessage(
+        `QR scanned (${scannedIp}) but couldn't connect: ${parseNetworkError(err)}`
+      );
     }
   }
 
