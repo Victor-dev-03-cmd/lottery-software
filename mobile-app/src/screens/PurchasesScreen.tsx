@@ -15,7 +15,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { addPurchase } from '../services/api';
 import { GamePicker } from '../components/GamePicker';
-import { BarcodeScanner } from '../components/BarcodeScanner';
+import BarcodeScanner from '../components/BarcodeScanner';
 
 const ACCENT = '#CF291D';
 
