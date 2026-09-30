@@ -1,0 +1,12 @@
+Place the following image assets in this directory before building:
+
+  icon.png           - 1024x1024 app icon (PNG, no transparency)
+  splash.png         - 1284x2778 splash screen (PNG)
+  adaptive-icon.png  - 1024x1024 adaptive icon foreground (PNG with transparency)
+  favicon.png        - 48x48 favicon (PNG)
+
+Design note: use #CF291D (dark red) as the background/accent colour to match the desktop app.
+
+You can generate placeholders quickly with:
+  npx expo-image-utils generate-app-icons ./assets/icon.png
+or supply your own branded assets.
