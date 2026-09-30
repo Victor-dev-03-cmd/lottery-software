@@ -39,11 +39,21 @@ export default function BarcodeScanner({ onScanned, onClose, label, labelSi }: P
     }
   }, [permission]);
 
+  // ── Barcode cleaner ───────────────────────────────────────────────────────────
+  // Strip all non-digit characters (hyphens, spaces, letters) — keep full digit sequence.
+  // Sri Lankan lottery barcodes vary: 11 digits (NLB), 16+ digits (DLB ITF codes), etc.
+  // Never truncate — capture the complete digit string.
+  function cleanBarcode(raw: string): string {
+    return raw.replace(/\D/g, '');  // digits only, no length limit
+  }
+
   // ── Handlers ─────────────────────────────────────────────────────────────────
   function handleBarcodeScanned({ data }: { data: string }) {
-    if (scanned) return;                          // already have one, wait for confirm
-    const cleaned = data.replace(/\D/g, '').slice(0, 11);
-    setScanned(cleaned || data);
+    if (scanned) return;
+    const cleaned = cleanBarcode(data);
+    // Accept any barcode that has at least 6 digits (avoid noise)
+    if (cleaned.length < 6) return;
+    setScanned(cleaned);
   }
 
   function handleConfirm() {
@@ -53,7 +63,7 @@ export default function BarcodeScanner({ onScanned, onClose, label, labelSi }: P
   }
 
   function handleManualSubmit() {
-    const cleaned = manualValue.replace(/\D/g, '').slice(0, 11);
+    const cleaned = cleanBarcode(manualValue);
     if (!cleaned) return;
     onScanned(cleaned);
     reset();
@@ -129,11 +139,11 @@ export default function BarcodeScanner({ onScanned, onClose, label, labelSi }: P
             placeholder="e.g. 62900474690"
             placeholderTextColor="#9CA3AF"
             autoFocus
-            maxLength={11}
+            maxLength={24}
             returnKeyType="done"
             onSubmitEditing={handleManualSubmit}
           />
-          <Text style={s.charCount}>{manualValue.length} / 11 digits</Text>
+          <Text style={s.charCount}>{cleanBarcode(manualValue).length} digits captured</Text>
           <TouchableOpacity
             style={[s.btn, !manualValue && s.btnOff]}
             onPress={handleManualSubmit}
@@ -155,7 +165,15 @@ export default function BarcodeScanner({ onScanned, onClose, label, labelSi }: P
             onCameraReady={() => setCameraReady(true)}
             onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
             barcodeScannerSettings={{
-              barcodeTypes: ['code128', 'code39', 'ean13', 'ean8', 'itf14', 'qr'],
+              // All formats used on Sri Lankan lottery tickets:
+              // code128: most NLB barcodes  |  itf14: DLB ITF codes (3125-130631350-2-09 style)
+              // codabar: some older tickets  |  ean13/ean8: standard retail barcodes
+              barcodeTypes: [
+                'code128', 'code39', 'codabar',
+                'ean13', 'ean8', 'upc_a', 'upc_e',
+                'itf14', 'interleaved2of5',
+                'qr', 'pdf417',
+              ],
             }}
           />
 
