@@ -41,8 +41,13 @@ export default function BarcodeScanner({ onScanned, onClose, label, labelSi }: P
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // Verifier — one instance per scanner open, reset on close
-  const verifier   = useRef(new FrameVerifier());
-  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const verifier    = useRef(new FrameVerifier());
+  const resetTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Frame throttle: skip frames arriving faster than MIN_FRAME_INTERVAL_MS
+  // MLKit fires onBarcodeScanned at full camera FPS (30-60 fps). Processing
+  // every frame wastes CPU — 80ms gives 12 fps which is more than sufficient.
+  const MIN_FRAME_INTERVAL_MS = 80;
+  const lastFrameMs = useRef(0);
 
   // ── Permission request ────────────────────────────────────────────────────
   useEffect(() => {
@@ -74,6 +79,12 @@ export default function BarcodeScanner({ onScanned, onClose, label, labelSi }: P
   const handleBarcodeScanned = useCallback(
     (scanResult: { data: string; type: string; bounds?: { origin?: { x?: number; y?: number }; size?: { width?: number; height?: number } } | null }) => {
       if (accepted) return;
+
+      // Frame throttle — skip frames that arrive too fast (saves CPU, no quality loss)
+      const now = Date.now();
+      if (now - lastFrameMs.current < MIN_FRAME_INTERVAL_MS) return;
+      lastFrameMs.current = now;
+
       const { data, type, bounds } = scanResult;
 
       dbg('camera:raw', { data, type, bounds });
@@ -87,8 +98,8 @@ export default function BarcodeScanner({ onScanned, onClose, label, labelSi }: P
       }, 4000);
 
       // Feed full scan result into pipeline (bounds used for ROI quality gate)
-      const { confidence:conf, ready, acceptedCode, rejectedReason } =
-        verifier.current.feed(data, type, bounds ?? null);
+      const result = verifier.current.feed(data, type, bounds ?? null);
+      const { confidence:conf, ready, acceptedCode, rejectedReason } = result;
 
       setLiveCode(cleanDigits(data));
       setLiveType(type);
@@ -96,12 +107,16 @@ export default function BarcodeScanner({ onScanned, onClose, label, labelSi }: P
       setPipelineMsg(rejectedReason ?? '');
 
       if (ready && acceptedCode) {
-        // Dump 30-frame diagnostic table in dev mode
         verifier.current.dumpWindow();
-        dbg('ACCEPTED', { code:acceptedCode, type, streak:verifier.current.currentStreak });
+        verifier.current.benchmarkLatency();
+        dbg('ACCEPTED', { code:acceptedCode, type, streak:verifier.current.currentStreak, totalMs:result.timing.totalMs });
         setAccepted(true);
         Vibration.vibrate(80);
-        setTimeout(() => { onScanned(acceptedCode); handleClose(); }, 600);
+        // Report immediately — no 600ms artificial delay.
+        // A brief 120ms UI flash so user sees the green "Verified" badge,
+        // then close. This is the ONLY UI delay and it is purely cosmetic.
+        onScanned(acceptedCode);
+        setTimeout(handleClose, 120);
       }
     },
     [accepted, onScanned]
@@ -347,7 +362,7 @@ const s = StyleSheet.create({
                   fontSize:18, fontFamily:'monospace', color:'#F1F5F9',
                   backgroundColor:'#1E293B', marginBottom:4, letterSpacing:1 },
   charCount:    { color:'#475569', fontSize:11, textAlign:'right', marginBottom:16 },
-  overlay:      { ...StyleSheet.absoluteFillObject, alignItems:'center', justifyContent:'center' },
+  overlay:      { ...StyleSheet.absoluteFill, alignItems:'center', justifyContent:'center' },
   frameBorder:  { width:280, height:170, position:'relative', alignItems:'center', justifyContent:'center' },
   frameBorderOk:{ },
   corner:       { position:'absolute', width:28, height:28, borderColor:'rgba(255,255,255,0.8)', borderWidth:3 },

@@ -236,38 +236,72 @@ export interface FrameRecord {
 }
 
 // ── FeedResult ──────────────────────────────────────────────────────────────────
+// ── Scan timing diagnostic ──────────────────────────────────────────────────
+export interface ScanTiming {
+  frameMs:        number;  // timestamp of raw frame
+  validationMs:   number;  // ms spent in validateCandidate
+  qualityMs:      number;  // ms spent in qualityGate
+  verificationMs: number;  // ms from first detection of this value to accept
+  totalMs:        number;  // frame → accept end-to-end
+  path:           'fast' | 'safe' | 'rejected';
+}
+
 export interface FeedResult {
   confidence:     number;
   ready:          boolean;
   acceptedCode:   string | null;
   rejectedReason: string | null;
   record:         FrameRecord;
+  timing:         ScanTiming;
 }
 
 // ── FrameVerifier ────────────────────────────────────────────────────────────────
-const REQUIRED_STREAK    = 3;
-const WINDOW_SIZE        = 10;
-const DOMINANT_THRESHOLD = 0.5;  // >50% of valid frames
-const MIN_DOM_WINDOW     = 4;    // wait for 4 valid frames before dominant-value gate fires
+// ── Verification parameters ─────────────────────────────────────────────────
+// FAST PATH: barcodes with a structural checksum (EAN-13, EAN-8, UPC-A, ITF-14)
+//   Need only 2 consecutive matching reads — checksum provides correctness guarantee.
+// SAFE PATH: variable-length / no-checksum barcodes (Code 128, Code 39, QR, etc.)
+//   Need 3 consecutive matching reads — temporal consistency is the only defence.
+const FAST_PATH_STREAK   = 2;  // checksum-validated formats
+const SAFE_PATH_STREAK   = 3;  // variable-length / no-checksum formats
+const WINDOW_SIZE        = 8;  // reduced from 10 — faster dominant convergence
+const DOMINANT_THRESHOLD = 0.5;
+const MIN_DOM_WINDOW     = 3;  // reduced from 4 — faster gate activation
+// Debounce: only prevents the SAME barcode from firing again within the window.
+// The FIRST scan of any barcode is NEVER delayed.
 const DEBOUNCE_MS        = 2000;
+
+/** Returns the required streak for this format. */
+function requiredStreak(type: string): number {
+  const spec = getSpec(type);
+  // Checksum-validated formats: 2 reads sufficient
+  return spec.hasGs1Checksum ? FAST_PATH_STREAK : SAFE_PATH_STREAK;
+}
 
 export class FrameVerifier {
   private window:             FrameRecord[] = [];
   private frameIndex          = 0;
   private streak              = 0;
   private streakValue         = '';
-  private streakFormat        = '';  // format must be consistent within a streak
+  private streakFormat        = '';
+  private streakStartMs       = 0;   // when this streak's first frame arrived
   private prevValidRoi:       RoiBounds | null = null;
   private lastAcceptedValue   = '';
   private lastAcceptedMs      = 0;
+
+  // Timing buckets for benchmark logging
+  private timings:            ScanTiming[] = [];
 
   feed(
     raw:    string,
     type:   string,
     bounds: { origin?: { x?: number; y?: number }; size?: { width?: number; height?: number } } | null = null,
   ): FeedResult {
-    const idx = ++this.frameIndex;
-    const now = Date.now();
+    const idx      = ++this.frameIndex;
+    const now      = Date.now();
+    const t0       = now;  // frame timestamp
+    let   tVal     = t0;
+    let   tQuality = t0;
+    let   tEnd     = t0;
 
     // ── Build normalised ROI from native bounds ────────────────────────────
     let roi: RoiBounds | null = null;
@@ -282,6 +316,7 @@ export class FrameVerifier {
 
     // ── Step 1: Format validation ─────────────────────────────────────────
     const v = validateCandidate(raw, type);
+    tVal = Date.now();
 
     dbg('frame', {
       idx, raw, type,
@@ -291,20 +326,26 @@ export class FrameVerifier {
     });
 
     if (!v.valid) {
+      tEnd = Date.now();
+      const timing: ScanTiming = { frameMs:t0, validationMs:tVal-t0, qualityMs:0, verificationMs:0, totalMs:tEnd-t0, path:'rejected' };
       const rec = this.makeRecord(idx, raw, type, v, false, 'reject_format', v.reason, roi, now, 0, null, 0, null);
       this.addToWindow(rec);
-      this.streak = 0; this.streakValue = '';
-      return { confidence:0, ready:false, acceptedCode:null, rejectedReason:v.reason, record:rec };
+      this.streak = 0; this.streakValue = ''; this.streakFormat = '';
+      return { confidence:0, ready:false, acceptedCode:null, rejectedReason:v.reason, record:rec, timing };
     }
 
     // ── Step 2: Image-quality / ROI gate ─────────────────────────────────
     const quality = qualityGate(roi, this.prevValidRoi);
+    tQuality = Date.now();
     if (!quality.ok) {
       dbg('reject:quality', quality.reason);
+      tEnd = Date.now();
+      const timing: ScanTiming = { frameMs:t0, validationMs:tVal-t0, qualityMs:tQuality-tVal, verificationMs:0, totalMs:tEnd-t0, path:'rejected' };
       const rec = this.makeRecord(idx, raw, type, v, false, 'reject_quality', quality.reason, roi, now, 0, null, this.streak, null);
       this.addToWindow(rec);
       // Don't reset streak — quality issue doesn't imply wrong value
-      return { confidence: this.streak / REQUIRED_STREAK, ready:false, acceptedCode:null, rejectedReason:quality.reason, record:rec };
+      const req = requiredStreak(type);
+      return { confidence: this.streak / req, ready:false, acceptedCode:null, rejectedReason:quality.reason, record:rec, timing };
     }
     this.prevValidRoi = roi ?? this.prevValidRoi;
 
@@ -315,10 +356,12 @@ export class FrameVerifier {
       if (domLen !== null && v.normalised.length !== domLen) {
         const reason = `Length outlier: got ${v.normalised.length}d, window dominant=${domLen}d`;
         dbg('reject:length-outlier', reason);
+        tEnd = Date.now();
+        const timing: ScanTiming = { frameMs:t0, validationMs:tVal-t0, qualityMs:tQuality-tVal, verificationMs:0, totalMs:tEnd-t0, path:'rejected' };
         const rec = this.makeRecord(idx, raw, type, v, false, 'reject_length_outlier', reason, roi, now, 0, null, 0, null);
         this.addToWindow(rec);
-        this.streak = 0; this.streakValue = '';
-        return { confidence:0, ready:false, acceptedCode:null, rejectedReason:reason, record:rec };
+        this.streak = 0; this.streakValue = ''; this.streakFormat = '';
+        return { confidence:0, ready:false, acceptedCode:null, rejectedReason:reason, record:rec, timing };
       }
     }
 
@@ -337,67 +380,79 @@ export class FrameVerifier {
         const domCnt = this.countInWindow(domVal);
         const reason = `Value outlier: '${v.normalised}' (${cnt}×) ≠ dominant '${domVal}' (${domCnt}×)`;
         dbg('reject:value-outlier', reason);
+        tEnd = Date.now();
+        const timing: ScanTiming = { frameMs:t0, validationMs:tVal-t0, qualityMs:tQuality-tVal, verificationMs:0, totalMs:tEnd-t0, path:'rejected' };
         rec.rejectedReason = reason;
         rec.decision       = 'reject_value_outlier';
         rec.isValid        = false;
-        if (this.streakValue === v.normalised) { this.streak = 0; this.streakValue = ''; }
-        return { confidence:0, ready:false, acceptedCode:null, rejectedReason:reason, record:rec };
+        if (this.streakValue === v.normalised) { this.streak = 0; this.streakValue = ''; this.streakFormat = ''; }
+        return { confidence:0, ready:false, acceptedCode:null, rejectedReason:reason, record:rec, timing };
       }
     }
 
     // ── Step 6: Consecutive streak + format consistency ─────────────────
-    // A streak is broken if EITHER value OR format changes.
-    // This catches QR-code frames interspersed with Code 128 frames
-    // (root cause [1] in the verified root-cause analysis above).
+    const req = requiredStreak(type);
+    const path: 'fast' | 'safe' = req === FAST_PATH_STREAK ? 'fast' : 'safe';
+
     if (v.normalised === this.streakValue && type === this.streakFormat) {
       this.streak++;
     } else {
-      if (v.normalised !== this.streakValue || type !== this.streakFormat) {
-        dbg('streak:reset', {
-          reason: v.normalised !== this.streakValue ? 'value changed' : 'format changed',
-          prev: { value: this.streakValue, format: this.streakFormat },
-          curr: { value: v.normalised,  format: type },
-        });
-      }
-      this.streak      = 1;
-      this.streakValue = v.normalised;
-      this.streakFormat= type;
+      dbg('streak:reset', { reason: v.normalised !== this.streakValue ? 'value' : 'format',
+        prev:{value:this.streakValue,format:this.streakFormat}, curr:{value:v.normalised,format:type} });
+      this.streak       = 1;
+      this.streakValue  = v.normalised;
+      this.streakFormat = type;
+      this.streakStartMs= now;
     }
     rec.streakAtFrame = this.streak;
 
-    const confidence = Math.min(1, this.streak / REQUIRED_STREAK);
-    const ready      = this.streak >= REQUIRED_STREAK;
+    const confidence = Math.min(1, this.streak / req);
+    const ready      = this.streak >= req;
 
-    dbg('streak', { streak: this.streak, value: this.streakValue, confidence });
+    dbg('streak', { streak:this.streak, req, path, value:this.streakValue, confidence });
 
     if (!ready) {
-      return { confidence, ready:false, acceptedCode:null, rejectedReason:null, record:rec };
+      const timing: ScanTiming = { frameMs:t0, validationMs:tVal-t0, qualityMs:tQuality-tVal, verificationMs:now-this.streakStartMs, totalMs:now-t0, path };
+      return { confidence, ready:false, acceptedCode:null, rejectedReason:null, record:rec, timing };
     }
 
     // ── Step 7: Final dominant gate (streak must agree with consensus) ────
     const finalDom = this.dominantValue();
     if (finalDom !== null && v.normalised !== finalDom) {
-      const reason = `Streak '${v.normalised}' ≠ window dominant '${finalDom}' — scan ambiguous`;
+      const reason = `Streak '${v.normalised}' ≠ window dominant '${finalDom}' — ambiguous`;
       dbg('reject:final-dom-mismatch', reason);
       rec.rejectedReason = reason;
-      return { confidence, ready:false, acceptedCode:null, rejectedReason:reason, record:rec };
+      tEnd = Date.now();
+      const timing: ScanTiming = { frameMs:t0, validationMs:tVal-t0, qualityMs:tQuality-tVal, verificationMs:now-this.streakStartMs, totalMs:tEnd-t0, path:'rejected' };
+      return { confidence, ready:false, acceptedCode:null, rejectedReason:reason, record:rec, timing };
     }
 
-    // ── Step 8: Debounce ─────────────────────────────────────────────────
+    // ── Step 8: Debounce (same barcode only — first scan NEVER delayed) ──
     if (v.normalised === this.lastAcceptedValue && (now - this.lastAcceptedMs) < DEBOUNCE_MS) {
-      const reason = `Debounce: '${v.normalised}' accepted ${now - this.lastAcceptedMs}ms ago`;
+      const reason = `Debounce: same barcode accepted ${now - this.lastAcceptedMs}ms ago`;
       dbg('debounce', reason);
-      return { confidence:1, ready:false, acceptedCode:null, rejectedReason:reason, record:rec };
+      tEnd = Date.now();
+      const timing: ScanTiming = { frameMs:t0, validationMs:tVal-t0, qualityMs:tQuality-tVal, verificationMs:now-this.streakStartMs, totalMs:tEnd-t0, path };
+      return { confidence:1, ready:false, acceptedCode:null, rejectedReason:reason, record:rec, timing };
     }
 
     // ── Accept ────────────────────────────────────────────────────────────
+    tEnd = Date.now();
+    const verMs = tEnd - this.streakStartMs;
+    const totalMs = tEnd - t0;
     this.lastAcceptedValue = v.normalised;
     this.lastAcceptedMs    = now;
     rec.finalAcceptedValue = v.normalised;
     rec.decision           = 'accept';
-    dbg('ACCEPT', { code: v.normalised, streak: this.streak, verCount, roi });
 
-    return { confidence:1, ready:true, acceptedCode:v.normalised, rejectedReason:null, record:rec };
+    const timing: ScanTiming = { frameMs:t0, validationMs:tVal-t0, qualityMs:tQuality-tVal, verificationMs:verMs, totalMs, path };
+    this.timings.push(timing);
+    if (this.timings.length > 100) this.timings.shift();
+
+    dbg('ACCEPT', { code:v.normalised, streak:this.streak, req, path, totalMs, verMs });
+    if (DEBUG) this.logTiming(timing);
+
+    return { confidence:1, ready:true, acceptedCode:v.normalised, rejectedReason:null, record:rec, timing };
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -447,8 +502,28 @@ export class FrameVerifier {
 
   reset() {
     this.window=[]; this.frameIndex=0; this.streak=0;
-    this.streakValue=''; this.streakFormat=''; this.prevValidRoi=null;
+    this.streakValue=''; this.streakFormat=''; this.streakStartMs=0;
+    this.prevValidRoi=null;
     dbg('reset','FrameVerifier cleared');
+  }
+
+  private logTiming(t: ScanTiming) {
+    console.log(
+      `[Scanner:TIMING] SCAN_START=${t.frameMs} ` +
+      `VALIDATION=${t.validationMs}ms QUALITY=${t.qualityMs}ms ` +
+      `VERIFICATION=${t.verificationMs}ms TOTAL=${t.totalMs}ms PATH=${t.path}`
+    );
+  }
+
+  /** Returns P50 and P95 latency from recent accepted scans (dev only). */
+  benchmarkLatency(): { p50: number; p95: number; count: number } | null {
+    const accepted = this.timings;
+    if (accepted.length === 0) return null;
+    const sorted = [...accepted].map(t => t.totalMs).sort((a,b) => a-b);
+    const p50 = sorted[Math.floor(sorted.length * 0.50)];
+    const p95 = sorted[Math.floor(sorted.length * 0.95)];
+    console.log(`[Scanner:BENCH] n=${sorted.length} P50=${p50}ms P95=${p95}ms`);
+    return { p50, p95, count: sorted.length };
   }
 
   /** Print a full diagnostic table of the current window (for real-device debugging). */
