@@ -1,6 +1,8 @@
 plugins {
     id "com.android.application"
-    id "kotlin-android"
+    // NOTE: do NOT add "kotlin-android" here.
+    // Flutter's dev.flutter.flutter-gradle-plugin applies Kotlin internally.
+    // Adding it manually causes BaseVariant class-not-found with AGP 8.x.
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -24,13 +26,14 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+
     kotlinOptions {
         jvmTarget = "17"
     }
 
     defaultConfig {
         applicationId "com.ajithrohana.lottery_mobile"
-        minSdk 21
+        minSdkVersion flutter.minSdkVersion
         targetSdk 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
