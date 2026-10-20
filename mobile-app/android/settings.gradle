@@ -1,23 +1,14 @@
-pluginManagement {
-    def flutterSdkPath = {
-        def properties = new Properties()
-        file("local.properties").withInputStream { properties.load(it) }
-        def flutterSdkPath = properties.getProperty("flutter.sdk")
-        assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
-        return flutterSdkPath
-    }()
+// Old-style settings — prevents Flutter's auto-upgrade from running
+include ':app'
 
-    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
-
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
+def localProperties = new Properties()
+def localPropertiesFile = file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader -> localProperties.load(reader) }
 }
 
-plugins {
-    id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
-}
+def flutterSdkPath = localProperties.getProperty('flutter.sdk')
+assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
 
-include ":app"
+// Load Flutter's plugin loader (old stable path — not pluginManagement block)
+apply from: "$flutterSdkPath/packages/flutter_tools/gradle/app_plugin_loader.gradle"
