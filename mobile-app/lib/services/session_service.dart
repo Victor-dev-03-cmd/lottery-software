@@ -29,8 +29,15 @@ class SessionService {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // Initialize Supabase if not already done
-      if (Supabase.instance.client.authUrl != supabaseUrl) {
+      // Initialize Supabase if not already done, or if URL changed
+      bool needsInit = false;
+      try {
+        // supabaseUrl is the correct property on SupabaseClient
+        needsInit = Supabase.instance.client.supabaseUrl != supabaseUrl;
+      } catch (_) {
+        needsInit = true; // Not yet initialized
+      }
+      if (needsInit) {
         await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
         await prefs.setString('supabase_url', supabaseUrl);
         await prefs.setString('supabase_key', supabaseAnonKey);
