@@ -1,17 +1,5 @@
-// Root build.gradle — pins AGP 8.3.2 so plugin portal can never resolve AGP 9.x
-buildscript {
-    ext.kotlin_version = '1.9.22'
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        // LOCKED: 8.3.2 supports Java 21, old DSL still works, BaseVariant still present
-        classpath 'com.android.tools.build:gradle:8.3.2'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-    }
-}
-
+// Root build.gradle for new declarative-plugins DSL
+// AGP version is pinned in android/app/build.gradle — no buildscript{} needed here
 allprojects {
     repositories {
         google()

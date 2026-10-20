@@ -1,45 +1,40 @@
-// app/build.gradle — old apply-plugin style, compatible with AGP 8.3.2 + Java 21
+plugins {
+    // AGP version PINNED to 8.3.2 — prevents resolution of AGP 9.x from plugin portal
+    id "com.android.application" version "8.3.2"
+    // Flutter's plugin provides Kotlin internally — do NOT add kotlin-android here
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
     localPropertiesFile.withReader('UTF-8') { reader -> localProperties.load(reader) }
 }
 
-def flutterRoot = localProperties.getProperty('flutter.sdk')
-assert flutterRoot != null, "Flutter SDK not found. Set flutter.sdk in local.properties"
-
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
 def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
 
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
-
 android {
     namespace "com.ajithrohana.lottery_mobile"
-    compileSdkVersion 34
-    ndkVersion "27.0.12077973"
+    compileSdk 34
+    ndkVersion flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     defaultConfig {
         applicationId "com.ajithrohana.lottery_mobile"
-        minSdkVersion 21
-        targetSdkVersion 34
+        minSdk flutter.minSdkVersion
+        targetSdk 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            signingConfig = signingConfigs.debug
             minifyEnabled false
         }
     }
