@@ -1154,7 +1154,10 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
         </div>
       </div>
 
-      {/* ── Mobile Companion Server Info ── */}
+      {/* ── Mobile Relay Pairing (Flutter app) ── */}
+      <MobileRelayCard />
+
+      {/* ── Mobile Companion Server Info (LAN) ── */}
       <MobileServerCard />
 
       {/* ── Supabase Cloud Sync ── */}
@@ -1188,6 +1191,122 @@ function ToggleRow({ label, value, onChange }: { label: string; value: boolean; 
 }
 
 // ── Supabase Config Card ──────────────────────────────────────────────────────
+
+// ── Mobile Relay Pairing (Flutter / Cloud WebSocket) ─────────────────────────
+
+function MobileRelayCard() {
+  const [relayUrl, setRelayUrl] = useState(
+    () => typeof window !== 'undefined' ? (localStorage.getItem('relay_url') ?? 'ws://localhost:8080') : 'ws://localhost:8080'
+  );
+  const [sessionId, setSessionId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('relay_session');
+      if (saved) return saved;
+    }
+    const id = Math.random().toString(36).substring(2, 10).toUpperCase();
+    if (typeof window !== 'undefined') localStorage.setItem('relay_session', id);
+    return id;
+  });
+  const [connected, setConnected] = useState(false);
+  const [peerCount, setPeerCount] = useState(0);
+  const [qrSvg, setQrSvg]       = useState<string | null>(null);
+  const [editingUrl, setEditing] = useState(false);
+  const [urlInput, setUrlInput]  = useState(relayUrl);
+
+  // Build pairing URL: lottery://pair?session=XXXX&relay=wss://...
+  const pairingUrl = `lottery://pair?session=${sessionId}&relay=${encodeURIComponent(relayUrl)}`;
+
+  useEffect(() => {
+    import("@tauri-apps/api/core").then(({ invoke }) => {
+      // Reuse the existing QR code generator with the pairing URL
+      invoke<string>("get_server_qr_code_for_url", { url: pairingUrl })
+        .then(b64 => setQrSvg(atob(b64)))
+        .catch(() => {
+          // Fallback: show the pairing URL as text if QR not available
+        });
+    }).catch(() => {});
+  }, [pairingUrl]);
+
+  function newSession() {
+    const id = Math.random().toString(36).substring(2, 10).toUpperCase();
+    localStorage.setItem('relay_session', id);
+    setSessionId(id);
+    setPeerCount(0);
+    setConnected(false);
+  }
+
+  function saveUrl() {
+    setRelayUrl(urlInput);
+    localStorage.setItem('relay_url', urlInput);
+    setEditing(false);
+  }
+
+  return (
+    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8" }}>
+      <div className="px-5 py-3.5" style={{ borderBottom:"1px solid #F3F4F6", borderLeft:"3px solid #7C3AED" }}>
+        <p className="font-semibold text-sm" style={{ color:"#1D1D1D" }}>📱 Flutter Mobile App — Cloud Pairing</p>
+        <p className="text-xs mt-0.5" style={{ color:"#9CA3AF" }}>
+          Works across any network · Scan QR with the Lottery Scanner Flutter app
+        </p>
+      </div>
+      <div className="p-5 space-y-3">
+        {/* Relay URL */}
+        <div>
+          <label className="text-xs font-semibold block mb-1" style={{ color:"#6B7280" }}>Relay Server URL</label>
+          {editingUrl ? (
+            <div style={{ display:"flex", gap:8 }}>
+              <input className="inp flex-1 font-mono text-sm" value={urlInput}
+                onChange={e => setUrlInput(e.target.value)}
+                placeholder="wss://your-relay.onrender.com"
+                onKeyDown={e => { if(e.key==='Enter') saveUrl(); if(e.key==='Escape') setEditing(false); }}
+                autoFocus />
+              <button onClick={saveUrl} className="px-3 py-1 rounded text-xs font-bold text-white" style={{ background:"#7C3AED" }}>Save</button>
+              <button onClick={() => setEditing(false)} className="px-3 py-1 rounded text-xs font-bold" style={{ background:"#F3F4F6", color:"#374151" }}>Cancel</button>
+            </div>
+          ) : (
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <code style={{ flex:1, fontSize:12, background:"#F3F4F6", padding:"5px 10px", borderRadius:6, color:"#374151" }}>{relayUrl}</code>
+              <button onClick={() => { setUrlInput(relayUrl); setEditing(true); }}
+                className="text-xs px-3 py-1 rounded" style={{ background:"#EDE9FE", color:"#7C3AED", fontWeight:700 }}>Edit</button>
+            </div>
+          )}
+          <p className="text-xs mt-1" style={{ color:"#9CA3AF" }}>
+            Deploy the Go relay: <code style={{ background:"#F3F4F6", padding:"1px 4px", borderRadius:3 }}>cd relay-server && go run main.go</code>
+            &nbsp;or free cloud: Render / Railway / Fly.io
+          </p>
+        </div>
+
+        {/* Session + QR */}
+        <div style={{ display:"flex", gap:14, alignItems:"flex-start" }}>
+          <div style={{ flex:1 }}>
+            <label className="text-xs font-semibold block mb-1" style={{ color:"#6B7280" }}>Session ID</label>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <code style={{ fontSize:20, fontWeight:900, letterSpacing:2, color:"#7C3AED" }}>{sessionId}</code>
+              <button onClick={newSession} className="text-xs px-2 py-1 rounded" style={{ background:"#F3F4F6", color:"#6B7280" }}>New</button>
+            </div>
+            <div className={`mt-2 flex items-center gap-2 text-xs ${connected ? "text-green-600" : "text-gray-400"}`}>
+              <span style={{ width:7, height:7, borderRadius:"50%", background:connected?"#16A34A":"#D1D5DB", display:"inline-block" }}/>
+              {connected ? `${peerCount} device connected` : "Waiting for mobile app"}
+            </div>
+            <div style={{ marginTop:8, fontSize:10, color:"#9CA3AF", wordBreak:"break-all" as const }}>{pairingUrl}</div>
+          </div>
+          {qrSvg ? (
+            <div style={{ width:100, height:100, background:"#fff", border:"1px solid #E5E7EB", borderRadius:8, padding:4 }}
+              dangerouslySetInnerHTML={{ __html: qrSvg }} />
+          ) : (
+            <div style={{ width:100, height:100, background:"#F3F4F6", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#9CA3AF", textAlign:"center" as const }}>
+              QR<br/>loads<br/>here
+            </div>
+          )}
+        </div>
+
+        <div className="text-xs p-3 rounded-lg" style={{ background:"#EDE9FE", color:"#5B21B6" }}>
+          <strong>How to pair:</strong> Open the Flutter Lottery Scanner app → tap the scan icon → point at this QR code
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── Mobile Companion Server Info ──────────────────────────────────────────────
 
