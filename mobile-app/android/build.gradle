@@ -1,8 +1,0 @@
-// Root build.gradle for new declarative-plugins DSL
-// AGP version is pinned in android/app/build.gradle — no buildscript{} needed here
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
