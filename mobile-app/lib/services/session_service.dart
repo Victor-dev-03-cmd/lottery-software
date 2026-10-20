@@ -29,15 +29,18 @@ class SessionService {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // Initialize Supabase if not already done, or if URL changed
-      bool needsInit = false;
+      // Compare against the URL we stored ourselves — SupabaseClient
+      // doesn't expose the URL as a public getter in v2.x.
+      final savedUrl = prefs.getString('supabase_url') ?? '';
+      bool isInitialized = false;
       try {
-        // supabaseUrl is the correct property on SupabaseClient
-        needsInit = Supabase.instance.client.supabaseUrl != supabaseUrl;
+        Supabase.instance.client; // throws StateError if not yet initialized
+        isInitialized = true;
       } catch (_) {
-        needsInit = true; // Not yet initialized
+        isInitialized = false;
       }
-      if (needsInit) {
+
+      if (!isInitialized || savedUrl != supabaseUrl) {
         await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
         await prefs.setString('supabase_url', supabaseUrl);
         await prefs.setString('supabase_key', supabaseAnonKey);
