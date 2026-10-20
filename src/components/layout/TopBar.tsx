@@ -521,7 +521,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
 
   return (
     <header
-      className="h-14 flex items-center px-4 shrink-0 no-print z-10"
+      className="h-14 flex items-center px-3 xl:px-4 shrink-0 no-print z-10"
       style={{
         background: "#FFFFFF",
         borderBottom: "2px solid #CF291D",
@@ -530,7 +530,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
     >
 
       {/* LEFT — Date & Time + Quick nav icons */}
-      <div className="flex-1 flex items-center gap-2.5 min-w-0">
+      <div className="flex-1 flex items-center gap-1.5 xl:gap-2.5 min-w-0">
         {/* Date/Time widget */}
         <div
           className="flex items-center gap-2.5 rounded-xl px-3 py-1.5"
@@ -559,8 +559,10 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
             <span className="text-[10px] uppercase font-semibold tracking-wide" style={{ color: TB.muted }}>
               {DAY[now.getDay()]} · {now.getFullYear()}
             </span>
-            <span className="text-sm font-black font-mono tracking-tight mt-0.5" style={{ color: "#CF291D" }}>
-              {timeStr}
+            <span className="text-xs xl:text-sm font-black font-mono tracking-tight mt-0.5" style={{ color: "#CF291D" }}>
+              {/* On compact screens show HH:MM only; full HH:MM:SS on larger screens */}
+              <span className="xl:hidden">{`${h12}:${mins} ${ampm}`}</span>
+              <span className="hidden xl:inline">{timeStr}</span>
             </span>
           </div>
         </div>
@@ -569,29 +571,29 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
         <button
           onClick={() => onNavigate("ai-analytics")}
           title="AI Intelligence"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all"
+          className="flex items-center gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all"
           style={{ background: "#F0F0FF", border: "1px solid rgba(79,70,229,0.22)", color: "#4f46e5" }}
           onMouseEnter={e => { e.currentTarget.style.background = "rgba(79,70,229,0.10)"; }}
           onMouseLeave={e => { e.currentTarget.style.background = "#F0F0FF"; }}>
           <Brain size={14}/>
-          <span className="hidden lg:inline">AI</span>
+          <span className="hidden xl:inline">AI</span>
         </button>
 
         {/* Quick nav: Settings */}
         <button
           onClick={() => onNavigate("settings")}
           title="Settings"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all"
+          className="flex items-center gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all"
           style={{ background: TB.chipBg, border: `1px solid ${TB.chipBdr}`, color: TB.muted }}
           onMouseEnter={e => { e.currentTarget.style.background = "rgba(207,41,29,0.10)"; e.currentTarget.style.color = "#CF291D"; }}
           onMouseLeave={e => { e.currentTarget.style.background = TB.chipBg; e.currentTarget.style.color = TB.muted; }}>
           <Settings size={14}/>
-          <span className="hidden lg:inline">Settings</span>
+          <span className="hidden xl:inline">Settings</span>
         </button>
       </div>
 
-      {/* CENTER — Search */}
-      <div ref={searchRef} className="relative w-[400px]">
+      {/* CENTER — Search (responsive width) */}
+      <div ref={searchRef} className="relative w-[200px] lg:w-[300px] xl:w-[400px] shrink-0">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: TB.muted }}/>
         <input
           type="text"
@@ -634,15 +636,17 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
       </div>
 
       {/* RIGHT — Actions */}
-      <div className="flex-1 flex items-center justify-end gap-2">
+      <div className="flex-1 flex items-center justify-end gap-1 xl:gap-2">
 
-        {/* New Invoice */}
+        {/* New Invoice — text collapses to icon on compact screens */}
         <button onClick={() => onNavigate("new-invoice")}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors whitespace-nowrap"
+          title="New Invoice"
+          className="flex items-center gap-1.5 px-2.5 xl:px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors whitespace-nowrap"
           style={{ background: "#CF291D" }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "#B50717")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "#CF291D")}>
-          <PlusCircle size={15} /> New Invoice
+          <PlusCircle size={15} />
+          <span className="hidden xl:inline">New Invoice</span>
         </button>
 
         {/* Calculator — floating draggable */}
@@ -806,14 +810,16 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
           )}
         </div>
 
-        {/* DB status */}
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
+        {/* DB status — text hidden at compact width, icon+tooltip always visible */}
+        <div
+          title={dbReady ? "SQLite Online" : "Database Offline"}
+          className="flex items-center gap-1.5 px-2 xl:px-3 py-1.5 rounded-lg text-xs font-semibold"
           style={{
             background: dbReady ? "#F0FDF4" : "#FEF2F2",
             border: `1px solid ${dbReady ? "rgba(22,163,74,0.28)" : "rgba(239,68,68,0.28)"}`,
           }}>
           <Database size={13} style={{ color: dbReady ? "#16a34a" : "#ef4444" }} />
-          <span style={{ color: dbReady ? "#16a34a" : "#ef4444" }}>
+          <span className="hidden xl:inline" style={{ color: dbReady ? "#16a34a" : "#ef4444" }}>
             {dbReady ? "SQLite Online" : "Offline"}
           </span>
         </div>
@@ -1059,7 +1065,8 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
         <div ref={roleRef} className="relative">
           <button
             onClick={() => setRoleMenuOpen(v => !v)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+            title={role === "admin" ? "Admin — Full access" : role === "cashier" ? "Cashier — Limited access" : "Guest"}
+            className="flex items-center gap-1.5 px-2 xl:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
             style={{
               background: role === "admin" ? "rgba(207,41,29,0.10)" : "rgba(37,99,235,0.08)",
               border: `1px solid ${role === "admin" ? "rgba(207,41,29,0.25)" : "rgba(37,99,235,0.20)"}`,
@@ -1069,10 +1076,10 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
             {role === "admin"
               ? <ShieldCheck size={13}/>
               : <User size={13}/>}
-            <span className="uppercase tracking-wider">
+            <span className="hidden xl:inline uppercase tracking-wider">
               {role === "admin" ? "Admin" : role === "cashier" ? "Cashier" : "Guest"}
             </span>
-            <ChevronDown size={11} className={`transition-transform ${roleMenuOpen ? "rotate-180" : ""}`}/>
+            <ChevronDown size={11} className={`hidden xl:block transition-transform ${roleMenuOpen ? "rotate-180" : ""}`}/>
           </button>
 
           {/* Role dropdown — glass panel */}
