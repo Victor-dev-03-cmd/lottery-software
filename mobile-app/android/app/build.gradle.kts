@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.ajithrohana.lottery_mobile"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36   // vibration + other plugins require 34+; use 36 for full API coverage
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -18,7 +18,7 @@ android {
     defaultConfig {
         applicationId = "com.ajithrohana.lottery_mobile"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
