@@ -31,7 +31,7 @@ class _PairingScreenState extends State<PairingScreen> {
 
     if (!mounted) return;
     if (ok) {
-      setState(() => _status = 'Connected to desktop (session $session)');
+      setState(() => _status = 'Connected to desktop (session ${SessionService().sessionId ?? ''})');
       await Future.delayed(const Duration(seconds: 1));
       if (mounted) Navigator.of(context).pushReplacementNamed('/main');
     } else {
