@@ -8,8 +8,7 @@ const kGrey    = Color(0xFF9CA3AF);
 const kBg      = Color(0xFFF5F5F5);
 
 class LotteryApp extends StatelessWidget {
-  final bool supabaseReady;
-  const LotteryApp({super.key, required this.supabaseReady});
+  const LotteryApp({super.key});
 
   @override
   Widget build(BuildContext context) {

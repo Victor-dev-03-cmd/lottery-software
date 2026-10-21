@@ -12,7 +12,7 @@ class PairingScreen extends StatefulWidget {
 class _PairingScreenState extends State<PairingScreen> {
   bool _scanning = false;
   bool _pairing = false;
-  String _status = 'Scan the QR code shown on your desktop Lottery app\n(Settings → Backup & Security → Mobile Companion)';
+  String _status = 'Scan the QR code shown on your desktop Lottery app\n(Settings → Mobile App)';
 
   Future<void> _onDetect(BarcodeCapture capture) async {
     if (_pairing) return;
@@ -35,7 +35,7 @@ class _PairingScreenState extends State<PairingScreen> {
       await Future.delayed(const Duration(seconds: 1));
       if (mounted) Navigator.of(context).pushReplacementNamed('/main');
     } else {
-      setState(() { _pairing = false; _status = 'Connection failed — check Supabase settings'; });
+      setState(() { _pairing = false; _status = 'Could not reach desktop — make sure both devices are on the same WiFi, then try again'; });
     }
   }
 

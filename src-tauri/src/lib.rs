@@ -2695,14 +2695,21 @@ fn get_local_ip() -> String {
     "127.0.0.1".to_string()
 }
 
-/// QR code containing lottery://IP:7423 — mobile scans once for zero-config setup
+/// QR code for direct local connection: lottery://pair?host=IP:7423
 #[tauri::command]
 fn get_server_qr_code() -> Result<String, String> {
+    let ip  = get_local_ip();
+    let url = format!("lottery://pair?host={}:7423", ip);
+    get_qr_for_url(url)
+}
+
+/// Generate a QR code SVG (base64-encoded) for any arbitrary URL.
+/// Used by the Mobile App settings tab to create pairing QR codes.
+#[tauri::command]
+fn get_qr_for_url(url: String) -> Result<String, String> {
     use qrcode::QrCode;
     use qrcode::render::svg;
     use base64::Engine;
-    let ip  = get_local_ip();
-    let url = format!("lottery://{}:7423", ip);
     let code = QrCode::new(url.as_bytes()).map_err(|e| e.to_string())?;
     let svg_str = code.render::<svg::Color>()
         .min_dimensions(220, 220)
@@ -2798,6 +2805,7 @@ pub fn run() {
             execute_ai_action,
             get_local_ip,
             get_server_qr_code,
+            get_qr_for_url,
             start_discovery_beacon,
         ])
         .run(tauri::generate_context!())

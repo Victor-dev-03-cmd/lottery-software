@@ -33,13 +33,17 @@ class QRParser {
   };
 
   static TicketData? parse(String raw) {
-    final text = raw.trim();
+    final text  = raw.trim();
+    final upper = text.toUpperCase();
 
-    // Detect board
+    // Detect board — startsWith is primary, contains is fallback for QR codes
+    // that have a non-printable encoding header before the game name.
     final isNlb = text.contains('nlb.lk') || text.contains('r.nlb.lk') ||
-                  _nlbNames.keys.any((k) => text.toUpperCase().startsWith(k));
+                  _nlbNames.keys.any((k) => upper.startsWith(k)) ||
+                  _nlbNames.keys.any((k) => upper.contains(k));
     final isDlb = text.contains('dlb.lk') || text.contains('www.dlb.lk') ||
-                  _dlbNames.keys.any((k) => text.toUpperCase().startsWith(k));
+                  _dlbNames.keys.any((k) => upper.startsWith(k)) ||
+                  _dlbNames.keys.any((k) => upper.contains(k));
 
     if (!isNlb && !isDlb) return null;
 
@@ -54,10 +58,10 @@ class QRParser {
   static TicketData _parseNlb(String text) {
     final upper = text.toUpperCase();
 
-    // Find game name
+    // Find game name — startsWith first, then contains fallback
     String gameName = 'Unknown NLB';
     for (final entry in _nlbNames.entries) {
-      if (upper.startsWith(entry.key)) {
+      if (upper.startsWith(entry.key) || upper.contains(entry.key)) {
         gameName = entry.value;
         break;
       }
@@ -104,7 +108,7 @@ class QRParser {
 
     String gameName = 'Unknown DLB';
     for (final entry in _dlbNames.entries) {
-      if (upper.startsWith(entry.key)) {
+      if (upper.startsWith(entry.key) || upper.contains(entry.key)) {
         gameName = entry.value;
         break;
       }

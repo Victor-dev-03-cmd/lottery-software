@@ -4,7 +4,7 @@ import {
   Save, Plus, Trash2, RefreshCw, Database, Shield, Printer,
   DollarSign, Gamepad2, Building2, CheckCircle, AlertTriangle,
   ToggleLeft, ToggleRight, Eye, EyeOff, HardDrive, RotateCcw,
-  Pencil, X, Home, ChevronRight, Cloud, Lock, ShieldCheck,
+  Pencil, X, Home, ChevronRight, Cloud, Lock, ShieldCheck, Smartphone,
 } from "lucide-react";
 import { testSupabaseConnection } from "../services/supabase";
 import {
@@ -19,7 +19,7 @@ import SoftwareUpdateTab from "./SoftwareUpdateTab";
 import type { CompanySettings, LotteryGame } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 
-type Tab = "general" | "games" | "financial" | "printing" | "security" | "ai" | "updates" | "import";
+type Tab = "general" | "games" | "financial" | "printing" | "security" | "mobile" | "ai" | "updates" | "import";
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "general",   label: "General",           icon: <Building2 size={15} /> },
@@ -27,6 +27,7 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "financial", label: "Financial",         icon: <DollarSign size={15} /> },
   { key: "printing",  label: "Printing",          icon: <Printer size={15} /> },
   { key: "security",  label: "Backup & Security", icon: <Shield size={15} /> },
+  { key: "mobile",    label: "Mobile App",        icon: <Smartphone size={15} /> },
   { key: "ai",        label: "AI Configuration",  icon: <span style={{ fontSize: 13 }}>🧠</span> },
   { key: "updates",   label: "Software Updates",  icon: <span style={{ fontSize: 13 }}>🔄</span> },
   { key: "import",    label: "Import Data",       icon: <span style={{ fontSize: 13 }}>📥</span> },
@@ -93,6 +94,7 @@ export default function Settings() {
           {activeTab === "financial" && <FinancialTab onSaved={showSaved} />}
           {activeTab === "printing"  && <PrintingTab onSaved={showSaved} />}
           {activeTab === "security"  && <SecurityTab onSaved={showSaved} />}
+          {activeTab === "mobile"    && <MobileAppTab />}
           {activeTab === "ai"        && <AIConfigTab />}
           {activeTab === "updates"   && <SoftwareUpdateTab />}
           {activeTab === "import"    && <ImportDataTab />}
@@ -1154,14 +1156,48 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
         </div>
       </div>
 
-      {/* ── Mobile Relay Pairing (Flutter app) ── */}
-      <MobileRelayCard />
-
-      {/* ── Mobile Companion Server Info (LAN) ── */}
-      <MobileServerCard />
-
       {/* ── Supabase Cloud Sync ── */}
       <SupabaseConfigCard />
+    </div>
+  );
+}
+
+// ── 6. MOBILE APP TAB ─────────────────────────────────────────────────────────
+
+function MobileAppTab() {
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#fff", border: "1px solid #E8E8E8" }}>
+        <div className="px-5 py-4" style={{ borderLeft: "4px solid #7C3AED", background: "linear-gradient(to right, #F5F3FF, #fff)" }}>
+          <div className="flex items-center gap-3">
+            <Smartphone size={22} style={{ color: "#7C3AED" }} />
+            <div>
+              <p className="font-bold text-base" style={{ color: "#1D1D1D" }}>Mobile Companion App</p>
+              <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
+                Connect the Flutter Lottery Scanner app to this desktop over WiFi or any network
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Local LAN connection (primary) */}
+      <MobileServerCard />
+
+      {/* Cloud relay connection (secondary) */}
+      <MobileRelayCard />
+
+      {/* How it works */}
+      <div className="rounded-2xl p-5 space-y-2" style={{ background: "#F8F9FA", border: "1px solid #E8E8E8" }}>
+        <p className="text-sm font-bold" style={{ color: "#374151" }}>How pairing works</p>
+        <ol className="text-xs space-y-1.5 list-decimal list-inside" style={{ color: "#6B7280" }}>
+          <li>Open the <strong>Lottery Scanner</strong> Flutter app on your Android phone</li>
+          <li>Tap the connection badge (top-right) → <strong>Scan Desktop QR</strong></li>
+          <li>Point the camera at the QR code below — connection happens automatically</li>
+          <li>Once paired, scanning a ticket on the phone instantly sends it here</li>
+        </ol>
+      </div>
     </div>
   );
 }
@@ -1218,12 +1254,9 @@ function MobileRelayCard() {
 
   useEffect(() => {
     import("@tauri-apps/api/core").then(({ invoke }) => {
-      // Reuse the existing QR code generator with the pairing URL
-      invoke<string>("get_server_qr_code_for_url", { url: pairingUrl })
+      invoke<string>("get_qr_for_url", { url: pairingUrl })
         .then(b64 => setQrSvg(atob(b64)))
-        .catch(() => {
-          // Fallback: show the pairing URL as text if QR not available
-        });
+        .catch(() => {});
     }).catch(() => {});
   }, [pairingUrl]);
 
@@ -1317,12 +1350,14 @@ function MobileServerCard() {
 
   useEffect(() => {
     import("@tauri-apps/api/core").then(({ invoke }) => {
-      invoke<string>("get_local_ip")
-        .then(ip => setServerIP(ip))
-        .catch(() => setServerIP("Not available"));
-      invoke<string>("get_server_qr_code")
-        .then(b64 => setQrSvg(atob(b64)))
-        .catch(() => {});
+      invoke<string>("get_local_ip").then(ip => {
+        setServerIP(ip);
+        // Generate QR for direct local connection
+        const pairingUrl = `lottery://pair?host=${ip}:7423`;
+        invoke<string>("get_qr_for_url", { url: pairingUrl })
+          .then(b64 => setQrSvg(atob(b64)))
+          .catch(() => {});
+      }).catch(() => setServerIP("Not available"));
     }).catch(() => setServerIP("Not available"));
   }, []);
 
