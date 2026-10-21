@@ -1,35 +1,37 @@
 name: "Release"
 
-# Trigger: push a version tag  →  git tag v1.0.25 && git push origin v1.0.25
+# Trigger: push a version tag matching the version in src-tauri/tauri.conf.json
+# Example:   git tag v1.0.25 && git push origin v1.0.25
 on:
   push:
     tags:
       - 'v*'
 
 jobs:
-  # ── Guard: ensure the git tag matches the version in tauri.conf.json ─────────
-  # This prevents the "v1.0.24 tag but 1.0.22 assets" mismatch that caused 404s.
+  # ── Guard: ensure the git tag matches tauri.conf.json version ─────────────────
+  # Prevents the "tag v1.0.24 but assets named 1.0.22" mismatch that caused 404s.
   verify-version:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.ver.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Check tag == tauri.conf.json version
         id: ver
         run: |
           CONF_VERSION=$(python3 -c "import json; print(json.load(open('src-tauri/tauri.conf.json'))['version'])")
           TAG_VERSION="${{ github.ref_name }}"
-          TAG_VERSION="${TAG_VERSION#v}"   # strip leading 'v'
-          echo "tauri.conf.json: $CONF_VERSION   tag: $TAG_VERSION"
+          TAG_VERSION="${TAG_VERSION#v}"
+          echo "tauri.conf.json=$CONF_VERSION  tag=$TAG_VERSION"
           if [ "$CONF_VERSION" != "$TAG_VERSION" ]; then
-            echo "::error::Version mismatch — tauri.conf.json is $CONF_VERSION but tag is ${{ github.ref_name }}."
-            echo "::error::Run: npm run version-bump $TAG_VERSION, commit, then re-push the tag."
+            echo "::error::Version mismatch: tauri.conf.json=$CONF_VERSION  tag=${{ github.ref_name }}"
+            echo "::error::Bump version in src-tauri/tauri.conf.json to $TAG_VERSION, commit to main, then re-push the tag."
             exit 1
           fi
           echo "version=$CONF_VERSION" >> "$GITHUB_OUTPUT"
 
-  # ── Build + publish (Windows + Linux) ────────────────────────────────────────
+  # ── Build Windows + Linux installers and publish the GitHub Release ────────────
   publish-tauri:
     needs: verify-version
     permissions:
@@ -55,12 +57,12 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Rust cache
+      - name: Rust build cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: "./src-tauri -> target"
 
-      - name: Install Linux system deps
+      - name: Install Linux system dependencies
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
@@ -74,11 +76,11 @@ jobs:
       - name: Install frontend dependencies
         run: bun install
 
-      - name: Build Tauri app and publish release
+      - name: Build Tauri app and publish GitHub Release
         uses: tauri-apps/tauri-action@v0.5.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Optional: set these secrets for signed updates (see RELEASE.md)
+          # Set these GitHub secrets for signed updates (see README for key generation)
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
@@ -87,18 +89,17 @@ jobs:
           releaseBody: |
             ## Lottery Manager ${{ github.ref_name }}
 
-            ### Install / Update
-            - **In-app**: Settings → Software Updates → Check for Updates
+            ### Update
+            - **In-app**: Settings → Software Updates → Check for Updates (silent install)
             - **Windows**: download `lottery-manager_*_x64-setup.exe`
             - **Linux**: download `lottery-manager_*_amd64.deb`
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
 
-  # ── Ensure latest.json is present and correct ────────────────────────────────
-  # tauri-action generates latest.json when TAURI_SIGNING_PRIVATE_KEY is set.
-  # When it is NOT set (unsigned/dangerousInsecure mode), tauri-action may skip
-  # the file. This job generates a correct unsigned latest.json as a fallback.
+  # ── Ensure latest.json is present and has correct asset URLs ──────────────────
+  # tauri-action generates latest.json automatically when TAURI_SIGNING_PRIVATE_KEY
+  # is set. When not set (dangerousInsecure / unsigned mode), this job fills the gap.
   ensure-manifest:
     needs: [verify-version, publish-tauri]
     runs-on: ubuntu-latest
@@ -117,6 +118,7 @@ jobs:
             --json assets \
             --jq '[.assets[].name] | contains(["latest.json"])' 2>/dev/null || echo "false")
           echo "has_manifest=$HAS" >> "$GITHUB_OUTPUT"
+          echo "latest.json already present: $HAS"
 
       - name: Generate and upload latest.json (unsigned fallback)
         if: steps.check.outputs.has_manifest != 'true'
@@ -124,65 +126,40 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ github.ref_name }}"
-          # Read version from tauri.conf.json — this is the canonical source of truth.
-          # It MUST match the tag (enforced by verify-version above).
           VERSION=$(python3 -c "import json; print(json.load(open('src-tauri/tauri.conf.json'))['version'])")
           PRODUCT=$(python3 -c "import json; print(json.load(open('src-tauri/tauri.conf.json'))['productName'])")
           BASE="https://github.com/${{ github.repository }}/releases/download/${TAG}"
           PUB_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-          # Try to fetch .sig files (present only when signing keys are set)
           mkdir -p sigs
           gh release download "${TAG}" \
             --repo "${{ github.repository }}" \
             --pattern "*.sig" --dir ./sigs/ 2>/dev/null || true
 
-          # Read signatures if available, otherwise leave empty (dangerousInsecure mode)
+          WIN_SIG=""
+          LIN_SIG=""
           WIN_SIG_FILE="sigs/${PRODUCT}_${VERSION}_x64-setup.exe.sig"
           LIN_SIG_FILE="sigs/${PRODUCT}_${VERSION}_amd64.AppImage.sig"
-          WIN_SIG=""; LIN_SIG=""
           [ -f "$WIN_SIG_FILE" ] && WIN_SIG=$(cat "$WIN_SIG_FILE")
           [ -f "$LIN_SIG_FILE" ] && LIN_SIG=$(cat "$LIN_SIG_FILE")
 
-          # Verify the actual installer files exist in the release
-          WIN_EXISTS=$(gh release view "${TAG}" --repo "${{ github.repository }}" \
-            --json assets --jq "[.assets[].name] | contains([\"${PRODUCT}_${VERSION}_x64-setup.exe\"])")
-          LIN_EXISTS=$(gh release view "${TAG}" --repo "${{ github.repository }}" \
-            --json assets --jq "[.assets[].name] | contains([\"${PRODUCT}_${VERSION}_amd64.AppImage\"])")
+          echo "Product=$PRODUCT  Version=$VERSION"
 
-          echo "Product: $PRODUCT  Version: $VERSION"
-          echo "Windows asset exists: $WIN_EXISTS"
-          echo "Linux asset exists:   $LIN_EXISTS"
+          # Escape any backslashes/quotes in the .sig content before embedding in JSON
+          WIN_SIG_ESC=$(printf '%s' "$WIN_SIG" | sed 's/\\/\\\\/g; s/"/\\"/g')
+          LIN_SIG_ESC=$(printf '%s' "$LIN_SIG" | sed 's/\\/\\\\/g; s/"/\\"/g')
 
-          # Write latest.json — asset URLs use exact same naming as tauri-action produces
-          python3 - <<PYEOF
-import json, os
-manifest = {
-    "version": os.environ.get("VERSION", ""),
-    "notes": f"Lottery Manager {os.environ.get('TAG', '')}",
-    "pub_date": os.environ.get("PUB_DATE", ""),
-    "platforms": {
-        "windows-x86_64": {
-            "signature": os.environ.get("WIN_SIG", ""),
-            "url": f"{os.environ['BASE']}/{os.environ['PRODUCT']}_{os.environ['VERSION']}_x64-setup.exe"
-        },
-        "linux-x86_64": {
-            "signature": os.environ.get("LIN_SIG", ""),
-            "url": f"{os.environ['BASE']}/{os.environ['PRODUCT']}_{os.environ['VERSION']}_amd64.AppImage"
-        }
-    }
-}
-with open("latest.json", "w") as f:
-    json.dump(manifest, f, indent=2)
-    f.write("\n")
-PYEOF
-
-          export VERSION TAG PUB_DATE WIN_SIG LIN_SIG BASE PRODUCT
-
+          # Build latest.json with printf → pretty-print through python3 -m json.tool
+          printf '{"version":"%s","notes":"Lottery Manager %s","pub_date":"%s","platforms":{"windows-x86_64":{"signature":"%s","url":"%s/%s_%s_x64-setup.exe"},"linux-x86_64":{"signature":"%s","url":"%s/%s_%s_amd64.AppImage"}}}\n' \
+            "$VERSION" "$TAG" "$PUB_DATE" \
+            "$WIN_SIG_ESC" "$BASE" "$PRODUCT" "$VERSION" \
+            "$LIN_SIG_ESC" "$BASE" "$PRODUCT" "$VERSION" \
+            | python3 -m json.tool > latest.json
+          echo "Generated latest.json:"
           cat latest.json
 
           gh release upload "${TAG}" latest.json \
             --repo "${{ github.repository }}" \
             --clobber
 
-          echo "latest.json uploaded successfully."
+          echo "latest.json uploaded."
