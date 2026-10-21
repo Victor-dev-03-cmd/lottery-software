@@ -22,6 +22,13 @@ class _StockPurchaseScreenState extends State<StockPurchaseScreen>
   bool _sending = false;
   bool _sent = false;
   String? _error;
+  bool _torchOn = false;
+
+  // QR-only controller — prevents linear barcodes from triggering the parser
+  late final MobileScannerController _scannerCtrl = MobileScannerController(
+    formats: [BarcodeFormat.qrCode],
+    torchEnabled: false,
+  );
 
   // Form controllers — populated immediately on QR scan
   final _gameCtrl     = TextEditingController();
@@ -39,11 +46,17 @@ class _StockPurchaseScreenState extends State<StockPurchaseScreen>
 
   @override
   void dispose() {
+    _scannerCtrl.dispose();
     for (final c in [_gameCtrl, _drawNoCtrl, _drawDateCtrl,
                      _startCtrl, _endCtrl, _qtyCtrl, _priceCtrl]) {
       c.dispose();
     }
     super.dispose();
+  }
+
+  void _toggleTorch() {
+    _scannerCtrl.toggleTorch();
+    setState(() => _torchOn = !_torchOn);
   }
 
   // ── QR detected ─────────────────────────────────────────────────────────────
@@ -90,7 +103,13 @@ class _StockPurchaseScreenState extends State<StockPurchaseScreen>
     setState(() { _scanning = true; _handled = false; _error = null; });
   }
 
-  void _closeScanner() => setState(() { _scanning = false; _handled = false; });
+  void _closeScanner() {
+    if (_torchOn) {
+      _scannerCtrl.toggleTorch();
+      _torchOn = false;
+    }
+    setState(() { _scanning = false; _handled = false; });
+  }
 
   void _clearForm() => setState(() {
     _ticket = null; _sent = false; _error = null;
@@ -147,10 +166,12 @@ class _StockPurchaseScreenState extends State<StockPurchaseScreen>
   Widget _buildScanner() {
     return Stack(fit: StackFit.expand, children: [
       MobileScanner(
+        controller: _scannerCtrl,
         onDetect: _onDetect,
         fit: BoxFit.cover,
       ),
-      const ScannerOverlay(label: 'Point at ticket QR code'),
+      const ScannerOverlay(label: 'Point QR code inside the frame'),
+      // Top-right: close button
       Positioned(
         top: 8, right: 8,
         child: IconButton(
@@ -160,6 +181,25 @@ class _StockPurchaseScreenState extends State<StockPurchaseScreen>
             backgroundColor: Colors.black45,
             shape: const CircleBorder(),
           ),
+        ),
+      ),
+      // Top-left: flashlight button
+      Positioned(
+        top: 8, left: 8,
+        child: IconButton(
+          onPressed: _toggleTorch,
+          icon: Icon(
+            _torchOn ? Icons.flashlight_off : Icons.flashlight_on,
+            color: _torchOn ? const Color(0xFFFCD34D) : Colors.white,
+            size: 22,
+          ),
+          style: IconButton.styleFrom(
+            backgroundColor: _torchOn
+                ? Colors.amber.withOpacity(0.3)
+                : Colors.black45,
+            shape: const CircleBorder(),
+          ),
+          tooltip: _torchOn ? 'Turn off flashlight' : 'Turn on flashlight',
         ),
       ),
     ]);
