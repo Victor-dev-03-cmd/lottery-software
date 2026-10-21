@@ -334,7 +334,6 @@ class _StockPurchaseScreenState extends State<StockPurchaseScreen>
               borderSide:
                   const BorderSide(color: kPrimary, width: 1.5)),
         ),
-        onFocus: (_) {},
       ),
     ]);
   }

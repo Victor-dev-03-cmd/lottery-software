@@ -20,22 +20,14 @@ class _PairingScreenState extends State<PairingScreen> {
     final value = barcode?.rawValue;
     if (value == null) return;
 
-    // Expected: lottery://pair?session=XXXX&url=https://...&key=eyJ...
+    // Expected: lottery://pair?session=XXXX&relay=wss://...
+    //       OR: lottery://pair?session=XXXX&url=https://...&key=eyJ...
     final uri = Uri.tryParse(value);
-    if (uri == null || uri.scheme != 'lottery' || uri.host != 'pair') return;
-
-    final session = uri.queryParameters['session'] ?? '';
-    final url     = uri.queryParameters['url']     ?? '';
-    final key     = uri.queryParameters['key']     ?? '';
-
-    if (session.isEmpty || url.isEmpty || key.isEmpty) {
-      setState(() => _status = 'Invalid pairing QR — try again');
-      return;
-    }
+    if (uri == null || uri.scheme != 'lottery') return;
 
     setState(() { _pairing = true; _status = 'Connecting…'; });
 
-    final ok = await SessionService().joinSession(session, url, key);
+    final ok = await SessionService().joinFromQR(value);
 
     if (!mounted) return;
     if (ok) {
