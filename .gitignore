@@ -27,3 +27,34 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# ── Tauri / Rust ──────────────────────────────────────────────────────────────
+src-tauri/target/
+
+# ── Flutter / Dart (mobile-app/) ──────────────────────────────────────────────
+# Dart tool cache — regenerated on every `flutter pub get`
+mobile-app/.dart_tool/
+# Flutter plugin list — auto-generated, not for version control
+mobile-app/.flutter-plugins
+mobile-app/.flutter-plugins-dependencies
+# Pub package lock — commit pubspec.lock only for app packages if desired;
+# for internal tools it's typically excluded
+mobile-app/pubspec.lock
+# Flutter build outputs
+mobile-app/build/
+
+# ── Android Gradle caches (inside mobile-app/android/) ───────────────────────
+# Gradle wrapper caches — version-specific, machine-specific
+mobile-app/android/.gradle/
+# Android build output
+mobile-app/android/build/
+mobile-app/android/app/build/
+# Android local properties (machine-specific SDK path)
+mobile-app/android/local.properties
+# ProGuard generated files
+mobile-app/android/app/proguard-rules.pro
+
+# ── SQLite database files ──────────────────────────────────────────────────────
+*.db
+*.db-shm
+*.db-wal

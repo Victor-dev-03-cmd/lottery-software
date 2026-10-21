@@ -1,0 +1,44 @@
+# Flutter/Dart standard gitignore
+# See: https://dart.dev/guides/libraries/private-files
+
+# Dart tool cache — regenerated on `flutter pub get`
+.dart_tool/
+
+# Flutter-generated files
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Pub package lock (optional — keep if reproducible builds are needed)
+pubspec.lock
+
+# Build outputs
+build/
+
+# Android Gradle caches
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+
+# iOS
+ios/Flutter/.last_build_id
+ios/Pods/
+ios/.symlinks/
+ios/Runner/GeneratedPluginRegistrant.*
+
+# macOS
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Pods/
+macos/.symlinks/
+
+# Web
+web/flutter_service_worker.js
+web/flutter.js
+
+# Linux / Windows
+linux/flutter/generated_plugins.cmake
+linux/flutter/generated_plugin_registrant.h
+linux/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugins.cmake
+windows/flutter/generated_plugin_registrant.h
+windows/flutter/generated_plugin_registrant.cc
