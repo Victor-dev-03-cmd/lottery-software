@@ -255,8 +255,10 @@ export default function Purchases() {
     setFormItems(prev => {
       const items = [...prev];
       // Find the last empty row; if none, push a new one
-      const lastEmptyIdx = items.map((it, i) => (it.game_name === "" ? i : -1))
-                                 .filter(i => i >= 0).at(-1);
+      const emptyIndices = items.map((it, i) => (it.game_name === "" ? i : -1)).filter(i => i >= 0);
+      const lastEmptyIdx: number | undefined = emptyIndices.length > 0
+        ? emptyIndices[emptyIndices.length - 1]
+        : undefined;
       if (lastEmptyIdx !== undefined) {
         items[lastEmptyIdx] = item;
       } else {
