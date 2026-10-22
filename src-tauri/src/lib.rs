@@ -1200,62 +1200,6 @@ async fn fetch_nlb_by_draw_or_date(game_slug: &str, draw_number: &str, date: &st
     result
 }
 
-/// Wrapper that adds date-targeted fetching on top of `fetch_nlb_result`.
-async fn fetch_nlb_result_for_date(game_slug: &str, target_date: &str) -> LotteryResult {
-    let url_path = nlb_url_slug(game_slug);
-    let (_, expected_count, _, max_digits) = get_game_profile(game_slug, "NLB");
-
-    let client = match build_client() {
-        Ok(c) => c,
-        Err(_) => return fetch_nlb_result(game_slug).await,
-    };
-
-    // ── Try date-specific search URLs first ───────────────────────────────────
-    if !target_date.is_empty() {
-        let date_urls = [
-            format!("https://www.nlb.lk/lotteries/{}?date={}", url_path, target_date),
-            format!("https://www.nlb.lk/lotteries/{}?draw_date={}", url_path, target_date),
-            format!("https://www.nlb.lk/results/{}?date={}", url_path, target_date),
-        ];
-        for url in &date_urls {
-            if let Some(html) = try_html(&client, url).await {
-                let doc = scraper::Html::parse_document(&html);
-                if let Some(p) = find_row_for_date(&doc, target_date, expected_count, max_digits) {
-                    return LotteryResult {
-                        game_slug:      game_slug.to_string(),
-                        board:          "NLB".into(),
-                        game_name:      nlb_display_name(game_slug),
-                        draw_number:    p.0, draw_date: p.1,
-                        winning_letter: p.2, winning_numbers: p.3,
-                        fetched_at:     current_timestamp(),
-                        source_url:     url.clone(),
-                        ..Default::default()
-                    };
-                }
-            }
-        }
-
-        // ── Fetch full page and scan table for the target date row ─────────────
-        let page_url = format!("https://www.nlb.lk/lotteries/{}", url_path);
-        if let Some(html) = try_html(&client, &page_url).await {
-            let doc = scraper::Html::parse_document(&html);
-            if let Some(p) = find_row_for_date(&doc, target_date, expected_count, max_digits) {
-                return LotteryResult {
-                    game_slug: game_slug.to_string(), board: "NLB".into(),
-                    game_name: nlb_display_name(game_slug),
-                    draw_number: p.0, draw_date: p.1,
-                    winning_letter: p.2, winning_numbers: p.3,
-                    fetched_at: current_timestamp(), source_url: page_url,
-                    ..Default::default()
-                };
-            }
-        }
-    }
-
-    // Fall through to latest-result fetch (also handles today)
-    fetch_nlb_result(game_slug).await
-}
-
 /// Wrapper that adds date-targeted fetching on top of `fetch_dlb_result`.
 async fn fetch_dlb_result_for_date(game_slug: &str, target_date: &str) -> LotteryResult {
     let url_path = dlb_url_slug(game_slug);
