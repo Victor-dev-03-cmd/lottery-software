@@ -30,10 +30,17 @@ class _ScannerViewState extends State<ScannerView> {
   @override
   void initState() {
     super.initState();
-    _ctrl = MobileScannerController(
-      formats: widget.qrOnly ? [BarcodeFormat.qrCode] : BarcodeFormat.all,
-      torchEnabled: false,
-    );
+    // formats is omitted when qrOnly=false so the controller uses its default
+    // (all barcode formats). Passing BarcodeFormat.all here fails because it is
+    // a BarcodeFormat bitmask constant, not a List<BarcodeFormat>.
+    _ctrl = widget.qrOnly
+        ? MobileScannerController(
+            formats: [BarcodeFormat.qrCode],
+            torchEnabled: false,
+          )
+        : MobileScannerController(
+            torchEnabled: false,
+          );
   }
 
   @override
