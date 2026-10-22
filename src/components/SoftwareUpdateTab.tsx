@@ -143,8 +143,7 @@ export default function SoftwareUpdateTab() {
         }
       });
       setPhase("done");
-      // Short delay so user sees the "installing" message, then relaunch
-      setTimeout(() => relaunch(), 1500);
+      // Show restart dialog — do NOT auto-restart silently
     } catch (e) {
       console.error("Update install failed:", e);
       setErrMsg(String(e));
@@ -402,12 +401,52 @@ export default function SoftwareUpdateTab() {
               </div>
             )}
 
-            {(phase === "installing" || phase === "done") && (
+            {phase === "installing" && (
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px",
                 background: "#F0FFF4", borderRadius: 8, border: "1px solid #BBF7D0",
                 fontSize: 12, fontWeight: 700, color: "#16A34A" }}>
                 <CheckCircle size={15} />
-                Update installed successfully — restarting Lottery Manager…
+                Installing update…
+              </div>
+            )}
+
+            {/* ── Restart dialog ─────────────────────────────────────── */}
+            {phase === "done" && (
+              <div style={{ background: "linear-gradient(135deg,#0F172A,#1E293B)", borderRadius: 12,
+                padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: "#16A34A",
+                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <CheckCircle size={24} style={{ color: "#fff" }} />
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 15, fontWeight: 800, color: "#F1F5F9", margin: 0 }}>
+                      Update installed successfully!
+                    </p>
+                    <p style={{ fontSize: 12, color: "#64748B", margin: "3px 0 0" }}>
+                      Lottery Manager will restart to apply the new version.
+                    </p>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button onClick={() => relaunch()}
+                    style={{ flex: 2, display: "flex", alignItems: "center", justifyContent: "center",
+                      gap: 8, padding: "12px 0", borderRadius: 10, border: "none",
+                      background: "linear-gradient(135deg,#16A34A,#15803D)", color: "#fff",
+                      fontSize: 14, fontWeight: 800, cursor: "pointer",
+                      boxShadow: "0 4px 14px rgba(22,163,74,0.4)" }}>
+                    🔄 Restart Now
+                  </button>
+                  <button onClick={() => setPhase("up-to-date")}
+                    style={{ flex: 1, padding: "12px 0", borderRadius: 10,
+                      border: "1px solid rgba(255,255,255,0.15)", background: "transparent",
+                      color: "#94A3B8", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                    Later
+                  </button>
+                </div>
+                <p style={{ fontSize: 10, color: "#475569", margin: 0, textAlign: "center" as const }}>
+                  All open data will be preserved. If you choose Later, restart manually to activate the update.
+                </p>
               </div>
             )}
           </div>

@@ -108,20 +108,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check if tauri-action already uploaded latest.json
-        id: check
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          HAS=$(gh release view "${{ github.ref_name }}" \
-            --repo "${{ github.repository }}" \
-            --json assets \
-            --jq '[.assets[].name] | contains(["latest.json"])' 2>/dev/null || echo "false")
-          echo "has_manifest=$HAS" >> "$GITHUB_OUTPUT"
-          echo "latest.json already present: $HAS"
-
-      - name: Generate and upload latest.json (unsigned fallback)
-        if: steps.check.outputs.has_manifest != 'true'
+      - name: Generate and upload correct latest.json
+        # Always runs — overwrites whatever tauri-action uploaded.
+        # Critical: tauri-action generates latest.json with "signature": "" when
+        # TAURI_SIGNING_PRIVATE_KEY is not set. Tauri's minisign parser crashes on
+        # an empty string even with dangerousInsecure:true — the field must be
+        # OMITTED entirely, not set to "". This step ensures correct format.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -131,6 +123,7 @@ jobs:
           BASE="https://github.com/${{ github.repository }}/releases/download/${TAG}"
           PUB_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
+          # Download .sig files — present only when TAURI_SIGNING_PRIVATE_KEY is set
           mkdir -p sigs
           gh release download "${TAG}" \
             --repo "${{ github.repository }}" \
@@ -143,18 +136,30 @@ jobs:
           [ -f "$WIN_SIG_FILE" ] && WIN_SIG=$(cat "$WIN_SIG_FILE")
           [ -f "$LIN_SIG_FILE" ] && LIN_SIG=$(cat "$LIN_SIG_FILE")
 
-          echo "Product=$PRODUCT  Version=$VERSION"
+          echo "Product=$PRODUCT  Version=$VERSION  WinSig=${#WIN_SIG}chars  LinSig=${#LIN_SIG}chars"
 
-          # Escape any backslashes/quotes in the .sig content before embedding in JSON
+          # Build platform JSON objects — signature field is OMITTED when empty.
+          # Tauri's minisign parser throws "Invalid encoding" on "" even with
+          # dangerousInsecure:true, so we must never write an empty signature field.
           WIN_SIG_ESC=$(printf '%s' "$WIN_SIG" | sed 's/\\/\\\\/g; s/"/\\"/g')
           LIN_SIG_ESC=$(printf '%s' "$LIN_SIG" | sed 's/\\/\\\\/g; s/"/\\"/g')
 
-          # Build latest.json with printf → pretty-print through python3 -m json.tool
-          printf '{"version":"%s","notes":"Lottery Manager %s","pub_date":"%s","platforms":{"windows-x86_64":{"signature":"%s","url":"%s/%s_%s_x64-setup.exe"},"linux-x86_64":{"signature":"%s","url":"%s/%s_%s_amd64.AppImage"}}}\n' \
-            "$VERSION" "$TAG" "$PUB_DATE" \
-            "$WIN_SIG_ESC" "$BASE" "$PRODUCT" "$VERSION" \
-            "$LIN_SIG_ESC" "$BASE" "$PRODUCT" "$VERSION" \
+          if [ -n "$WIN_SIG_ESC" ]; then
+            WIN_OBJ="{\"signature\":\"$WIN_SIG_ESC\",\"url\":\"$BASE/${PRODUCT}_${VERSION}_x64-setup.exe\"}"
+          else
+            WIN_OBJ="{\"url\":\"$BASE/${PRODUCT}_${VERSION}_x64-setup.exe\"}"
+          fi
+
+          if [ -n "$LIN_SIG_ESC" ]; then
+            LIN_OBJ="{\"signature\":\"$LIN_SIG_ESC\",\"url\":\"$BASE/${PRODUCT}_${VERSION}_amd64.AppImage\"}"
+          else
+            LIN_OBJ="{\"url\":\"$BASE/${PRODUCT}_${VERSION}_amd64.AppImage\"}"
+          fi
+
+          printf '{"version":"%s","notes":"Lottery Manager %s","pub_date":"%s","platforms":{"windows-x86_64":%s,"linux-x86_64":%s}}\n' \
+            "$VERSION" "$TAG" "$PUB_DATE" "$WIN_OBJ" "$LIN_OBJ" \
             | python3 -m json.tool > latest.json
+
           echo "Generated latest.json:"
           cat latest.json
 
@@ -162,4 +167,4 @@ jobs:
             --repo "${{ github.repository }}" \
             --clobber
 
-          echo "latest.json uploaded."
+          echo "latest.json updated on release ${TAG}."
