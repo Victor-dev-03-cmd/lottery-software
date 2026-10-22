@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'screens/main_screen.dart';
-import 'screens/pairing_screen.dart';
 
 const kPrimary = Color(0xFFCF291D);
 const kDark    = Color(0xFF1D1D1D);
@@ -28,8 +27,7 @@ class LotteryApp extends StatelessWidget {
         ),
       ),
       routes: {
-        '/main':    (_) => const MainScreen(),
-        '/pairing': (_) => const PairingScreen(),
+        '/main': (_) => const MainScreen(),
       },
       home: const MainScreen(),
     );

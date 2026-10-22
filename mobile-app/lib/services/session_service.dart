@@ -30,9 +30,10 @@ class SessionService {
 
   final _statusCtrl = StreamController<RelayStatus>.broadcast();
   Stream<RelayStatus> get statusStream => _statusCtrl.stream;
-  RelayStatus get status => _status;
-  String? get sessionId => _sessionId;
-  bool get connected => _status == RelayStatus.connected;
+  RelayStatus get status     => _status;
+  String? get sessionId      => _sessionId;
+  String? get desktopHost    => _desktopHost;
+  bool get connected         => _status == RelayStatus.connected;
 
   // ── Pairing from QR code ────────────────────────────────────────────────────
   // Supported QR formats:
