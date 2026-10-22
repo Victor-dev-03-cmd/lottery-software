@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart' show BarcodeCapture;
 import 'package:vibration/vibration.dart';
 import '../app.dart';
 import '../models/ticket_data.dart';
 import '../services/qr_parser.dart';
 import '../services/session_service.dart';
 import '../widgets/scan_result_card.dart';
-import '../widgets/scanner_overlay.dart';
+import '../widgets/scanner_view.dart';
 
 class StockReturnScreen extends StatefulWidget {
   const StockReturnScreen({super.key});
@@ -51,12 +51,11 @@ class _StockReturnScreenState extends State<StockReturnScreen> {
         if (_scanning)
           SizedBox(
             height: 280,
-            child: Stack(children: [
-              MobileScanner(onDetect: _onDetect),
-              const ScannerOverlay(label: 'Scan return ticket QR'),
-              Positioned(top: 8, right: 8,
-                child: IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => setState(() => _scanning = false))),
-            ]),
+            child: ScannerView(
+              overlayLabel: 'Scan return ticket QR',
+              onDetect: _onDetect,
+              onClose: () => setState(() => _scanning = false),
+            ),
           ),
         Expanded(
           child: SingleChildScrollView(

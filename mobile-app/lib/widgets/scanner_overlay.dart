@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// Proper scanner viewfinder overlay — no ColorFiltered hack.
-/// Uses a CustomPainter to draw a semi-transparent dark mask with
-/// a transparent rectangular hole in the centre.
+/// Modern scanner viewfinder overlay.
+/// Dark backdrop with a transparent rectangular window, sharp corner accents,
+/// and a smooth animated scan-line.
 class ScannerOverlay extends StatelessWidget {
   final String label;
   const ScannerOverlay({super.key, required this.label});
@@ -12,44 +12,51 @@ class ScannerOverlay extends StatelessWidget {
     return LayoutBuilder(builder: (context, constraints) {
       final w = constraints.maxWidth;
       final h = constraints.maxHeight;
-      // Frame: 80% wide, proportional height
-      final frameW = w * 0.80;
-      final frameH = frameW * 0.55;
+      final frameW = w * 0.78;
+      final frameH = frameW * 0.58;
       final frameRect = Rect.fromCenter(
-        center: Offset(w / 2, h * 0.42),
+        center: Offset(w / 2, h * 0.44),
         width: frameW,
         height: frameH,
       );
 
       return Stack(children: [
-        // Dark mask with transparent hole
+        // Semi-transparent dark backdrop with transparent hole
         CustomPaint(
           size: Size(w, h),
-          painter: _OverlayPainter(frameRect),
+          painter: _BackdropPainter(frameRect),
         ),
-        // Corner brackets
+        // Animated corner accents
         Positioned.fromRect(
           rect: frameRect,
-          child: _CornerBrackets(frameRect: frameRect),
+          child: _CornerAccents(size: Size(frameRect.width, frameRect.height)),
         ),
-        // Scan line animation
+        // Animated scan line
         Positioned.fromRect(
           rect: frameRect,
           child: const _ScanLine(),
         ),
-        // Label below frame
+        // Label
         Positioned(
-          top: frameRect.bottom + 14,
+          top: frameRect.bottom + 16,
           left: 0,
           right: 0,
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.50),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
+                ),
+              ),
             ),
           ),
         ),
@@ -58,82 +65,111 @@ class ScannerOverlay extends StatelessWidget {
   }
 }
 
-class _OverlayPainter extends CustomPainter {
+// ── Backdrop with even-odd hole ─────────────────────────────────────────────
+
+class _BackdropPainter extends CustomPainter {
   final Rect frame;
-  _OverlayPainter(this.frame);
+  _BackdropPainter(this.frame);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final full = Offset.zero & size;
-    // Dark overlay
-    final paint = Paint()..color = Colors.black.withOpacity(0.60);
-    // Clip the hole out using even-odd fill
+    // Dark semi-transparent overlay
     final path = Path()
-      ..addRect(full)
-      ..addRRect(RRect.fromRectAndRadius(frame, const Radius.circular(10)))
+      ..addRect(Offset.zero & size)
+      ..addRRect(RRect.fromRectAndRadius(frame, const Radius.circular(8)))
       ..fillType = PathFillType.evenOdd;
-    canvas.drawPath(path, paint);
+    canvas.drawPath(path, Paint()..color = Colors.black.withOpacity(0.65));
 
-    // Subtle white border around the frame
+    // Soft white inner border around the viewfinder window
     canvas.drawRRect(
-      RRect.fromRectAndRadius(frame, const Radius.circular(10)),
+      RRect.fromRectAndRadius(frame, const Radius.circular(8)),
       Paint()
-        ..color = Colors.white.withOpacity(0.25)
+        ..color = Colors.white.withOpacity(0.18)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1,
+        ..strokeWidth = 1.0,
     );
   }
 
   @override
-  bool shouldRepaint(_OverlayPainter old) => old.frame != frame;
+  bool shouldRepaint(_BackdropPainter old) => old.frame != frame;
 }
 
-class _CornerBrackets extends StatelessWidget {
-  final Rect frameRect;
-  const _CornerBrackets({required this.frameRect});
+// ── Corner accents ──────────────────────────────────────────────────────────
+
+class _CornerAccents extends StatelessWidget {
+  final Size size;
+  const _CornerAccents({required this.size});
 
   @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(frameRect.width, frameRect.height),
-      painter: _BracketPainter(),
-    );
-  }
+  Widget build(BuildContext context) =>
+      CustomPaint(size: size, painter: _CornerPainter());
 }
 
-class _BracketPainter extends CustomPainter {
+class _CornerPainter extends CustomPainter {
+  static const _cornerLen  = 22.0;
+  static const _strokeW    = 2.8;
+  static const _radius     = 8.0;
+  static const _color      = Color(0xFFCF291D); // app primary red
+
   @override
   void paint(Canvas canvas, Size size) {
     final p = Paint()
-      ..color = const Color(0xFFCF291D)
-      ..strokeWidth = 3.5
+      ..color = _color
+      ..strokeWidth = _strokeW
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
-    const len = 24.0;
-    final r = const Radius.circular(3);
+
+    final w = size.width;
+    final h = size.height;
+    const r = Radius.circular(_radius);
+    const L = _cornerLen;
 
     // Top-left
-    canvas.drawPath(Path()
-      ..moveTo(0, len)
-      ..arcToPoint(Offset(len, 0), radius: r, clockwise: false), p);
+    canvas.drawPath(
+      Path()
+        ..moveTo(0, L)
+        ..lineTo(0, _radius)
+        ..arcToPoint(Offset(_radius, 0), radius: r, clockwise: true)
+        ..lineTo(L, 0),
+      p,
+    );
+
     // Top-right
-    canvas.drawPath(Path()
-      ..moveTo(size.width - len, 0)
-      ..arcToPoint(Offset(size.width, len), radius: r), p);
+    canvas.drawPath(
+      Path()
+        ..moveTo(w - L, 0)
+        ..lineTo(w - _radius, 0)
+        ..arcToPoint(Offset(w, _radius), radius: r, clockwise: true)
+        ..lineTo(w, L),
+      p,
+    );
+
     // Bottom-left
-    canvas.drawPath(Path()
-      ..moveTo(0, size.height - len)
-      ..arcToPoint(Offset(len, size.height), radius: r, clockwise: true), p);
+    canvas.drawPath(
+      Path()
+        ..moveTo(0, h - L)
+        ..lineTo(0, h - _radius)
+        ..arcToPoint(Offset(_radius, h), radius: r, clockwise: false)
+        ..lineTo(L, h),
+      p,
+    );
+
     // Bottom-right
-    canvas.drawPath(Path()
-      ..moveTo(size.width - len, size.height)
-      ..arcToPoint(Offset(size.width, size.height - len), radius: r,
-          clockwise: false), p);
+    canvas.drawPath(
+      Path()
+        ..moveTo(w - L, h)
+        ..lineTo(w - _radius, h)
+        ..arcToPoint(Offset(w, h - _radius), radius: r, clockwise: false)
+        ..lineTo(w, h - L),
+      p,
+    );
   }
 
   @override
   bool shouldRepaint(_) => false;
 }
+
+// ── Animated scan line ──────────────────────────────────────────────────────
 
 class _ScanLine extends StatefulWidget {
   const _ScanLine();
@@ -150,47 +186,41 @@ class _ScanLineState extends State<_ScanLine>
   void initState() {
     super.initState();
     _ctrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1800))
-      ..repeat(reverse: true);
-    _anim = Tween<double>(begin: 0, end: 1).animate(
-        CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    )..repeat(reverse: true);
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
   }
 
   @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
+  void dispose() { _ctrl.dispose(); super.dispose(); }
 
   @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _anim,
-      builder: (_, __) => CustomPaint(
-        painter: _ScanLinePainter(_anim.value),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _anim,
+    builder: (_, __) => CustomPaint(painter: _ScanLinePainter(_anim.value)),
+  );
 }
 
 class _ScanLinePainter extends CustomPainter {
-  final double progress;
-  _ScanLinePainter(this.progress);
+  final double t;
+  _ScanLinePainter(this.t);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final y = size.height * progress;
+    final y = 4 + (size.height - 8) * t;
+    // Thin red line with gradient fade at edges
     final paint = Paint()
-      ..shader = LinearGradient(
-        colors: [
-          Colors.transparent,
-          const Color(0xFFCF291D).withOpacity(0.7),
-          Colors.transparent,
-        ],
-      ).createShader(Rect.fromLTWH(0, y - 1, size.width, 2));
+      ..shader = LinearGradient(colors: [
+        Colors.transparent,
+        const Color(0xFFCF291D).withOpacity(0.8),
+        const Color(0xFFFF4444).withOpacity(0.9),
+        const Color(0xFFCF291D).withOpacity(0.8),
+        Colors.transparent,
+      ]).createShader(Rect.fromLTWH(0, y - 1, size.width, 2));
     canvas.drawRect(Rect.fromLTWH(0, y - 1, size.width, 2), paint);
   }
 
   @override
-  bool shouldRepaint(_ScanLinePainter old) => old.progress != progress;
+  bool shouldRepaint(_ScanLinePainter old) => old.t != t;
 }

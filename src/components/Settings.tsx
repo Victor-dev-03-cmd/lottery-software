@@ -1226,6 +1226,18 @@ function ToggleRow({ label, value, onChange }: { label: string; value: boolean; 
   );
 }
 
+// ── SVG QR helper ─────────────────────────────────────────────────────────────
+// The qrcode Rust crate emits SVGs with fixed pixel width/height (e.g. 220x220)
+// but no viewBox, so they overflow their container at any other size.
+// This strips the fixed dimensions, adds a viewBox, and lets CSS control size.
+function scaleSvg(svg: string): string {
+  const dim = svg.match(/\bwidth="(\d+)"/)?.[1] ?? "220";
+  return svg
+    .replace(/<svg\b/, `<svg viewBox="0 0 ${dim} ${dim}" style="width:100%;height:100%;display:block;"`)
+    .replace(/\s+width="\d+"/, "")
+    .replace(/\s+height="\d+"/, "");
+}
+
 // ── Supabase Config Card ──────────────────────────────────────────────────────
 
 // ── Mobile Relay Pairing (Flutter / Cloud WebSocket) ─────────────────────────
@@ -1255,7 +1267,7 @@ function MobileRelayCard() {
   useEffect(() => {
     import("@tauri-apps/api/core").then(({ invoke }) => {
       invoke<string>("get_qr_for_url", { url: pairingUrl })
-        .then(b64 => setQrSvg(atob(b64)))
+        .then(b64 => setQrSvg(scaleSvg(atob(b64))))
         .catch(() => {});
     }).catch(() => {});
   }, [pairingUrl]);
@@ -1309,32 +1321,49 @@ function MobileRelayCard() {
           </p>
         </div>
 
-        {/* Session + QR */}
-        <div style={{ display:"flex", gap:14, alignItems:"flex-start" }}>
-          <div style={{ flex:1 }}>
+        {/* Session + QR — side-by-side on wide screens, stacked on narrow */}
+        <div style={{ display:"flex", gap:16, alignItems:"flex-start", flexWrap:"wrap" as const }}>
+          {/* QR code — always visible */}
+          <div style={{ flexShrink:0 }}>
+            {qrSvg ? (
+              <div style={{ width:180, height:180, background:"#fff", border:"2px solid #DDD6FE",
+                borderRadius:12, padding:8, boxSizing:"border-box" as const,
+                boxShadow:"0 2px 12px rgba(124,58,237,0.12)" }}
+                dangerouslySetInnerHTML={{ __html: qrSvg }} />
+            ) : (
+              <div style={{ width:180, height:180, background:"#F5F3FF", border:"2px solid #DDD6FE",
+                borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center",
+                flexDirection:"column" as const, gap:6, fontSize:11, color:"#7C3AED" }}>
+                <div style={{ fontSize:22 }}>⏳</div>
+                <span>Loading QR…</span>
+              </div>
+            )}
+            <p style={{ textAlign:"center" as const, fontSize:10, color:"#9CA3AF", marginTop:5 }}>
+              Scan with mobile app
+            </p>
+          </div>
+
+          {/* Session info */}
+          <div style={{ flex:1, minWidth:160 }}>
             <label className="text-xs font-semibold block mb-1" style={{ color:"#6B7280" }}>Session ID</label>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <code style={{ fontSize:20, fontWeight:900, letterSpacing:2, color:"#7C3AED" }}>{sessionId}</code>
-              <button onClick={newSession} className="text-xs px-2 py-1 rounded" style={{ background:"#F3F4F6", color:"#6B7280" }}>New</button>
+              <code style={{ fontSize:22, fontWeight:900, letterSpacing:3, color:"#7C3AED" }}>{sessionId}</code>
+              <button onClick={newSession} className="text-xs px-2 py-1 rounded"
+                style={{ background:"#EDE9FE", color:"#7C3AED", fontWeight:700, border:"1px solid #DDD6FE" }}>New</button>
             </div>
             <div className={`mt-2 flex items-center gap-2 text-xs ${connected ? "text-green-600" : "text-gray-400"}`}>
-              <span style={{ width:7, height:7, borderRadius:"50%", background:connected?"#16A34A":"#D1D5DB", display:"inline-block" }}/>
-              {connected ? `${peerCount} device connected` : "Waiting for mobile app"}
+              <span style={{ width:7, height:7, borderRadius:"50%", background:connected?"#16A34A":"#D1D5DB", display:"inline-block", flexShrink:0 }}/>
+              {connected ? `${peerCount} device connected` : "Waiting for mobile app to scan"}
             </div>
-            <div style={{ marginTop:8, fontSize:10, color:"#9CA3AF", wordBreak:"break-all" as const }}>{pairingUrl}</div>
+            <div style={{ marginTop:10, fontSize:10, color:"#9CA3AF", wordBreak:"break-all" as const,
+              background:"#F9FAFB", borderRadius:6, padding:"6px 8px", border:"1px solid #F3F4F6" }}>
+              {pairingUrl}
+            </div>
           </div>
-          {qrSvg ? (
-            <div style={{ width:100, height:100, background:"#fff", border:"1px solid #E5E7EB", borderRadius:8, padding:4 }}
-              dangerouslySetInnerHTML={{ __html: qrSvg }} />
-          ) : (
-            <div style={{ width:100, height:100, background:"#F3F4F6", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#9CA3AF", textAlign:"center" as const }}>
-              QR<br/>loads<br/>here
-            </div>
-          )}
         </div>
 
         <div className="text-xs p-3 rounded-lg" style={{ background:"#EDE9FE", color:"#5B21B6" }}>
-          <strong>How to pair:</strong> Open the Flutter Lottery Scanner app → tap the scan icon → point at this QR code
+          <strong>How to pair:</strong> Open the Lottery Scanner app → tap the connection badge (top-right) → Scan Desktop QR → point at the QR code above
         </div>
       </div>
     </div>
@@ -1346,16 +1375,14 @@ function MobileRelayCard() {
 function MobileServerCard() {
   const [serverIP, setServerIP] = useState<string>("checking…");
   const [qrSvg,   setQrSvg]    = useState<string | null>(null);
-  const [showQR,  setShowQR]   = useState(false);
 
   useEffect(() => {
     import("@tauri-apps/api/core").then(({ invoke }) => {
       invoke<string>("get_local_ip").then(ip => {
         setServerIP(ip);
-        // Generate QR for direct local connection
         const pairingUrl = `lottery://pair?host=${ip}:7423`;
         invoke<string>("get_qr_for_url", { url: pairingUrl })
-          .then(b64 => setQrSvg(atob(b64)))
+          .then(b64 => setQrSvg(scaleSvg(atob(b64))))
           .catch(() => {});
       }).catch(() => setServerIP("Not available"));
     }).catch(() => setServerIP("Not available"));
@@ -1364,55 +1391,56 @@ function MobileServerCard() {
   return (
     <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
       <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #2563EB" }}>
-        <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>📱 Mobile Companion Server</p>
+        <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>📱 Direct Local Connection (WiFi / LAN)</p>
         <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
-          Scan the QR code with the mobile app for instant zero-config connection
+          Same network only · fastest · scan once to pair permanently
         </p>
       </div>
-      <div className="p-5 space-y-3">
-        <div style={{ display:"flex", gap:14, alignItems:"flex-start" }}>
-          {/* IP info */}
-          <div style={{ flex:1, background:"#1D1D1D", borderRadius:8, padding:"10px 14px" }}>
-            <div style={{ fontSize:10, color:"#9CA3AF", marginBottom:4, textTransform:"uppercase" as const, letterSpacing:"0.05em" }}>
-              Desktop LAN IP
-            </div>
-            <div style={{ fontSize:20, fontWeight:900, fontFamily:"monospace", color:"#4ADE80" }}>
-              {serverIP}
-            </div>
-            <div style={{ fontSize:10, color:"#6B7280", marginTop:2 }}>
-              Port: <strong style={{ color:"#94A3B8" }}>7423</strong>
-            </div>
-            <div style={{ fontSize:9, color:"#4ADE80", marginTop:6, fontWeight:700 }}>
-              🔵 UDP beacon broadcasting every 5 s
-            </div>
-          </div>
-          {/* QR code */}
-          {qrSvg && (
-            <div style={{ cursor:"pointer", textAlign:"center" as const }} onClick={() => setShowQR(!showQR)}>
-              <div style={{ width:80, height:80, background:"#fff", border:"1px solid #E5E7EB", borderRadius:8, overflow:"hidden", padding:4 }}
+      <div className="p-5">
+        <div style={{ display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" as const }}>
+          {/* QR code — always visible, properly sized */}
+          <div style={{ flexShrink: 0 }}>
+            {qrSvg ? (
+              <div style={{ width: 200, height: 200, background: "#fff", border: "2px solid #E5E7EB",
+                borderRadius: 12, padding: 8, boxSizing: "border-box" as const,
+                boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}
                 dangerouslySetInnerHTML={{ __html: qrSvg }} />
-              <div style={{ fontSize:9, color:"#9CA3AF", marginTop:3 }}>
-                {showQR ? "Hide" : "Tap to expand"}
+            ) : (
+              <div style={{ width: 200, height: 200, background: "#F3F4F6", border: "2px solid #E5E7EB",
+                borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 12, color: "#9CA3AF", flexDirection: "column" as const, gap: 6 }}>
+                <div style={{ fontSize: 24 }}>⏳</div>
+                <span>Loading QR…</span>
+              </div>
+            )}
+            <p style={{ textAlign: "center" as const, fontSize: 10, color: "#9CA3AF", marginTop: 6 }}>
+              Scan with Lottery Scanner app
+            </p>
+          </div>
+          {/* IP + status info */}
+          <div style={{ flex: 1, minWidth: 180, display: "flex", flexDirection: "column" as const, gap: 10 }}>
+            <div style={{ background: "#1D1D1D", borderRadius: 10, padding: "12px 16px" }}>
+              <div style={{ fontSize: 10, color: "#9CA3AF", textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 4 }}>
+                Desktop LAN IP
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 900, fontFamily: "monospace", color: "#4ADE80", letterSpacing: 1 }}>
+                {serverIP}
+              </div>
+              <div style={{ fontSize: 11, color: "#6B7280", marginTop: 3 }}>
+                Port <strong style={{ color: "#94A3B8" }}>7423</strong>
+              </div>
+              <div style={{ fontSize: 10, color: "#4ADE80", marginTop: 8, fontWeight: 600 }}>
+                🔵 UDP beacon active · mDNS: _lottery._tcp.local
               </div>
             </div>
-          )}
-        </div>
-
-        {/* Expanded QR */}
-        {showQR && qrSvg && (
-          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:16, background:"#F9FAFB", borderRadius:10, border:"1px solid #E5E7EB" }}>
-            <div style={{ width:200, height:200, background:"#fff", padding:8, borderRadius:8 }}
-              dangerouslySetInnerHTML={{ __html: qrSvg }} />
-            <div style={{ marginTop:10, fontSize:11, color:"#374151", textAlign:"center" as const }}>
-              <strong>Scan with the Lottery Scanner app</strong><br/>
-              <span style={{ color:"#9CA3AF", fontSize:10 }}>Mobile app → Settings → Scan QR Code</span>
+            <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#16A34A" }}>
+              ✓ Server running · port 7423 ready for connections
+            </div>
+            <div style={{ fontSize: 11, color: "#6B7280", lineHeight: 1.5 }}>
+              <strong>How to connect:</strong><br/>
+              Open the mobile app → tap the connection badge → Scan Desktop QR → point at the code above.
             </div>
           </div>
-        )}
-
-        <div className="flex items-center gap-2 text-xs" style={{ color:"#16A34A", background:"#F0FDF4", borderRadius:8, padding:"8px 12px" }}>
-          <span>✓</span>
-          <span>Server on port 7423 · UDP beacon active · mDNS: _lottery._tcp.local.</span>
         </div>
       </div>
     </div>

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart' show BarcodeCapture;
 import 'package:vibration/vibration.dart';
 import '../app.dart';
 import '../models/ticket_data.dart';
 import '../services/qr_parser.dart';
 import '../services/session_service.dart';
 import '../widgets/scan_result_card.dart';
-import '../widgets/scanner_overlay.dart';
+import '../widgets/scanner_view.dart';
 
 class InvoiceScreen extends StatefulWidget {
   const InvoiceScreen({super.key});
@@ -51,12 +51,11 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         if (_scanning)
           SizedBox(
             height: 260,
-            child: Stack(children: [
-              MobileScanner(onDetect: _onDetect),
-              const ScannerOverlay(label: 'Scan tickets for invoice'),
-              Positioned(top: 8, right: 8,
-                child: IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => setState(() => _scanning = false))),
-            ]),
+            child: ScannerView(
+              overlayLabel: 'Scan tickets for invoice',
+              onDetect: _onDetect,
+              onClose: () => setState(() => _scanning = false),
+            ),
           ),
         Padding(
           padding: const EdgeInsets.all(12),

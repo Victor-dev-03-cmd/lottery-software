@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart' show BarcodeCapture;
 import '../services/session_service.dart';
 import '../app.dart';
+import '../widgets/scanner_view.dart';
 
 class PairingScreen extends StatefulWidget {
   const PairingScreen({super.key});
@@ -57,7 +58,12 @@ class _PairingScreenState extends State<PairingScreen> {
         Expanded(
           flex: 2,
           child: _scanning
-            ? MobileScanner(onDetect: _onDetect)
+            ? ScannerView(
+                overlayLabel: 'Point at the desktop pairing QR',
+                onDetect: _onDetect,
+                onClose: () => setState(() => _scanning = false),
+                qrOnly: false,
+              )
             : Container(
                 color: Colors.black87,
                 child: Center(
