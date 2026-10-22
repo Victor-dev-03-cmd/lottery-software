@@ -41,7 +41,7 @@ class _WinningTicketsScreenState extends State<WinningTicketsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
-      body: Column(children: [
+      body: SafeArea(child: Column(children: [
         Container(
           padding: const EdgeInsets.all(12),
           color: const Color(0xFFFFFBEB),
@@ -107,7 +107,7 @@ class _WinningTicketsScreenState extends State<WinningTicketsScreen> {
             ]),
           ),
         ),
-      ]),
+      ])), // SafeArea + Column
     );
   }
 }

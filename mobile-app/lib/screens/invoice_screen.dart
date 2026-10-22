@@ -47,7 +47,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
-      body: Column(children: [
+      body: SafeArea(child: Column(children: [
         if (_scanning)
           SizedBox(
             height: 260,
@@ -105,7 +105,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 ),
               ),
         ),
-      ]),
+      ])), // SafeArea + Column
     );
   }
 }

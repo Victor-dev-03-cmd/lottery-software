@@ -47,7 +47,7 @@ class _StockReturnScreenState extends State<StockReturnScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
-      body: Column(children: [
+      body: SafeArea(child: Column(children: [
         if (_scanning)
           SizedBox(
             height: 280,
@@ -104,7 +104,7 @@ class _StockReturnScreenState extends State<StockReturnScreen> {
             ]),
           ),
         ),
-      ]),
+      ])), // SafeArea + Column
     );
   }
 

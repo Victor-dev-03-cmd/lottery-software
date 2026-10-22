@@ -69,7 +69,7 @@ class _StockPurchaseScreenState extends State<StockPurchaseScreen>
       _gameCtrl.text     = ticket.gameName;
       _drawNoCtrl.text   = ticket.drawNumber;
       _drawDateCtrl.text = ticket.drawDate;
-      _startCtrl.text    = ticket.serialNumber;
+      _startCtrl.text    = ticket.barcodeStart;
       _endCtrl.text      = '';      // user scans/enters end barcode separately
       _qtyCtrl.text      = '';
     });
@@ -113,7 +113,8 @@ class _StockPurchaseScreenState extends State<StockPurchaseScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
-      body: Column(children: [
+      body: SafeArea(
+        child: Column(children: [
         // ── Scanner view ──
         AnimatedContainer(
           duration: const Duration(milliseconds: 280),
@@ -139,6 +140,7 @@ class _StockPurchaseScreenState extends State<StockPurchaseScreen>
           ]),
         ),
       ]),
+      ), // SafeArea
     );
   }
 
