@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Plus, Trash2, X, Save, RefreshCw, ShoppingCart,
   Home, ChevronRight, Package,
@@ -169,6 +169,17 @@ function BatchDetailView({ gameName, barcodeStart, totalQty }: {
   );
 }
 
+// ── Mobile ticket payload (emitted by Rust /api/v1/scan) ─────────────────────
+
+interface MobileTicketPayload {
+  game_name:     string;
+  draw_number:   string;
+  draw_date:     string;
+  barcode_start: string;
+  board:         string;
+  raw_qr:        string;
+}
+
 // ── Empty state helpers ───────────────────────────────────────────────────────
 
 const EMPTY_ITEM = (): PurchaseInvoiceItem => ({
@@ -217,6 +228,99 @@ export default function Purchases() {
   const [pickerRow, setPickerRow]     = useState<number | null>(null);
   // Barcode correction: scanner reads one barcode before the actual start
   const [barcodeOffset, setBarcodeOffset] = useState(false);
+
+  // ── Refs for stable access inside event callbacks ───────────────────────────
+  const showFormRef    = useRef(showForm);
+  const gameCostMapRef = useRef(gameCostMap);
+  const editPurchaseRef = useRef(editPurchase);
+  useEffect(() => { showFormRef.current    = showForm;    }, [showForm]);
+  useEffect(() => { gameCostMapRef.current = gameCostMap; }, [gameCostMap]);
+  useEffect(() => { editPurchaseRef.current = editPurchase; }, [editPurchase]);
+
+  // Queue for tickets that arrive before the form is open
+  const mobilePendingRef = useRef<MobileTicketPayload[]>([]);
+
+  // ── Apply one mobile ticket into the form rows ───────────────────────────────
+  const applyMobileTicket = useCallback((ticket: MobileTicketPayload) => {
+    const item: PurchaseInvoiceItem = {
+      game_name:     ticket.game_name,
+      draw_number:   ticket.draw_number,
+      barcode_start: ticket.barcode_start,
+      barcode_end:   "",
+      qty:           0,
+      unit_price:    gameCostMapRef.current[ticket.game_name] ?? 0,
+      value:         0,
+    };
+
+    setFormItems(prev => {
+      const items = [...prev];
+      // Find the last empty row; if none, push a new one
+      const lastEmptyIdx = items.map((it, i) => (it.game_name === "" ? i : -1))
+                                 .filter(i => i >= 0).at(-1);
+      if (lastEmptyIdx !== undefined) {
+        items[lastEmptyIdx] = item;
+      } else {
+        items.push(item);
+      }
+      // Always append a new empty row so the user can immediately scan the next ticket
+      items.push(EMPTY_ITEM());
+      return items;
+    });
+
+    // Update invoice total
+    setFormItems(prev => {
+      if (editPurchaseRef.current) {
+        const total = prev.reduce((s, it) => s + it.value, 0);
+        setEdit(ed => ed ? { ...ed, invoice_total: total } : ed);
+      }
+      return prev;
+    });
+  }, []);
+
+  const applyMobileTicketRef = useRef(applyMobileTicket);
+  useEffect(() => { applyMobileTicketRef.current = applyMobileTicket; }, [applyMobileTicket]);
+
+  // ── When form opens, drain any queued mobile tickets ────────────────────────
+  useEffect(() => {
+    if (showForm && mobilePendingRef.current.length > 0) {
+      const pending = mobilePendingRef.current.splice(0);
+      pending.forEach(t => applyMobileTicketRef.current(t));
+    }
+  }, [showForm]);
+
+  // ── Tauri event listener for real-time mobile pushes ────────────────────────
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    import("@tauri-apps/api/event").then(({ listen }) => {
+      listen<MobileTicketPayload>("mobile:ticket", async (event) => {
+        const ticket = event.payload;
+        if (!showFormRef.current) {
+          // Queue the ticket and open the form; the effect above will drain the queue
+          mobilePendingRef.current.push(ticket);
+          const num = await getNextPurchaseNumber();
+          setEdit(EMPTY_PURCHASE(num));
+          setFormItems([EMPTY_ITEM()]);
+          setShowForm(true);
+        } else {
+          applyMobileTicketRef.current(ticket);
+        }
+      }).then(fn => { unlisten = fn; });
+    }).catch(() => {});
+    return () => { unlisten?.(); };
+  }, []); // set up once — refs keep values current
+
+  // ── Mobile scan notification banner ─────────────────────────────────────────
+  const [mobileFlash, setMobileFlash] = useState<string | null>(null);
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    import("@tauri-apps/api/event").then(({ listen }) => {
+      listen<MobileTicketPayload>("mobile:ticket", (event) => {
+        setMobileFlash(`📱 ${event.payload.game_name} · Draw ${event.payload.draw_number} received`);
+        setTimeout(() => setMobileFlash(null), 3500);
+      }).then(fn => { unlisten = fn; });
+    }).catch(() => {});
+    return () => { unlisten?.(); };
+  }, []);
 
   useEffect(() => {
     load();
@@ -413,6 +517,16 @@ export default function Purchases() {
           <ShieldAlert size={14}/>
           <span>{authError}</span>
           <button className="ml-auto font-bold" onClick={() => setAuthError(null)}>×</button>
+        </div>
+      )}
+
+      {/* Mobile scan notification banner */}
+      {mobileFlash && (
+        <div className="mx-6 mt-2 flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold"
+          style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", color: "#15803D",
+            animation: "fadeIn 0.2s ease" }}>
+          <span>{mobileFlash}</span>
+          <span style={{ marginLeft:"auto", color:"#86EFAC" }}>→ form updated</span>
         </div>
       )}
 

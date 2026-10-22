@@ -17,6 +17,14 @@ class TicketData {
     required this.scannedAt,
   });
 
+  /// The numeric barcode to use as barcode_start in the purchases form.
+  /// NLB: serialNumber as-is (already numeric).
+  /// DLB: strip dashes — "1047-672103968-4-00" → "1047672103968400".
+  String get barcodeStart {
+    if (board == 'NLB') return serialNumber;
+    return serialNumber.replaceAll('-', '').replaceAll(' ', '');
+  }
+
   Map<String, dynamic> toJson() => {
     'board':         board,
     'game_name':     gameName,

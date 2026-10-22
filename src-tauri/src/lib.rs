@@ -1721,6 +1721,7 @@ async fn get_api_key(app: tauri::AppHandle) -> String {
 /// Start the local REST API server on 0.0.0.0:7423 — accessible from mobile on same WiFi.
 #[tauri::command]
 async fn start_api_server(app: tauri::AppHandle) {
+    let app_handle = app.clone(); // kept for event emission; get_api_key consumes app
     let db_path = find_db(&app)
         .map(|p| p.to_string_lossy().to_string())
         .unwrap_or_default();
@@ -1737,7 +1738,7 @@ async fn start_api_server(app: tauri::AppHandle) {
         use std::{collections::HashMap, sync::Arc};
 
         #[derive(Clone)]
-        struct ApiState { db_path: String, api_key: String }
+        struct ApiState { db_path: String, api_key: String, app: tauri::AppHandle }
 
         // Fixed companion key accepted from mobile app — no user configuration needed
         const COMPANION_KEY: &str = "LOTTERY_COMPANION";
@@ -1978,7 +1979,25 @@ async fn start_api_server(app: tauri::AppHandle) {
             .allow_headers(Any)
             .allow_origin(Any);
 
-        let state = Arc::new(ApiState { db_path, api_key });
+        // /api/v1/scan — mobile sends scanned ticket here; no DB write, just emits
+        // a Tauri event so the desktop Purchases form auto-fills in real-time.
+        async fn scan_handler(
+            State(s): State<Arc<ApiState>>,
+            BodyJson(body): BodyJson<serde_json::Value>,
+        ) -> impl IntoResponse {
+            let payload = serde_json::json!({
+                "game_name":     body["game_name"].as_str().unwrap_or(""),
+                "draw_number":   body["draw_number"].as_str().unwrap_or(""),
+                "draw_date":     body["draw_date"].as_str().unwrap_or(""),
+                "barcode_start": body["barcode_start"].as_str().unwrap_or(""),
+                "board":         body["board"].as_str().unwrap_or(""),
+                "raw_qr":        body["raw_qr"].as_str().unwrap_or(""),
+            });
+            let _ = s.app.emit("mobile:ticket", &payload);
+            (StatusCode::OK, Json(serde_json::json!({"success":true,"message":"Ticket received — desktop form updated"})))
+        }
+
+        let state = Arc::new(ApiState { db_path, api_key, app: app_handle });
 
         // /api/v1/health is public (used for discovery pings — reveals no data)
         // All other endpoints require x-api-key: LOTTERY_COMPANION (or the main UUID)
@@ -1989,6 +2008,7 @@ async fn start_api_server(app: tauri::AppHandle) {
             .route("/api/v1/invoices",  get(invoices_handler))
             .route("/api/v1/purchases", axum::routing::post(purchases_post))
             .route("/api/v1/returns",   axum::routing::post(returns_post))
+            .route("/api/v1/scan",      axum::routing::post(scan_handler))
             .layer(axum::middleware::from_fn_with_state(state.clone(), auth_check))
             .with_state(state.clone());
 

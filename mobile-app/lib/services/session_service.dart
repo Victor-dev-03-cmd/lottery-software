@@ -198,20 +198,20 @@ class SessionService {
         final client = HttpClient()
           ..connectionTimeout = const Duration(seconds: 6)
           ..idleTimeout       = const Duration(seconds: 6);
+        // /api/v1/scan — emits a Tauri event to auto-fill the Purchases form.
+        // No DB write; the desktop user reviews and saves manually.
         final req = await client.postUrl(
-            Uri.parse('http://$_desktopHost/api/v1/purchases'));
+            Uri.parse('http://$_desktopHost/api/v1/scan'));
         req.headers
           ..set('Content-Type', 'application/json')
           ..set('x-api-key', 'LOTTERY_COMPANION');
         req.write(jsonEncode({
           'game_name':     ticket.gameName,
-          'barcode_start': ticket.serialNumber,
-          'barcode_end':   '',
-          'qty':           0,
-          'unit_price':    32.5,
-          'purchase_date': ticket.drawDate,
+          'barcode_start': ticket.barcodeStart,  // clean numeric barcode
           'draw_number':   ticket.drawNumber,
+          'draw_date':     ticket.drawDate,
           'board':         ticket.board,
+          'raw_qr':        ticket.rawQr,
         }));
         final resp = await req.close().timeout(const Duration(seconds: 6));
         await resp.drain<void>();
