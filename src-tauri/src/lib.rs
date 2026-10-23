@@ -4,8 +4,6 @@ use std::path::PathBuf;
 use std::time::Duration;
 use std::sync::{OnceLock, Mutex};
 
-// Embedded Python scraper — extracted to temp dir at runtime
-const PYTHON_SCRAPER: &str = include_str!("../../lottery_scripts/fetch_lottery.py");
 
 // ── Active games (8 NLB + 8 DLB) ─────────────────────────────────────────────
 static ALL_GAME_SLUGS: &[(&str, &str)] = &[
@@ -975,71 +973,6 @@ async fn fetch_live_results(board: String, games: Vec<String>) -> Vec<LotteryRes
     results
 }
 
-/// Call the embedded Python scraper (srilanka-lottery library).
-/// Returns Some(LotteryResult) on success, None if Python/library unavailable.
-fn fetch_via_python(board: String, game_slug: String, draw_number: String, date: String) -> Option<LotteryResult> {
-    // Write script to temp dir once
-    let script_path = std::env::temp_dir().join("nlb_dlb_scraper.py");
-    if !script_path.exists() {
-        std::fs::write(&script_path, PYTHON_SCRAPER).ok()?;
-    }
-
-    // Windows uses "python" not "python3"; try both so it works cross-platform
-    let python_exe = if cfg!(target_os = "windows") { "python" } else { "python3" };
-    let mut cmd = std::process::Command::new(python_exe);
-    // Fallback: if "python" also fails on Windows, try "python3" (some installs have both)
-    if cfg!(target_os = "windows") && cmd.output().is_err() {
-        cmd = std::process::Command::new("python3");
-    }
-    cmd.arg(&script_path)
-        .arg("--board").arg(&board)
-        .arg("--game").arg(&game_slug);
-    if !draw_number.is_empty() {
-        cmd.arg("--draw").arg(&draw_number);
-    }
-    if !date.is_empty() {
-        cmd.arg("--date").arg(&date);
-    }
-
-    let output = cmd.output().ok()?;
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let parsed: serde_json::Value = serde_json::from_str(stdout.trim()).ok()?;
-
-    // Check for error
-    if let Some(err) = parsed.get("error").and_then(|v| v.as_str()) {
-        if !err.is_empty() && err != "null" {
-            return None;
-        }
-    }
-
-    let numbers: Vec<String> = parsed.get("winning_numbers")
-        .and_then(|v| v.as_array())
-        .map(|arr| arr.iter().filter_map(|x| x.as_str().map(|s| s.to_string())).collect())
-        .unwrap_or_default();
-
-    if numbers.is_empty() {
-        return None;
-    }
-
-    let board_upper = board.to_uppercase();
-    let game_name = if board_upper == "DLB" { dlb_display_name(&game_slug) } else { nlb_display_name(&game_slug) };
-
-    Some(LotteryResult {
-        game_slug:       parsed.get("game_slug").and_then(|v| v.as_str()).unwrap_or(&game_slug).to_string(),
-        board:           parsed.get("board").and_then(|v| v.as_str()).unwrap_or(&board).to_string(),
-        game_name,
-        draw_number:     parsed.get("draw_number").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-        draw_date:       parsed.get("draw_date").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-        winning_numbers: numbers,
-        winning_letter:  parsed.get("winning_letter").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-        super_number:    String::new(),
-        prizes:          vec![],
-        fetched_at:      current_timestamp(),
-        source_url:      String::new(),
-        error:           String::new(),
-    })
-}
-
 #[tauri::command]
 async fn fetch_single_result(
     board:       String,
@@ -1050,12 +983,7 @@ async fn fetch_single_result(
     let date_str = target_date.unwrap_or_default();
     let draw_str = draw_number.unwrap_or_default();
 
-    // Try Python scraper first (uses srilanka-lottery library)
-    if let Some(r) = fetch_via_python(board.clone(), game_slug.clone(), draw_str.clone(), date_str.clone()) {
-        return r;
-    }
-
-    // Fallback: Rust HTML scraper
+    // Pure Rust HTML scraper — no Python, no external dependencies
     if board.to_uppercase() == "DLB" {
         fetch_dlb_result_for_date(&game_slug, &date_str).await
     } else {
