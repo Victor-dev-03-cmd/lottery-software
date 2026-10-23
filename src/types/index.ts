@@ -284,6 +284,7 @@ export interface PurchaseInvoiceItem {
   unit_price: number;
   value: number;
   draw_number?: string;
+  draw_date?: string;
   // ERP fields
   batch_number?: string;
   ticket_start_no?: string;

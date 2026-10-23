@@ -562,7 +562,7 @@ async function initSchema() {
     "ALTER TABLE purchase_invoices ADD COLUMN warehouse_location TEXT DEFAULT ''",
   ]) { try { await d.execute(col); } catch {} }
 
-  // purchase_invoice_items — batch, serial, books, draw number
+  // purchase_invoice_items — batch, serial, books, draw number, draw date
   for (const col of [
     "ALTER TABLE purchase_invoice_items ADD COLUMN batch_number TEXT DEFAULT ''",
     "ALTER TABLE purchase_invoice_items ADD COLUMN ticket_start_no TEXT DEFAULT ''",
@@ -570,6 +570,7 @@ async function initSchema() {
     "ALTER TABLE purchase_invoice_items ADD COLUMN books_qty INTEGER DEFAULT 0",
     "ALTER TABLE purchase_invoice_items ADD COLUMN tickets_per_book INTEGER DEFAULT 100",
     "ALTER TABLE purchase_invoice_items ADD COLUMN draw_number TEXT DEFAULT ''",
+    "ALTER TABLE purchase_invoice_items ADD COLUMN draw_date TEXT DEFAULT ''",
   ]) { try { await d.execute(col); } catch {} }
 
   // Petty Cash — daily cash flow tracking
@@ -1933,7 +1934,7 @@ export async function getPurchaseInvoices(): Promise<import("../types").Purchase
     const [items, returnCredits] = await Promise.all([
       d.select<import("../types").PurchaseInvoiceItem[]>(
         `SELECT id, purchase_id, game_name, barcode_start, barcode_end, qty, unit_price, value,
-                draw_number, batch_number, ticket_start_no, ticket_end_no, books_qty, tickets_per_book
+                draw_number, draw_date, batch_number, ticket_start_no, ticket_end_no, books_qty, tickets_per_book
          FROM purchase_invoice_items WHERE purchase_id=? ORDER BY id ASC`,
         [inv.id]
       ),
@@ -1975,12 +1976,13 @@ export async function savePurchaseInvoice(
     await d.execute(
       `INSERT INTO purchase_invoice_items
        (purchase_id,game_name,barcode_start,barcode_end,qty,unit_price,value,
-        batch_number,ticket_start_no,ticket_end_no,books_qty,tickets_per_book,draw_number)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        batch_number,ticket_start_no,ticket_end_no,books_qty,tickets_per_book,draw_number,draw_date)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [purchaseId, item.game_name, item.barcode_start, item.barcode_end,
        item.qty, item.unit_price, item.value,
        item.batch_number ?? "", item.ticket_start_no ?? "", item.ticket_end_no ?? "",
-       item.books_qty ?? 0, item.tickets_per_book ?? 100, item.draw_number ?? ""]
+       item.books_qty ?? 0, item.tickets_per_book ?? 100, item.draw_number ?? "",
+       item.draw_date ?? ""]
     );
   };
 

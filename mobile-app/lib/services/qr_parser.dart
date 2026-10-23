@@ -58,7 +58,7 @@ class QRParser {
   static TicketData _parseNlb(String text) {
     final upper = text.toUpperCase();
 
-    // Find game name — startsWith first, then contains fallback
+    // Game name — startsWith first, then contains fallback
     String gameName = 'Unknown NLB';
     for (final entry in _nlbNames.entries) {
       if (upper.startsWith(entry.key) || upper.contains(entry.key)) {
@@ -67,27 +67,40 @@ class QRParser {
       }
     }
 
-    // Date pattern: YYYY/MM/DD or YYYY-MM-DD
+    // Date: YYYY/MM/DD or YYYY-MM-DD
     final dateMatch = RegExp(r'(\d{4}[/\-]\d{2}[/\-]\d{2})').firstMatch(text);
     final drawDate = dateMatch != null
         ? dateMatch.group(1)!.replaceAll('/', '-')
         : '';
 
-    // Draw number: first 3-4 digit standalone number after game name
+    // Draw number: first standalone 3-5 digit token
     final parts = text.trim().split(RegExp(r'\s+'));
     String drawNumber = '';
     String serialNumber = '';
 
-    for (int i = 0; i < parts.length; i++) {
-      final p = parts[i];
+    for (final p in parts) {
       if (RegExp(r'^\d{3,5}$').hasMatch(p) && drawNumber.isEmpty) {
         drawNumber = p;
         continue;
       }
-      // NLB serial: long number (13-15 digits)
+      // NLB serial: standalone 10-16 digit token (barcode on ticket)
       if (RegExp(r'^\d{10,16}$').hasMatch(p) && serialNumber.isEmpty) {
         serialNumber = p;
         break;
+      }
+    }
+
+    // Fallback: scan the full text for any contiguous 9-16 digit sequence
+    // (handles QR codes where barcode is not space-separated)
+    if (serialNumber.isEmpty) {
+      final allNums = RegExp(r'\d{9,16}').allMatches(text);
+      for (final m in allNums) {
+        final n = m.group(0)!;
+        // Skip if it looks like a date (8 digits) or draw number
+        if (n != drawNumber && n.length >= 9) {
+          serialNumber = n;
+          break;
+        }
       }
     }
 
@@ -102,7 +115,8 @@ class QRParser {
     );
   }
 
-  // DLB: "SUPIRI DHANA SAMPATHA 1047 2026.10.13 1047 - 672103968 - 4 - 00 ..."
+  // DLB: "SASIRI 1143 2026.10.13 1143 - 23456 - 2 - 15 ..."
+  //      "SUPIRI DHANA SAMPATHA 1047 2026.10.13 1047 - 672103968 - 4 - 00 ..."
   static TicketData _parseDlb(String text) {
     final upper = text.toUpperCase();
 
@@ -120,7 +134,7 @@ class QRParser {
         ? dateMatch.group(1)!.replaceAll('.', '-').replaceAll('/', '-')
         : '';
 
-    // Draw number: first 3-4 digit number after game name
+    // Draw number: first standalone 3-5 digit token
     final parts = text.trim().split(RegExp(r'\s+'));
     String drawNumber = '';
     for (final p in parts) {
@@ -130,13 +144,48 @@ class QRParser {
       }
     }
 
-    // DLB serial: "1047 - 672103968 - 4 - 00" → "1047-672103968-4-00"
+    // DLB serial pattern: "draw - serial - section - ticket"
+    // Digit ranges made permissive to handle all DLB game formats:
+    //   serial: 2-12 digits (some games have 4-5 digit serials, others 9)
+    //   section: 1-4 digits
+    //   ticket: 1-4 digits
     final serialMatch = RegExp(
-      r'(\d{3,5})\s*[-–]\s*(\d{6,10})\s*[-–]\s*(\d{1,2})\s*[-–]\s*(\d{2})'
+      r'(\d{3,6})\s*[-–]\s*(\d{2,12})\s*[-–]\s*(\d{1,4})\s*[-–]\s*(\d{1,4})'
     ).firstMatch(text);
-    final serialNumber = serialMatch != null
-        ? '${serialMatch.group(1)}-${serialMatch.group(2)}-${serialMatch.group(3)}-${serialMatch.group(4)}'
-        : '';
+
+    String serialNumber = '';
+    if (serialMatch != null) {
+      serialNumber =
+          '${serialMatch.group(1)!}-${serialMatch.group(2)!}-'
+          '${serialMatch.group(3)!}-${serialMatch.group(4)!}';
+    } else {
+      // Fallback 1: 3-group pattern (no draw prefix in serial)
+      final m3 = RegExp(
+        r'(\d{3,12})\s*[-–]\s*(\d{1,4})\s*[-–]\s*(\d{1,4})'
+      ).firstMatch(text);
+      if (m3 != null) {
+        serialNumber = '${m3.group(1)!}-${m3.group(2)!}-${m3.group(3)!}';
+      } else {
+        // Fallback 2: any standalone numeric token 5-14 digits (≠ draw number)
+        for (final p in parts) {
+          if (RegExp(r'^\d{5,14}$').hasMatch(p) && p != drawNumber) {
+            serialNumber = p;
+            break;
+          }
+        }
+        // Fallback 3: regex scan for contiguous 5-14 digit sequences
+        if (serialNumber.isEmpty) {
+          final allNums = RegExp(r'\d{5,14}').allMatches(text);
+          for (final m in allNums) {
+            final n = m.group(0)!;
+            if (n != drawNumber) {
+              serialNumber = n;
+              break;
+            }
+          }
+        }
+      }
+    }
 
     return TicketData(
       board: 'DLB',

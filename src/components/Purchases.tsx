@@ -174,7 +174,7 @@ function BatchDetailView({ gameName, barcodeStart, totalQty }: {
 interface MobileTicketPayload {
   game_name:     string;
   draw_number:   string;
-  draw_date:     string;
+  draw_date:     string;  // per-ticket draw date from QR
   barcode_start: string;
   board:         string;
   raw_qr:        string;
@@ -183,7 +183,7 @@ interface MobileTicketPayload {
 // ── Empty state helpers ───────────────────────────────────────────────────────
 
 const EMPTY_ITEM = (): PurchaseInvoiceItem => ({
-  game_name: "", barcode_start: "", barcode_end: "", qty: 0, unit_price: 0, value: 0, draw_number: "",
+  game_name: "", barcode_start: "", barcode_end: "", qty: 0, unit_price: 0, value: 0, draw_number: "", draw_date: "",
 });
 
 const EMPTY_PURCHASE = (num: string): PurchaseInvoice => ({
@@ -258,6 +258,7 @@ export default function Purchases() {
         const item: PurchaseInvoiceItem = {
           game_name:     ticket.game_name,
           draw_number:   ticket.draw_number,
+          draw_date:     ticket.draw_date,
           barcode_start: ticket.barcode_start,
           barcode_end:   "",
           qty:           0,
@@ -659,13 +660,13 @@ export default function Purchases() {
                               </button>
                             </td>
 
-                            {/* Draw number */}
-                            <td className="px-2 py-2" style={{ width:100 }}>
+                            {/* Draw number + per-row draw date */}
+                            <td className="px-2 py-2" style={{ width:115 }}>
                               {(() => {
                                 const date = editPurchase?.purchase_date ?? today();
                                 const info = it.game_name ? getDrawInfo(it.game_name, date) : null;
                                 return (
-                                  <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
+                                  <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
                                     <input value={it.draw_number ?? ""}
                                       onChange={e => updateItem(idx, "draw_number", e.target.value)}
                                       onKeyDown={e => { if (e.key==="Enter") { e.preventDefault(); setFormItems(p=>[...p,EMPTY_ITEM()]); }}}
@@ -674,12 +675,18 @@ export default function Purchases() {
                                       style={{ border:`1px solid ${it.draw_number?"#2563EB":"#E8E8E8"}`,
                                         background: it.draw_number?"#EFF6FF":"#FAFAFA",
                                         color:"#1D4ED8", fontWeight:700 }}/>
-                                    {info?.drawNo && !it.draw_number && (
+                                    {/* Per-row draw date from QR scan */}
+                                    {it.draw_date ? (
+                                      <div style={{ fontSize:9, color:"#059669", textAlign:"center",
+                                        background:"#F0FDF4", borderRadius:4, padding:"1px 4px",
+                                        border:"1px solid #BBF7D0", fontWeight:600 }}>
+                                        {it.draw_date}
+                                      </div>
+                                    ) : info?.drawNo && !it.draw_number ? (
                                       <div style={{ fontSize:9, color:"#6B7280", textAlign:"center", lineHeight:1.2 }}>
                                         Auto: <strong style={{ color:"#2563EB" }}>#{info.drawNo}</strong>
-                                        <span style={{ color:"#9CA3AF" }}> (prev #{info.prevDrawNo})</span>
                                       </div>
-                                    )}
+                                    ) : null}
                                   </div>
                                 );
                               })()}
