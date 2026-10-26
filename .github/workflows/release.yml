@@ -97,9 +97,15 @@ jobs:
           prerelease: false
           args: ${{ matrix.args }}
 
-  # ── Ensure latest.json is present and has correct asset URLs ──────────────────
-  # tauri-action generates latest.json automatically when TAURI_SIGNING_PRIVATE_KEY
-  # is set. When not set (dangerousInsecure / unsigned mode), this job fills the gap.
+  # ── Build updater archives + sign if key available + upload latest.json ───────
+  # This job is self-contained: it downloads the regular installers produced by
+  # publish-tauri, wraps them in the archive formats that the Tauri v2 updater
+  # protocol requires, signs them when TAURI_SIGNING_PRIVATE_KEY is set, and
+  # generates latest.json. It never blocks on the signing key — if the key is
+  # absent the archives are uploaded unsigned and dangerousInsecure mode (set in
+  # tauri.conf.json) allows clients to install without signature verification.
+  # When the secret is eventually added, remove dangerousInsecure from tauri.conf.json
+  # and the next release will produce fully signed, verified updates.
   ensure-manifest:
     needs: [verify-version, publish-tauri]
     runs-on: ubuntu-latest
@@ -108,21 +114,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Generate and upload correct latest.json
-        # Always runs — overwrites tauri-action's latest.json to guarantee:
-        #   1. Correct artifact URLs (updater archives, not installers)
-        #   2. Signatures present (from tauri-action's .sig files)
-        #   3. No empty "signature":"" fields that crash Tauri's minisign parser
-        #
-        # ROOT CAUSE the previous version got wrong:
-        #   _x64-setup.exe  →  wrong: full NSIS installer, not a zip archive
-        #   _amd64.AppImage →  wrong: raw AppImage, not a tar.gz archive
-        # Tauri v2 updater protocol requires:
-        #   Windows: _x64-setup.nsis.zip  (NSIS installer wrapped in zip)
-        #   Linux:   _amd64.AppImage.tar.gz (AppImage wrapped in tar.gz)
-        # tauri-action only generates these when TAURI_SIGNING_PRIVATE_KEY is set.
+      - name: Setup Bun (for tauri signer sign command)
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install frontend dependencies
+        run: bun install
+
+      - name: Build updater archives, sign, upload latest.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           TAG="${{ github.ref_name }}"
           VERSION=$(python3 -c "import json; print(json.load(open('src-tauri/tauri.conf.json'))['version'])")
@@ -130,57 +134,122 @@ jobs:
           BASE="https://github.com/${{ github.repository }}/releases/download/${TAG}"
           PUB_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-          # Updater artifact names — these are what tauri-action generates when
-          # TAURI_SIGNING_PRIVATE_KEY is set (NOT the plain .exe/.AppImage files).
+          # Tauri v2 updater archive names (different from raw installer names)
           WIN_ARTIFACT="${PRODUCT}_${VERSION}_x64-setup.nsis.zip"
           LIN_ARTIFACT="${PRODUCT}_${VERSION}_amd64.AppImage.tar.gz"
+          WIN_INSTALLER="${PRODUCT}_${VERSION}_x64-setup.exe"
+          LIN_APPIMAGE="${PRODUCT}_${VERSION}_amd64.AppImage"
 
-          # Download all .sig files from the release (tauri-action uploads them alongside
-          # each updater archive when signing keys are present)
-          mkdir -p sigs
-          gh release download "${TAG}" \
-            --repo "${{ github.repository }}" \
-            --pattern "*.sig" --dir ./sigs/ 2>/dev/null || true
+          mkdir -p artifacts
 
-          WIN_SIG=""
-          LIN_SIG=""
-          [ -f "sigs/${WIN_ARTIFACT}.sig" ] && WIN_SIG=$(cat "sigs/${WIN_ARTIFACT}.sig")
-          [ -f "sigs/${LIN_ARTIFACT}.sig" ] && LIN_SIG=$(cat "sigs/${LIN_ARTIFACT}.sig")
-
-          echo "Product=$PRODUCT  Version=$VERSION"
-          echo "Win artifact: ${WIN_ARTIFACT}  Sig=${#WIN_SIG}chars"
-          echo "Lin artifact: ${LIN_ARTIFACT}  Sig=${#LIN_SIG}chars"
-
-          # Verify the updater archives actually exist in the release.
+          # ── Step 1: Check if tauri-action already created the archives ──────
           WIN_EXISTS=$(gh release view "${TAG}" --repo "${{ github.repository }}" \
             --json assets --jq "[.assets[].name] | contains([\"${WIN_ARTIFACT}\"])" 2>/dev/null || echo "false")
           LIN_EXISTS=$(gh release view "${TAG}" --repo "${{ github.repository }}" \
             --json assets --jq "[.assets[].name] | contains([\"${LIN_ARTIFACT}\"])" 2>/dev/null || echo "false")
-          echo "Win archive exists in release: ${WIN_EXISTS}"
-          echo "Lin archive exists in release: ${LIN_EXISTS}"
+          echo "Archives already in release — Win:${WIN_EXISTS}  Lin:${LIN_EXISTS}"
 
-          if [ "$WIN_EXISTS" != "true" ] || [ "$LIN_EXISTS" != "true" ]; then
-            echo "::error::Updater archives missing from release!"
-            echo "::error::Expected: ${WIN_ARTIFACT} and ${LIN_ARTIFACT}"
-            echo "::error::Make sure TAURI_SIGNING_PRIVATE_KEY is set in GitHub repository secrets."
-            echo "::error::Without the signing key, tauri-action does not produce updater archives."
-            exit 1
+          # ── Step 2: Create archives from installers if not already present ──
+          if [ "$WIN_EXISTS" != "true" ]; then
+            echo "Downloading Windows installer and creating .nsis.zip ..."
+            gh release download "${TAG}" \
+              --repo "${{ github.repository }}" \
+              --pattern "${WIN_INSTALLER}" --dir ./artifacts/ 2>/dev/null || true
+            if [ -f "artifacts/${WIN_INSTALLER}" ]; then
+              cd artifacts && zip "${WIN_ARTIFACT}" "${WIN_INSTALLER}" && cd ..
+              echo "Created ${WIN_ARTIFACT}"
+            else
+              echo "::warning::Windows installer not in release — skipping Windows archive"
+            fi
+          else
+            # Already exists — download it so we can re-sign if needed
+            gh release download "${TAG}" \
+              --repo "${{ github.repository }}" \
+              --pattern "${WIN_ARTIFACT}" --dir ./artifacts/ 2>/dev/null || true
           fi
 
-          # Build platform JSON objects. Signature MUST be present — Tauri v2
-          # verifies signatures and rejects updates without a valid signature
-          # (dangerousInsecure mode was removed in this release).
+          if [ "$LIN_EXISTS" != "true" ]; then
+            echo "Downloading Linux AppImage and creating .AppImage.tar.gz ..."
+            gh release download "${TAG}" \
+              --repo "${{ github.repository }}" \
+              --pattern "${LIN_APPIMAGE}" --dir ./artifacts/ 2>/dev/null || true
+            if [ -f "artifacts/${LIN_APPIMAGE}" ]; then
+              cd artifacts && tar czf "${LIN_ARTIFACT}" "${LIN_APPIMAGE}" && cd ..
+              echo "Created ${LIN_ARTIFACT}"
+            else
+              echo "::warning::Linux AppImage not in release — skipping Linux archive"
+            fi
+          else
+            gh release download "${TAG}" \
+              --repo "${{ github.repository }}" \
+              --pattern "${LIN_ARTIFACT}" --dir ./artifacts/ 2>/dev/null || true
+          fi
+
+          # ── Step 3: Sign archives if TAURI_SIGNING_PRIVATE_KEY is set ───────
+          WIN_SIG=""
+          LIN_SIG=""
+
+          if [ -n "${TAURI_SIGNING_PRIVATE_KEY}" ]; then
+            echo "Signing key is available — signing archives ..."
+            if [ -f "artifacts/${WIN_ARTIFACT}" ]; then
+              bun run tauri -- signer sign "artifacts/${WIN_ARTIFACT}" && \
+                WIN_SIG=$(cat "artifacts/${WIN_ARTIFACT}.sig") && \
+                echo "Windows archive signed (${#WIN_SIG} chars)"
+            fi
+            if [ -f "artifacts/${LIN_ARTIFACT}" ]; then
+              bun run tauri -- signer sign "artifacts/${LIN_ARTIFACT}" && \
+                LIN_SIG=$(cat "artifacts/${LIN_ARTIFACT}.sig") && \
+                echo "Linux archive signed (${#LIN_SIG} chars)"
+            fi
+          else
+            echo "::notice::TAURI_SIGNING_PRIVATE_KEY not set — archives will be unsigned."
+            echo "::notice::dangerousInsecure:true in tauri.conf.json allows clients to install"
+            echo "::notice::unsigned updates. Add the secret and remove dangerousInsecure for"
+            echo "::notice::full signature verification."
+            # Download any .sig files tauri-action may have created
+            mkdir -p sigs
+            gh release download "${TAG}" \
+              --repo "${{ github.repository }}" \
+              --pattern "*.sig" --dir ./sigs/ 2>/dev/null || true
+            [ -f "sigs/${WIN_ARTIFACT}.sig" ] && WIN_SIG=$(cat "sigs/${WIN_ARTIFACT}.sig")
+            [ -f "sigs/${LIN_ARTIFACT}.sig" ] && LIN_SIG=$(cat "sigs/${LIN_ARTIFACT}.sig")
+          fi
+
+          # ── Step 4: Upload archives (and sigs) to the release ───────────────
+          WIN_UPLOADED=false
+          LIN_UPLOADED=false
+
+          if [ -f "artifacts/${WIN_ARTIFACT}" ]; then
+            gh release upload "${TAG}" "artifacts/${WIN_ARTIFACT}" \
+              --repo "${{ github.repository }}" --clobber && WIN_UPLOADED=true
+            [ -f "artifacts/${WIN_ARTIFACT}.sig" ] && \
+              gh release upload "${TAG}" "artifacts/${WIN_ARTIFACT}.sig" \
+                --repo "${{ github.repository }}" --clobber
+          fi
+
+          if [ -f "artifacts/${LIN_ARTIFACT}" ]; then
+            gh release upload "${TAG}" "artifacts/${LIN_ARTIFACT}" \
+              --repo "${{ github.repository }}" --clobber && LIN_UPLOADED=true
+            [ -f "artifacts/${LIN_ARTIFACT}.sig" ] && \
+              gh release upload "${TAG}" "artifacts/${LIN_ARTIFACT}.sig" \
+                --repo "${{ github.repository }}" --clobber
+          fi
+
+          # ── Step 5: Generate and upload latest.json ──────────────────────────
           WIN_SIG_ESC=$(printf '%s' "$WIN_SIG" | sed 's/\\/\\\\/g; s/"/\\"/g')
           LIN_SIG_ESC=$(printf '%s' "$LIN_SIG" | sed 's/\\/\\\\/g; s/"/\\"/g')
 
-          if [ -z "$WIN_SIG_ESC" ] || [ -z "$LIN_SIG_ESC" ]; then
-            echo "::error::Signature files are missing or empty."
-            echo "::error::Ensure TAURI_SIGNING_PRIVATE_KEY is set in GitHub repository secrets."
-            exit 1
+          # Omit signature field when empty — Tauri's minisign parser crashes on ""
+          if [ -n "$WIN_SIG_ESC" ]; then
+            WIN_OBJ="{\"signature\":\"$WIN_SIG_ESC\",\"url\":\"$BASE/${WIN_ARTIFACT}\"}"
+          else
+            WIN_OBJ="{\"url\":\"$BASE/${WIN_ARTIFACT}\"}"
           fi
-
-          WIN_OBJ="{\"signature\":\"$WIN_SIG_ESC\",\"url\":\"$BASE/${WIN_ARTIFACT}\"}"
-          LIN_OBJ="{\"signature\":\"$LIN_SIG_ESC\",\"url\":\"$BASE/${LIN_ARTIFACT}\"}"
+          if [ -n "$LIN_SIG_ESC" ]; then
+            LIN_OBJ="{\"signature\":\"$LIN_SIG_ESC\",\"url\":\"$BASE/${LIN_ARTIFACT}\"}"
+          else
+            LIN_OBJ="{\"url\":\"$BASE/${LIN_ARTIFACT}\"}"
+          fi
 
           printf '{"version":"%s","notes":"Lottery Manager %s","pub_date":"%s","platforms":{"windows-x86_64":%s,"linux-x86_64":%s}}\n' \
             "$VERSION" "$TAG" "$PUB_DATE" "$WIN_OBJ" "$LIN_OBJ" \
@@ -190,7 +259,6 @@ jobs:
           cat latest.json
 
           gh release upload "${TAG}" latest.json \
-            --repo "${{ github.repository }}" \
-            --clobber
+            --repo "${{ github.repository }}" --clobber
 
-          echo "latest.json updated on release ${TAG}."
+          echo "Done. Signed=${#WIN_SIG}/${#LIN_SIG} chars. Win=${WIN_UPLOADED} Lin=${LIN_UPLOADED}"
