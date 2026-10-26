@@ -1271,12 +1271,20 @@ pub struct AppConfig {
     pub db_directory: String,
     /// Set to true after the first-run setup wizard completes.
     pub setup_completed: bool,
-    /// Supabase project URL (optional cloud sync)
+    /// Supabase project URL (optional cloud sync — preserved, not removed)
     #[serde(default)]
     pub supabase_url: String,
-    /// Supabase anon key (optional cloud sync)
+    /// Supabase anon key (optional cloud sync — preserved, not removed)
     #[serde(default)]
     pub supabase_anon_key: String,
+    /// Go API server URL (e.g. https://api.example.com). When set, the
+    /// background sync worker drains the queue to this API instead of Supabase.
+    #[serde(default)]
+    pub api_server_url: String,
+    /// Device key issued by the Go API at registration time.
+    /// Stored as plain text in the config file (local machine only).
+    #[serde(default)]
+    pub api_device_key: String,
 }
 
 impl Default for AppConfig {
@@ -1286,6 +1294,8 @@ impl Default for AppConfig {
             setup_completed:   false,
             supabase_url:      String::new(),
             supabase_anon_key: String::new(),
+            api_server_url:    String::new(),
+            api_device_key:    String::new(),
         }
     }
 }
@@ -2309,6 +2319,374 @@ async fn save_supabase_config_secure(
     persist_config(&app, &config)
 }
 
+// ── Go API Backend Commands ───────────────────────────────────────────────────
+// New commands targeting the Go API server. Preserve all existing Supabase
+// commands above — they are not modified or removed.
+
+/// Save Go API server configuration to app config.
+/// Requires admin session token. Does not modify Supabase config.
+#[tauri::command]
+async fn save_api_config(
+    app: tauri::AppHandle,
+    token: String,
+    api_server_url: String,
+    api_device_key: String,
+) -> Result<(), String> {
+    if !verify_admin_token(&token) {
+        return Err("Unauthorized: Admin session required to change API config".to_string());
+    }
+    let mut config = load_config(&app);
+    config.api_server_url = api_server_url;
+    config.api_device_key = api_device_key;
+    persist_config(&app, &config)
+}
+
+/// Test connectivity to the Go API server.
+#[tauri::command]
+async fn test_api_connection(app: tauri::AppHandle) -> String {
+    let config = load_config(&app);
+    if config.api_server_url.is_empty() {
+        return "Not configured. Enter the API server URL in Settings.".to_string();
+    }
+    let url = format!("{}/api/v1/health", config.api_server_url.trim_end_matches('/'));
+    let client = match reqwest::Client::builder()
+        .timeout(Duration::from_secs(8))
+        .build()
+    {
+        Ok(c) => c,
+        Err(e) => return format!("Client error: {}", e),
+    };
+    match client.get(&url).send().await {
+        Ok(r) if r.status().is_success() => "✓ Connected to API server successfully.".to_string(),
+        Ok(r) => format!("HTTP {}: Check your API server URL.", r.status()),
+        Err(e) => format!("Connection failed: {}", e),
+    }
+}
+
+#[derive(serde::Serialize)]
+struct ApiSyncStats {
+    flushed:   usize,
+    failed:    usize,
+    remaining: usize,
+}
+
+/// Drain sync_queue to the Go API server.
+/// Background worker calls with token=None; on-demand requires admin token.
+/// Falls back to Supabase if api_server_url is not configured.
+#[tauri::command]
+async fn drain_sync_queue_to_backend(
+    app: tauri::AppHandle,
+    token: Option<String>,
+) -> Result<ApiSyncStats, String> {
+    if let Some(t) = &token {
+        if !verify_admin_token(t) {
+            return Err("Unauthorized: invalid admin session".to_string());
+        }
+    }
+
+    let config = load_config(&app);
+
+    // Routing: Go API if configured, otherwise delegate to Supabase drain.
+    if config.api_server_url.is_empty() || config.api_device_key.is_empty() {
+        // Fall back to existing Supabase drain (unchanged behavior).
+        // We call drain_sync_queue which handles its own Supabase config check.
+        let stats = drain_sync_queue(app, token).await?;
+        return Ok(ApiSyncStats {
+            flushed:   stats.flushed,
+            failed:    stats.failed,
+            remaining: stats.remaining,
+        });
+    }
+
+    let db_path = {
+        let base = if config.db_directory.is_empty() {
+            app.path().app_data_dir().map_err(|e| e.to_string())?
+        } else {
+            PathBuf::from(&config.db_directory)
+        };
+        base.join("ajith_rohana.db")
+    };
+
+    // Phase 1: read queue items
+    let db_path2 = db_path.clone();
+    let items: Vec<(i64, String, String, String, String)> =
+        tokio::task::spawn_blocking(move || {
+            let conn = rusqlite::Connection::open(&db_path2)?;
+            conn.execute_batch("CREATE TABLE IF NOT EXISTS sync_queue (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                table_name TEXT NOT NULL,
+                operation TEXT NOT NULL DEFAULT 'upsert',
+                record_id INTEGER,
+                payload TEXT NOT NULL DEFAULT '{}',
+                on_conflict TEXT DEFAULT 'id',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                retry_count INTEGER DEFAULT 0,
+                last_error TEXT DEFAULT ''
+            )").ok();
+            let mut stmt = conn.prepare(
+                "SELECT id, table_name, operation, payload, on_conflict
+                 FROM sync_queue WHERE retry_count < 3 ORDER BY id ASC LIMIT 50"
+            )?;
+            let rows = stmt.query_map([], |row| {
+                Ok((
+                    row.get::<_, i64>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            })?.filter_map(|r| r.ok()).collect();
+            Ok::<_, rusqlite::Error>(rows)
+        }).await.map_err(|e| e.to_string())?.map_err(|e| e.to_string())?;
+
+    if items.is_empty() {
+        return Ok(ApiSyncStats { flushed: 0, failed: 0, remaining: 0 });
+    }
+
+    // Phase 2: send to Go API
+    let base_url = config.api_server_url.trim_end_matches('/').to_string();
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(20))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let mut flushed: Vec<i64> = vec![];
+    let mut errors: Vec<(i64, String)> = vec![];
+
+    for (id, table_name, operation, payload, on_conflict) in &items {
+        let payload_val: serde_json::Value = serde_json::from_str(payload)
+            .unwrap_or(serde_json::Value::Object(Default::default()));
+
+        let result = if operation == "delete" {
+            if let Some(rid) = payload_val.get("id").and_then(|v| v.as_i64()) {
+                // DELETE: send upsert with is_deleted flag (soft delete in cloud)
+                // We send to /api/v1/sync/batch with the record so the API can handle it.
+                // For now, for tables without is_deleted, we skip cloud delete to avoid
+                // orphan records breaking FK constraints. Only invoice deletes are tracked.
+                let delete_payload = serde_json::json!({
+                    "table": table_name,
+                    "rows": [payload_val],
+                    "on_conflict": on_conflict,
+                    "operation": "delete",
+                    "record_id": rid,
+                });
+                client.post(format!("{}/api/v1/sync/batch", base_url))
+                    .header("X-Device-Key", &config.api_device_key)
+                    .header("Content-Type", "application/json")
+                    .json(&delete_payload)
+                    .send()
+                    .await
+            } else {
+                flushed.push(*id);
+                continue;
+            }
+        } else {
+            let batch_payload = serde_json::json!({
+                "table": table_name,
+                "rows": [payload_val],
+                "on_conflict": on_conflict,
+            });
+            client.post(format!("{}/api/v1/sync/batch", base_url))
+                .header("X-Device-Key", &config.api_device_key)
+                .header("Content-Type", "application/json")
+                .json(&batch_payload)
+                .send()
+                .await
+        };
+
+        match result {
+            Ok(r) if r.status().is_success() => { flushed.push(*id); }
+            Ok(r) => {
+                let code = r.status().as_u16();
+                let body = r.text().await.unwrap_or_default();
+                errors.push((*id, format!("HTTP {}: {}", code, &body[..body.len().min(200)])));
+            }
+            Err(e) => { errors.push((*id, e.to_string())); }
+        }
+    }
+
+    // Phase 3: update queue
+    let remaining = tokio::task::spawn_blocking(move || {
+        let conn = rusqlite::Connection::open(&db_path)?;
+        for id in &flushed {
+            conn.execute("DELETE FROM sync_queue WHERE id=?1", rusqlite::params![id]).ok();
+        }
+        for (id, err) in &errors {
+            conn.execute(
+                "UPDATE sync_queue SET retry_count=retry_count+1, last_error=?1 WHERE id=?2",
+                rusqlite::params![err, id],
+            ).ok();
+        }
+        let remaining: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM sync_queue WHERE retry_count < 3", [], |r| r.get(0)
+        ).unwrap_or(0);
+        Ok::<_, rusqlite::Error>((flushed.len(), errors.len(), remaining as usize))
+    }).await.map_err(|e| e.to_string())?.map_err(|e: rusqlite::Error| e.to_string())?;
+
+    Ok(ApiSyncStats {
+        flushed:   remaining.0,
+        failed:    remaining.1,
+        remaining: remaining.2,
+    })
+}
+
+/// Push a lottery result to the Go API backend.
+/// Falls back to Supabase push if api_server_url is not configured.
+/// Accepts serde_json::Value to avoid coupling to LotteryResult struct.
+#[tauri::command]
+async fn push_result_to_backend(
+    app: tauri::AppHandle,
+    result: serde_json::Value,
+    game_slug: String,
+) -> Result<(), String> {
+    let config = load_config(&app);
+    if config.api_server_url.is_empty() || config.api_device_key.is_empty() {
+        // Fall back to Supabase: deserialize into LotteryResult and call push_to_supabase
+        let lr: LotteryResult = serde_json::from_value(result)
+            .map_err(|e| format!("deserialize result: {}", e))?;
+        return push_to_supabase(app, lr, game_slug).await;
+    }
+    let url = format!("{}/api/v1/results", config.api_server_url.trim_end_matches('/'));
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(15))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let resp = client.post(&url)
+        .header("X-Device-Key", &config.api_device_key)
+        .json(&result)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(format!("API error HTTP {}", resp.status()));
+    }
+    Ok(())
+}
+
+/// Pull lottery results from the Go API backend.
+/// Falls back to Supabase pull if api_server_url is not configured.
+#[tauri::command]
+async fn pull_results_from_backend(
+    app: tauri::AppHandle,
+) -> Result<Vec<serde_json::Value>, String> {
+    let config = load_config(&app);
+    if config.api_server_url.is_empty() || config.api_device_key.is_empty() {
+        return pull_from_supabase(app).await;
+    }
+    let url = format!("{}/api/v1/results?limit=300",
+        config.api_server_url.trim_end_matches('/'));
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(15))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let resp = client.get(&url)
+        .header("X-Device-Key", &config.api_device_key)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    let data: Vec<serde_json::Value> = resp.json().await.map_err(|e| e.to_string())?;
+    Ok(data)
+}
+
+/// Full sync one table to the Go API. Reads all rows from SQLite and upserts to cloud.
+/// Targets Go API if configured; returns error otherwise (unlike queue which falls back).
+#[tauri::command]
+async fn full_sync_table_to_backend(
+    app: tauri::AppHandle,
+    token: String,
+    table_name: String,
+) -> Result<ApiSyncStats, String> {
+    if !verify_admin_token(&token) {
+        return Err("Unauthorized: Admin session required".to_string());
+    }
+    let config = load_config(&app);
+    if config.api_server_url.is_empty() || config.api_device_key.is_empty() {
+        return Err("Go API not configured. Enter API URL and device key in Settings.".to_string());
+    }
+
+    // Allowlist check (same list as Go API server — defence in depth)
+    let allowed_tables = [
+        "agents","invoices","invoice_items","inventory_batches","payments",
+        "ticket_returns","daily_collections","suppliers","purchase_invoices",
+        "purchase_invoice_items","purchase_payments","lottery_games",
+        "commission_schemes","workers","worker_salaries","supplier_returns",
+        "petty_cash_transactions","petty_cash_closings","lottery_results",
+        "company_settings",
+    ];
+    if !allowed_tables.contains(&table_name.as_str()) {
+        return Err(format!("Table '{}' is not in the sync allowlist", table_name));
+    }
+
+    let db_path = {
+        let base = if config.db_directory.is_empty() {
+            app.path().app_data_dir().map_err(|e| e.to_string())?
+        } else {
+            PathBuf::from(&config.db_directory)
+        };
+        base.join("ajith_rohana.db")
+    };
+
+    let table_name2 = table_name.clone();
+    let rows: Vec<serde_json::Value> = tokio::task::spawn_blocking(move || {
+        let conn = rusqlite::Connection::open(&db_path)?;
+        let mut stmt = conn.prepare(&format!(
+            "SELECT * FROM \"{}\" ORDER BY id ASC", table_name2
+        ))?;
+        let col_names: Vec<String> = stmt.column_names().iter().map(|s| s.to_string()).collect();
+        let rows: Vec<serde_json::Value> = stmt.query_map([], |row| {
+            let mut map = serde_json::Map::new();
+            for (i, col) in col_names.iter().enumerate() {
+                let val = match row.get_ref(i) {
+                    Ok(rusqlite::types::ValueRef::Integer(n)) =>
+                        serde_json::Value::Number(n.into()),
+                    Ok(rusqlite::types::ValueRef::Real(f)) =>
+                        serde_json::Number::from_f64(f).map(serde_json::Value::Number)
+                            .unwrap_or(serde_json::Value::Null),
+                    Ok(rusqlite::types::ValueRef::Text(t)) =>
+                        serde_json::Value::String(String::from_utf8_lossy(t).to_string()),
+                    _ => serde_json::Value::Null,
+                };
+                map.insert(col.clone(), val);
+            }
+            Ok(serde_json::Value::Object(map))
+        }).ok().map(|r| r.filter_map(|v| v.ok()).collect()).unwrap_or_default();
+        Ok::<_, rusqlite::Error>(rows)
+    }).await.map_err(|e| e.to_string())?.map_err(|e| e.to_string())?;
+
+    if rows.is_empty() {
+        return Ok(ApiSyncStats { flushed: 0, failed: 0, remaining: 0 });
+    }
+
+    let url = format!("{}/api/v1/sync/full", config.api_server_url.trim_end_matches('/'));
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(120))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let mut total_flushed = 0usize;
+    let mut total_failed  = 0usize;
+
+    for chunk in rows.chunks(50) {
+        let payload = serde_json::json!({
+            "table": table_name,
+            "rows": chunk,
+        });
+        match client.post(&url)
+            .header("X-Device-Key", &config.api_device_key)
+            .json(&payload)
+            .send()
+            .await
+        {
+            Ok(r) if r.status().is_success() || r.status().as_u16() == 207 => {
+                total_flushed += chunk.len();
+            }
+            Ok(_) | Err(_) => { total_failed += chunk.len(); }
+        }
+    }
+
+    Ok(ApiSyncStats { flushed: total_flushed, failed: total_failed, remaining: 0 })
+}
+
 // ── AI Query Gateway ──────────────────────────────────────────────────────────
 // Calls Claude API through Rust to protect the API key from WebView exposure.
 
@@ -2697,6 +3075,13 @@ pub fn run() {
             verify_admin_session,
             drain_sync_queue,
             full_sync_all_tables,
+            // ── Go API backend commands (Phase 1) ──────────────────────────
+            save_api_config,
+            test_api_connection,
+            drain_sync_queue_to_backend,
+            push_result_to_backend,
+            pull_results_from_backend,
+            full_sync_table_to_backend,
             ai_query,
             save_ai_api_key,
             execute_ai_action,

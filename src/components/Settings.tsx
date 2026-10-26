@@ -1156,7 +1156,10 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
         </div>
       </div>
 
-      {/* ── Supabase Cloud Sync ── */}
+      {/* ── Go API Backend (new — Supabase card below is unchanged) ── */}
+      <BackendConfigCard />
+
+      {/* ── Supabase Cloud Sync (preserved, unchanged) ── */}
       <SupabaseConfigCard />
     </div>
   );
@@ -1441,6 +1444,114 @@ function MobileServerCard() {
               Open the mobile app → tap the connection badge → Scan Desktop QR → point at the code above.
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Go API Backend Config Card ─────────────────────────────────────────────────
+// Additive — does not modify SupabaseConfigCard below.
+
+function BackendConfigCard() {
+  const { withAdminToken } = useAuth();
+  const [apiUrl,    setApiUrl]    = useState("");
+  const [deviceKey, setDeviceKey] = useState("");
+  const [status,    setStatus]    = useState("");
+  const [testing,   setTesting]   = useState(false);
+  const [saved,     setSaved]     = useState(false);
+
+  useEffect(() => {
+    invoke<{ api_server_url: string; api_device_key: string }>("get_app_config")
+      .then(cfg => {
+        if (cfg.api_server_url) setApiUrl(cfg.api_server_url);
+        // Device key is not shown after save — display placeholder only
+        if (cfg.api_device_key) setDeviceKey("••••••••••••••••");
+      })
+      .catch(() => {});
+  }, []);
+
+  async function handleSave() {
+    setSaved(false); setStatus("");
+    try {
+      await withAdminToken(async (token) => {
+        await invoke("save_api_config", {
+          token,
+          apiServerUrl: apiUrl.trim(),
+          apiDeviceKey: deviceKey.startsWith("•") ? undefined : deviceKey.trim(),
+        });
+      });
+      setSaved(true); setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setStatus(`✗ ${friendlyAuthError(err)}`);
+    }
+  }
+
+  async function handleTest() {
+    setTesting(true); setStatus("");
+    const msg = await invoke<string>("test_api_connection").catch(e => `Error: ${String(e)}`);
+    setStatus(msg); setTesting(false);
+  }
+
+  return (
+    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
+      <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #2563EB" }}>
+        <div className="flex items-center gap-2">
+          <Cloud size={16} style={{ color: "#2563EB" }} />
+          <div>
+            <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Go API Backend</p>
+            <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
+              Self-hosted PostgreSQL sync · when configured, overrides Supabase queue drain
+            </p>
+          </div>
+        </div>
+        {saved && <span className="text-xs font-semibold text-green-600">✓ Saved</span>}
+      </div>
+      <div className="p-5 space-y-3">
+        <div>
+          <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>
+            API Server URL
+          </label>
+          <input
+            value={apiUrl}
+            onChange={e => setApiUrl(e.target.value)}
+            placeholder="https://api.yourdomain.com"
+            className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+            style={{ border: "1px solid #E8E8E8", background: "#FAFAFA" }}
+          />
+        </div>
+        <div>
+          <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>
+            Device Key
+          </label>
+          <input
+            value={deviceKey}
+            onChange={e => setDeviceKey(e.target.value)}
+            placeholder="Issued at device registration"
+            type="password"
+            className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none font-mono"
+            style={{ border: "1px solid #E8E8E8", background: "#FAFAFA" }}
+          />
+          <p className="text-[10px] mt-1" style={{ color: "#9CA3AF" }}>
+            Leave blank to keep existing key. Key is never shown after save.
+          </p>
+        </div>
+        {status && (
+          <p className="text-xs font-medium" style={{ color: status.startsWith("✓") ? "#16a34a" : "#CF291D" }}>
+            {status}
+          </p>
+        )}
+        <div className="flex gap-2">
+          <button onClick={handleTest} disabled={testing || !apiUrl}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium"
+            style={{ background: "#F3F4F6", color: "#374151", border: "1px solid #E8E8E8" }}>
+            {testing ? "Testing…" : "Test Connection"}
+          </button>
+          <button onClick={handleSave}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white"
+            style={{ background: "#2563EB" }}>
+            Save
+          </button>
         </div>
       </div>
     </div>

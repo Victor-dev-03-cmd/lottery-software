@@ -406,10 +406,11 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
 
   async function runSync() {
     setSyncStatus("syncing");
-    addLog("Pushing local records to Supabase…", "info");
+    addLog("Pushing local records to cloud backend…", "info");
     try {
+      // Routes to Go API if api_server_url is configured, else Supabase.
       const stats = await invoke<{ flushed: number; failed: number; remaining: number }>(
-        "drain_sync_queue", { token: null }
+        "drain_sync_queue_to_backend", { token: null }
       );
       if (stats.flushed > 0)  addLog(`✓ Pushed ${stats.flushed} record${stats.flushed !== 1 ? "s" : ""}`, "ok");
       if (stats.failed > 0)   addLog(`⚠ ${stats.failed} failed — will retry`, "warn");

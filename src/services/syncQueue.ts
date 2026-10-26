@@ -38,10 +38,17 @@ export async function enqueueSync(
   }
 }
 
-/** Drain the queue via Rust (calls Supabase). */
+/**
+ * Drain the queue via Rust.
+ * Routes to the Go API backend when api_server_url is configured;
+ * otherwise falls back to the existing Supabase drain (unchanged behavior).
+ * The Rust command itself handles the routing — both paths are preserved.
+ */
 export async function flushQueue(token?: string): Promise<SyncStats> {
   try {
-    return await invoke<SyncStats>("drain_sync_queue", { token: token ?? null });
+    // drain_sync_queue_to_backend: routes to Go API if configured, else Supabase.
+    // Existing drain_sync_queue command is preserved and still registered.
+    return await invoke<SyncStats>("drain_sync_queue_to_backend", { token: token ?? null });
   } catch {
     return { flushed: 0, failed: 0, remaining: 0 };
   }
