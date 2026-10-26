@@ -590,16 +590,16 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                   </th>
                   <th
                     className="px-4 py-3 text-left"
-                    style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", minWidth: 130 }}
+                    style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", minWidth: 185 }}
                   >
-                    Barcode Start
+                    ▶ First Ticket Barcode
                   </th>
                   <th
                     className="px-4 py-3 text-left"
-                    style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", minWidth: 130 }}
+                    style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", minWidth: 185 }}
                   >
                     <span className="flex items-center gap-1">
-                      Barcode End
+                      ▷ Next Batch Starts
                       <span title="Auto-calculated from Start + Qty">
                         <Calculator size={11} style={{ color: "#BFBFBF" }} />
                       </span>
@@ -750,7 +750,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                       )}
                     </td>
 
-                    <td className="px-2 py-1.5" id={`row-${i}-bc-start`}>
+                    <td className="px-2 py-1.5" id={`row-${i}-bc-start`} style={{ minWidth: 185 }}>
                       <input
                         type="text"
                         inputMode="numeric"
@@ -763,13 +763,12 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                           }
                         }}
                         placeholder="Scan start barcode"
-                        className="w-full rounded px-2 py-1 text-sm font-mono focus:outline-none"
-                        style={{ border: "1px solid transparent", background: "transparent", color: "#1D1D1D" }}
-                        onFocus={(e) => { e.target.select(); e.currentTarget.style.borderColor = "#CF291D"; }}
-                        onBlur={(e) => (e.currentTarget.style.borderColor = "transparent")}
+                        className="w-full rounded-lg px-2.5 py-2 text-xs font-mono focus:outline-none"
+                        style={{ border: "2px solid #2563EB", background: "#EFF6FF", color: "#1d4ed8", letterSpacing:"0.04em", minHeight:32 }}
+                        onFocus={e => e.target.select()}
                       />
                     </td>
-                    <td className="px-2 py-1.5" id={`row-${i}-bc-end`}>
+                    <td className="px-2 py-1.5" id={`row-${i}-bc-end`} style={{ minWidth: 185 }}>
                       <input
                         type="text"
                         inputMode="numeric"
@@ -782,10 +781,9 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                           }
                         }}
                         placeholder="Auto-filled"
-                        className="w-full rounded px-2 py-1 text-sm font-mono focus:outline-none"
-                        style={{ border: "1px solid transparent", background: "#F0FFF4", color: "#1D1D1D" }}
-                        onFocus={(e) => { e.target.select(); e.currentTarget.style.borderColor = "#CF291D"; }}
-                        onBlur={(e) => (e.currentTarget.style.borderColor = "transparent")}
+                        className="w-full rounded-lg px-2.5 py-2 text-xs font-mono focus:outline-none"
+                        style={{ border: "2px solid #7C3AED", background: "#F5F3FF", color: "#6d28d9", letterSpacing:"0.04em", minHeight:32 }}
+                        onFocus={e => e.target.select()}
                       />
                     </td>
                     <td className="px-2 py-1.5" id={`row-${i}-qty`}>

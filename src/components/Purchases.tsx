@@ -235,6 +235,13 @@ export default function Purchases() {
   useEffect(() => { showFormRef.current    = showForm;    }, [showForm]);
   useEffect(() => { gameCostMapRef.current = gameCostMap; }, [gameCostMap]);
 
+  // ── Deduplication guard against double-fire / rapid repeat scans ────────────
+  // Key = game_name|draw_number|barcode_start. If the same key arrives within
+  // DEBOUNCE_MS, the second event is silently dropped.
+  const lastScanKeyRef  = useRef<string>("");
+  const lastScanTimeRef = useRef<number>(0);
+  const DEBOUNCE_MS     = 2500;
+
   // ── Mobile scan notification banner ─────────────────────────────────────────
   const [mobileFlash, setMobileFlash] = useState<string | null>(null);
 
@@ -249,6 +256,15 @@ export default function Purchases() {
     import("@tauri-apps/api/event").then(({ listen }) => {
       listen<MobileTicketPayload>("mobile:ticket", async (event) => {
         const ticket = event.payload;
+
+        // ── Deduplication: drop if same key arrives within DEBOUNCE_MS ──────
+        const key = `${ticket.game_name}|${ticket.draw_number}|${ticket.barcode_start}`;
+        const now = Date.now();
+        if (key === lastScanKeyRef.current && now - lastScanTimeRef.current < DEBOUNCE_MS) {
+          return; // duplicate event — silently discard
+        }
+        lastScanKeyRef.current  = key;
+        lastScanTimeRef.current = now;
 
         // Show flash notification
         setMobileFlash(`📱 ${ticket.game_name} · Draw ${ticket.draw_number} received`);
@@ -622,7 +638,7 @@ export default function Purchases() {
                   <table className="w-full">
                     <thead>
                       <tr style={{ background:"#1D1D1D" }}>
-                        {["🎫 Ticket (click to pick)","Draw No.","▶ First Ticket Barcode","▷ Next Batch Starts","Qty","Unit Price (Rs.)","Total (Rs.)",""].map((h,i) => (
+                        {["🎫 Ticket (click to pick)","Draw No.","▶ First Ticket Barcode","▷ Next Batch Starts","Qty","Unit Price","Total (Rs.)",""].map((h,i) => (
                           <th key={i} className="px-3 py-2 text-left"
                             style={{ fontSize:10, color:"#9CA3AF", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em" }}>{h}</th>
                         ))}
@@ -630,7 +646,9 @@ export default function Purchases() {
                     </thead>
                     <tbody>
                       {formItems.map((it, idx) => {
-                        const barcodeWarn = it.barcode_start && it.barcode_start.length !== 11;
+                        // Warn only for suspiciously short barcodes (<8 digits).
+                        // DLB barcodes are legitimately 14-16 digits — never warn on those.
+                        const barcodeWarn = it.barcode_start && it.barcode_start.length < 8;
                         const qtyOk = it.qty > 0;
                         return (
                           <tr key={idx} style={{ borderTop:"1px solid #F3F4F6", background: idx % 2 === 0 ? "#fff" : "#FAFAFA" }}>
@@ -693,31 +711,31 @@ export default function Purchases() {
                             </td>
 
                             {/* Barcode Start — first physical ticket */}
-                            <td className="px-2 py-2" style={{ width:130 }}>
+                            <td className="px-2 py-2" style={{ minWidth:185 }}>
                               <input value={it.barcode_start}
                                 onChange={e => updateItem(idx, "barcode_start", e.target.value)}
                                 onKeyDown={e => { if (e.key==="Enter") { e.preventDefault(); (e.currentTarget.parentElement?.parentElement?.nextElementSibling?.querySelector("input") as HTMLElement)?.focus(); }}}
                                 placeholder="First ticket barcode"
-                                className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none font-mono"
-                                style={{ border:`1px solid ${barcodeWarn&&it.barcode_start?"#F59E0B":"#2563EB"}`, background:"#EFF6FF", color:"#1d4ed8" }}
+                                className="w-full rounded-lg px-2.5 py-2 text-xs focus:outline-none font-mono"
+                                style={{ border:`2px solid ${barcodeWarn&&it.barcode_start?"#F59E0B":"#2563EB"}`, background:"#EFF6FF", color:"#1d4ed8", letterSpacing:"0.04em", minHeight:32 }}
                                 onFocus={e => e.target.select()}/>
                               {barcodeWarn && it.barcode_start && (
-                                <div style={{ fontSize:9, color:"#D97706", marginTop:1 }}>⚠ {it.barcode_start.length} digits (expect 11)</div>
+                                <div style={{ fontSize:9, color:"#D97706", marginTop:2 }}>⚠ {it.barcode_start.length} digits (too short)</div>
                               )}
                             </td>
 
                             {/* Barcode End — EXCLUSIVE: first ticket of NEXT batch */}
-                            <td className="px-2 py-2" style={{ width:140 }}>
+                            <td className="px-2 py-2" style={{ minWidth:185 }}>
                               <input value={it.barcode_end}
                                 onChange={e => updateItem(idx, "barcode_end", e.target.value)}
                                 onKeyDown={e => { if (e.key==="Enter") { e.preventDefault(); (e.currentTarget.parentElement?.parentElement?.nextElementSibling?.querySelector("input") as HTMLElement)?.focus(); }}}
                                 placeholder="Next batch start"
-                                className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none font-mono"
-                                style={{ border:"1px solid #7C3AED", background:"#F5F3FF", color:"#6d28d9" }}
+                                className="w-full rounded-lg px-2.5 py-2 text-xs focus:outline-none font-mono"
+                                style={{ border:"2px solid #7C3AED", background:"#F5F3FF", color:"#6d28d9", letterSpacing:"0.04em", minHeight:32 }}
                                 onFocus={e => e.target.select()}/>
                               {it.barcode_end && it.barcode_start && (
-                                <div style={{ fontSize:9, color:"#6B7280", marginTop:1 }}>
-                                  Last ticket: <span style={{ fontFamily:"monospace", fontWeight:700, color:"#7C3AED" }}>{lastTicketBarcode(it.barcode_end)}</span>
+                                <div style={{ fontSize:9, color:"#6B7280", marginTop:2 }}>
+                                  Last: <span style={{ fontFamily:"monospace", fontWeight:700, color:"#7C3AED" }}>{lastTicketBarcode(it.barcode_end)}</span>
                                 </div>
                               )}
                             </td>
