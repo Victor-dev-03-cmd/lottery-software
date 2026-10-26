@@ -1419,8 +1419,58 @@ async fn get_app_data_dir(app: tauri::AppHandle) -> Result<String, String> {
 #[tauri::command]
 async fn backup_db_to_path(app: tauri::AppHandle, dest_path: String) -> Result<String, String> {
     let src = find_db(&app)?;
+
+    // Step 1: Copy the file.
     std::fs::copy(&src, &dest_path)
         .map_err(|e| format!("Backup copy failed: {}", e))?;
+
+    // Step 2: Minimum size guard.
+    // SQLite treats a zero-byte file as a valid empty database and PRAGMA integrity_check
+    // returns "ok" — which would give false confidence for a truncated or missing backup.
+    // A real non-empty SQLite DB is always at least one page (default 4096 bytes).
+    let backup_size = std::fs::metadata(&dest_path)
+        .map(|m| m.len())
+        .unwrap_or(0);
+    if backup_size < 4096 {
+        let _ = std::fs::remove_file(&dest_path);
+        return Err(format!(
+            "Backup size check FAILED ({} bytes is too small for a valid SQLite database). \
+             The backup has been deleted. Ensure the source database is not empty and retry.",
+            backup_size
+        ));
+    }
+
+    // Step 3: Open the copy with rusqlite and run PRAGMA integrity_check.
+    // This catches truncated writes, filesystem corruption, and partial copies.
+    // The check runs on the COPY (read-only), never on the active database.
+    let dest_for_check = dest_path.clone();
+    let check_result = tokio::task::spawn_blocking(move || {
+        let conn = rusqlite::Connection::open_with_flags(
+            &dest_for_check,
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+        )
+        .map_err(|e| format!("Cannot open backup for verification: {}", e))?;
+
+        let result: String = conn
+            .query_row("PRAGMA integrity_check;", [], |row| row.get(0))
+            .map_err(|e| format!("PRAGMA integrity_check failed: {}", e))?;
+
+        Ok::<String, String>(result)
+    })
+    .await
+    .map_err(|e| format!("Verification thread panicked: {}", e))??;
+
+    if check_result != "ok" {
+        // The backup is corrupt. Remove it so the caller is not left with a bad file.
+        let _ = std::fs::remove_file(&dest_path);
+        return Err(format!(
+            "Backup integrity check FAILED (result: {}). \
+             The incomplete backup has been deleted. \
+             Check available disk space and retry.",
+            check_result
+        ));
+    }
+
     Ok(dest_path)
 }
 
