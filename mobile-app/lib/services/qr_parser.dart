@@ -145,12 +145,14 @@ class QRParser {
     }
 
     // DLB serial pattern: "draw - serial - section - ticket"
-    // Digit ranges made permissive to handle all DLB game formats:
-    //   serial: 2-12 digits (some games have 4-5 digit serials, others 9)
-    //   section: 1-4 digits
-    //   ticket: 1-4 digits
+    //
+    // Group 2 minimum was previously \d{2,12} (≥2 digits). Relaxed to \d{1,12}
+    // because some DLB games (e.g. Sasiri) may have a 1-digit component in
+    // position 2. Without this, the 4-group fails and falls to the 3-group
+    // fallback, which can capture only A-B-C, silently dropping the final D
+    // ("ticket in book") digits.
     final serialMatch = RegExp(
-      r'(\d{3,6})\s*[-–]\s*(\d{2,12})\s*[-–]\s*(\d{1,4})\s*[-–]\s*(\d{1,4})'
+      r'(\d{3,6})\s*[-–]\s*(\d{1,12})\s*[-–]\s*(\d{1,4})\s*[-–]\s*(\d{1,4})'
     ).firstMatch(text);
 
     String serialNumber = '';
@@ -159,9 +161,12 @@ class QRParser {
           '${serialMatch.group(1)!}-${serialMatch.group(2)!}-'
           '${serialMatch.group(3)!}-${serialMatch.group(4)!}';
     } else {
-      // Fallback 1: 3-group pattern (no draw prefix in serial)
+      // Fallback 1: 3-group pattern — only used when there is NO 4th dashed
+      // segment. The negative lookahead (?!\s*[-–]\s*\d) prevents this from
+      // matching A-B-C when A-B-C-D actually exists in the text, which would
+      // silently drop the D (final ticket digits).
       final m3 = RegExp(
-        r'(\d{3,12})\s*[-–]\s*(\d{1,4})\s*[-–]\s*(\d{1,4})'
+        r'(\d{3,12})\s*[-–]\s*(\d{1,4})\s*[-–]\s*(\d{1,4})(?!\s*[-–]\s*\d)'
       ).firstMatch(text);
       if (m3 != null) {
         serialNumber = '${m3.group(1)!}-${m3.group(2)!}-${m3.group(3)!}';
@@ -186,6 +191,21 @@ class QRParser {
         }
       }
     }
+
+    // ── Diagnostic logging (retained to help confirm Sasiri fix on device) ────
+    // To verify on a physical device: scan a Sasiri ticket and check the
+    // debug console for the raw QR value and which regex captured the serial.
+    // Remove or gate behind a debug flag once the format is confirmed.
+    assert(() {
+      if (gameName == 'Sasiri' || serialNumber.isEmpty) {
+        // ignore: avoid_print
+        print('[QRParser] DLB raw: $text');
+        // ignore: avoid_print
+        print('[QRParser] gameName=$gameName drawNumber=$drawNumber '
+            'serialNumber=$serialNumber barcodeStart=${serialNumber.replaceAll('-', '')}');
+      }
+      return true;
+    }());
 
     return TicketData(
       board: 'DLB',

@@ -113,6 +113,13 @@ class _StockPurchaseScreenState extends State<StockPurchaseScreen> {
       _scanningEnd  = false;
     });
     _autoCalcQty();
+
+    // Send the end barcode to the desktop so it can update the existing row.
+    // Uses sendTicketData with the named barcodeEnd parameter so the desktop
+    // can distinguish this update from a new-row scan.
+    if (_ticket != null) {
+      _sendToDesktop(_ticket!, barcodeEnd: cleaned);
+    }
   }
 
   // ── Optional quantity auto-calc ───────────────────────────────────────────────
@@ -125,11 +132,15 @@ class _StockPurchaseScreenState extends State<StockPurchaseScreen> {
     _qtyCtrl.text = (end - start).toString();
   }
 
-  // ── Send to desktop (EXISTING logic, unchanged) ───────────────────────────────
-  Future<void> _sendToDesktop(TicketData ticket) async {
+  // ── Send to desktop ────────────────────────────────────────────────────────────
+  // barcodeEnd is empty for the initial QR scan; non-empty when the end barcode
+  // has been scanned — the desktop uses this to update the existing row rather
+  // than creating a new one.
+  Future<void> _sendToDesktop(TicketData ticket, {String barcodeEnd = ''}) async {
     setState(() => _sync = _SyncState.syncing);
     try {
-      await SessionService().sendTicketData(ticket, 'stock_purchase');
+      await SessionService().sendTicketData(
+          ticket, 'stock_purchase', barcodeEnd: barcodeEnd);
       if (mounted) setState(() => _sync = _SyncState.sent);
     } catch (_) {
       if (mounted) setState(() => _sync = _SyncState.failed);
@@ -139,7 +150,8 @@ class _StockPurchaseScreenState extends State<StockPurchaseScreen> {
   // ── Retry sync ────────────────────────────────────────────────────────────────
   void _retrySync() {
     if (_ticket == null) return;
-    _sendToDesktop(_ticket!);
+    // Retry sends the current state of both barcodes
+    _sendToDesktop(_ticket!, barcodeEnd: _endCtrl.text.trim());
   }
 
   void _openScanner() =>
@@ -202,6 +214,12 @@ class _StockPurchaseScreenState extends State<StockPurchaseScreen> {
             height: isAnyScannerOpen ? 300 : 0,
             child: isAnyScannerOpen
                 ? ScannerView(
+                    // ValueKey forces a full dispose+recreate when switching
+                    // between start-QR mode and end-barcode mode. Without this,
+                    // Flutter reuses the existing ScannerView state (same widget
+                    // type), keeping the old controller alive — so the torch
+                    // state and format filter from the previous scan survive.
+                    key: ValueKey(_scanningEnd),
                     overlayLabel: _scanningEnd
                         ? 'Scan the LAST ticket barcode'
                         : 'Scan ticket QR code',

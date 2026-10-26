@@ -1918,6 +1918,11 @@ async fn start_api_server(app: tauri::AppHandle) {
                 "draw_number":   body["draw_number"].as_str().unwrap_or(""),
                 "draw_date":     body["draw_date"].as_str().unwrap_or(""),
                 "barcode_start": body["barcode_start"].as_str().unwrap_or(""),
+                // barcode_end is empty on the initial QR scan; non-empty when
+                // the user scans the last ticket barcode on the mobile app.
+                // The desktop listener uses this to update an existing row's
+                // barcode_end rather than creating a new purchase row.
+                "barcode_end":   body["barcode_end"].as_str().unwrap_or(""),
                 "board":         body["board"].as_str().unwrap_or(""),
                 "raw_qr":        body["raw_qr"].as_str().unwrap_or(""),
             });

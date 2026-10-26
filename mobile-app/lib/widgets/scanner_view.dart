@@ -78,7 +78,7 @@ class _ScannerViewState extends State<ScannerView> {
         child: _ScanButton(
           icon: _torchOn ? Icons.flashlight_off : Icons.flashlight_on,
           iconColor: _torchOn ? const Color(0xFFFCD34D) : Colors.white,
-          bgColor: _torchOn ? Colors.amber.withOpacity(0.30) : Colors.black45,
+          bgColor: _torchOn ? Colors.amber.withValues(alpha: 0.30) : Colors.black45,
           onTap: _toggleTorch,
           tooltip: _torchOn ? 'Flashlight off' : 'Flashlight on',
         ),
@@ -127,7 +127,7 @@ class _ScanButton extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.25),
+                color: Colors.black.withValues(alpha: 0.25),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),

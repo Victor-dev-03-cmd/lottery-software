@@ -176,6 +176,7 @@ interface MobileTicketPayload {
   draw_number:   string;
   draw_date:     string;  // per-ticket draw date from QR
   barcode_start: string;
+  barcode_end:   string;  // empty on initial QR scan; set after end-barcode scan
   board:         string;
   raw_qr:        string;
 }
@@ -236,8 +237,8 @@ export default function Purchases() {
   useEffect(() => { gameCostMapRef.current = gameCostMap; }, [gameCostMap]);
 
   // ── Deduplication guard against double-fire / rapid repeat scans ────────────
-  // Key = game_name|draw_number|barcode_start. If the same key arrives within
-  // DEBOUNCE_MS, the second event is silently dropped.
+  // Key includes barcode_end so an end-barcode update (same start, non-empty end)
+  // is never dropped as a duplicate of the original QR scan.
   const lastScanKeyRef  = useRef<string>("");
   const lastScanTimeRef = useRef<number>(0);
   const DEBOUNCE_MS     = 2500;
@@ -258,7 +259,10 @@ export default function Purchases() {
         const ticket = event.payload;
 
         // ── Deduplication: drop if same key arrives within DEBOUNCE_MS ──────
-        const key = `${ticket.game_name}|${ticket.draw_number}|${ticket.barcode_start}`;
+        // barcode_end is included in the key so an end-barcode update event
+        // (same ticket, non-empty barcode_end) is NOT treated as a duplicate
+        // of the original QR scan event (which has empty barcode_end).
+        const key = `${ticket.game_name}|${ticket.draw_number}|${ticket.barcode_start}|${ticket.barcode_end ?? ""}`;
         const now = Date.now();
         if (key === lastScanKeyRef.current && now - lastScanTimeRef.current < DEBOUNCE_MS) {
           return; // duplicate event — silently discard
@@ -266,7 +270,32 @@ export default function Purchases() {
         lastScanKeyRef.current  = key;
         lastScanTimeRef.current = now;
 
-        // Show flash notification
+        // ── End-barcode update: non-empty barcode_end → update existing row ──
+        // When the mobile user scans the last ticket, we receive a second event
+        // with the same barcode_start but a non-empty barcode_end. Instead of
+        // creating a new row, find the most-recently filled row whose barcode_start
+        // matches and whose barcode_end is still empty, then patch it in-place.
+        if (ticket.barcode_end) {
+          setFormItems(prev => {
+            const items = [...prev];
+            let rowIdx = -1;
+            for (let i = items.length - 1; i >= 0; i--) {
+              if (items[i].barcode_start === ticket.barcode_start && !items[i].barcode_end) {
+                rowIdx = i;
+                break;
+              }
+            }
+            if (rowIdx >= 0) {
+              items[rowIdx] = { ...items[rowIdx], barcode_end: ticket.barcode_end };
+            }
+            return items;
+          });
+          setMobileFlash(`📱 End barcode received · ${ticket.barcode_end}`);
+          setTimeout(() => setMobileFlash(null), 3000);
+          return; // do not fall through to new-row creation
+        }
+
+        // Show flash notification for new QR scan
         setMobileFlash(`📱 ${ticket.game_name} · Draw ${ticket.draw_number} received`);
         setTimeout(() => setMobileFlash(null), 3500);
 

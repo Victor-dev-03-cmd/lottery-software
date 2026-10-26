@@ -175,16 +175,21 @@ class SessionService {
   }
 
   // ── Send scanned ticket to desktop ─────────────────────────────────────────
-  Future<void> sendTicketData(TicketData ticket, String action) async {
+  // barcodeEnd is empty for the initial QR scan (desktop creates a new row).
+  // Pass a non-empty barcodeEnd after the end barcode is scanned — the desktop
+  // listener will update the existing row's barcode_end field instead.
+  Future<void> sendTicketData(TicketData ticket, String action,
+      {String barcodeEnd = ''}) async {
     // Relay WebSocket path
     if (_ws != null && _status == RelayStatus.connected) {
       try {
         _ws!.add(jsonEncode({
-          'type':    'ticket_scanned',
-          'session': _sessionId,
-          'action':  action,
-          'ticket':  ticket.toJson(),
-          'ts':      DateTime.now().toIso8601String(),
+          'type':        'ticket_scanned',
+          'session':     _sessionId,
+          'action':      action,
+          'ticket':      ticket.toJson(),
+          'barcode_end': barcodeEnd,   // forwarded so relay can pass it on
+          'ts':          DateTime.now().toIso8601String(),
         }));
         return;
       } catch (_) {
@@ -208,6 +213,7 @@ class SessionService {
         req.write(jsonEncode({
           'game_name':     ticket.gameName,
           'barcode_start': ticket.barcodeStart,  // clean numeric barcode
+          'barcode_end':   barcodeEnd,            // empty on start scan, set on end scan
           'draw_number':   ticket.drawNumber,
           'draw_date':     ticket.drawDate,
           'board':         ticket.board,
