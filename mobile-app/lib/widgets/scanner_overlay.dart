@@ -45,7 +45,7 @@ class ScannerOverlay extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.50),
+                color: Colors.black.withValues(alpha: 0.50),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -78,13 +78,13 @@ class _BackdropPainter extends CustomPainter {
       ..addRect(Offset.zero & size)
       ..addRRect(RRect.fromRectAndRadius(frame, const Radius.circular(8)))
       ..fillType = PathFillType.evenOdd;
-    canvas.drawPath(path, Paint()..color = Colors.black.withOpacity(0.65));
+    canvas.drawPath(path, Paint()..color = Colors.black.withValues(alpha: 0.65));
 
     // Soft white inner border around the viewfinder window
     canvas.drawRRect(
       RRect.fromRectAndRadius(frame, const Radius.circular(8)),
       Paint()
-        ..color = Colors.white.withOpacity(0.18)
+        ..color = Colors.white.withValues(alpha: 0.18)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.0,
     );
@@ -213,9 +213,9 @@ class _ScanLinePainter extends CustomPainter {
     final paint = Paint()
       ..shader = LinearGradient(colors: [
         Colors.transparent,
-        const Color(0xFFCF291D).withOpacity(0.8),
-        const Color(0xFFFF4444).withOpacity(0.9),
-        const Color(0xFFCF291D).withOpacity(0.8),
+        const Color(0xFFCF291D).withValues(alpha: 0.8),
+        const Color(0xFFFF4444).withValues(alpha: 0.9),
+        const Color(0xFFCF291D).withValues(alpha: 0.8),
         Colors.transparent,
       ]).createShader(Rect.fromLTWH(0, y - 1, size.width, 2));
     canvas.drawRect(Rect.fromLTWH(0, y - 1, size.width, 2), paint);

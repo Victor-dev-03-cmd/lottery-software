@@ -1,13 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../app.dart';
 import '../services/session_service.dart';
 import 'winning_tickets_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  /// Called when a quick-action card should switch the bottom-nav tab.
   final void Function(int index) onNavigate;
-
   const HomeScreen({super.key, required this.onNavigate});
 
   @override
@@ -33,12 +32,10 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-
   Color get _connColor => switch (_status) {
-    RelayStatus.connected    => const Color(0xFF16A34A),
-    RelayStatus.connecting   => const Color(0xFFF59E0B),
-    RelayStatus.disconnected => const Color(0xFFEF4444),
+    RelayStatus.connected    => kGreen,
+    RelayStatus.connecting   => kYellow,
+    RelayStatus.disconnected => kTextSub,
   };
 
   String get _connLabel => switch (_status) {
@@ -56,93 +53,58 @@ class _HomeScreenState extends State<HomeScreen> {
     };
   }
 
-  // ── Build ────────────────────────────────────────────────────────────────────
+  IconData get _connIcon => switch (_status) {
+    RelayStatus.connected    => Icons.wifi_rounded,
+    RelayStatus.connecting   => Icons.wifi_find_rounded,
+    RelayStatus.disconnected => Icons.wifi_off_rounded,
+  };
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: kBgMain,
       body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
         slivers: [
-          // ── Header ──────────────────────────────────────────────────────────
+          // ── App bar ───────────────────────────────────────────────────────
           SliverAppBar(
-            expandedHeight: 160,
-            floating: false,
             pinned: true,
-            backgroundColor: kDark,
-            elevation: 0,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF1D1D1D), Color(0xFF2D1B1B)],
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 60, 20, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      const Text(
-                        'Ajith Rohana Enterprise',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Lottery Distribution Manager',
-                        style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // Connection badge pinned in the app bar
+            floating: false,
+            backgroundColor: kCardBg,
+            scrolledUnderElevation: 1,
+            shadowColor: kBorder.withValues(alpha: 0.5),
+            titleSpacing: 20,
+            title: Row(children: [
+              // Brand symbol (small)
+              _SmallBrandMark(),
+              const SizedBox(width: 12),
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Ajith Rohana Enterprise',
+                  style: GoogleFonts.inter(
+                    fontSize: 15, fontWeight: FontWeight.w700, color: kText)),
+                Text('Lottery Distribution',
+                  style: GoogleFonts.inter(
+                    fontSize: 11, fontWeight: FontWeight.w400, color: kTextSub)),
+              ]),
+            ]),
             actions: [
+              // Connection badge
               GestureDetector(
-                onTap: () => widget.onNavigate(4), // go to Settings tab
+                onTap: () => widget.onNavigate(4),
                 child: Container(
-                  margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  margin: const EdgeInsets.only(right: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: _connColor.withOpacity(0.15),
+                    color: _connColor.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: _connColor.withOpacity(0.40)),
+                    border: Border.all(color: _connColor.withValues(alpha: 0.30)),
                   ),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: _connColor,
-                        shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(
-                          color: _connColor.withOpacity(0.6),
-                          blurRadius: 5,
-                        )],
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      _connLabel,
-                      style: TextStyle(
-                        color: _connColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    Icon(_connIcon, size: 14, color: _connColor),
+                    const SizedBox(width: 5),
+                    Text(_connLabel,
+                      style: GoogleFonts.inter(
+                        fontSize: 11, fontWeight: FontWeight.w600, color: _connColor)),
                   ]),
                 ),
               ),
@@ -157,111 +119,164 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBody() {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Connection detail card
+        // ── Welcome header ───────────────────────────────────────────────────
+        Text('Welcome back',
+          style: GoogleFonts.inter(
+            fontSize: 13, fontWeight: FontWeight.w400, color: kTextSub)),
+        const SizedBox(height: 2),
+        Text('Dashboard',
+          style: GoogleFonts.inter(
+            fontSize: 26, fontWeight: FontWeight.w700, color: kText,
+            letterSpacing: -0.5)),
+        const SizedBox(height: 20),
+
+        // ── Desktop connection card ──────────────────────────────────────────
         _ConnectionCard(
           status: _status,
           connColor: _connColor,
           connLabel: _connLabel,
           connSub: _connSub,
+          connIcon: _connIcon,
           onSettingsTap: () => widget.onNavigate(4),
         ),
-        const SizedBox(height: 22),
+        const SizedBox(height: 24),
 
-        // Section heading
-        const _SectionHeading('Quick Actions'),
+        // ── Quick actions ────────────────────────────────────────────────────
+        Text('Quick Actions',
+          style: GoogleFonts.inter(
+            fontSize: 13, fontWeight: FontWeight.w700,
+            color: kText, letterSpacing: 0.1)),
         const SizedBox(height: 12),
 
-        // 2×2 quick action grid
         GridView.count(
           crossAxisCount: 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: 1.25,
+          childAspectRatio: 1.30,
           children: [
             _ActionCard(
               icon: Icons.inventory_2_rounded,
               label: 'Purchases',
               subtitle: 'Scan & record stock',
               color: kPrimary,
+              bgColor: kBlueLight,
               onTap: () => widget.onNavigate(1),
             ),
             _ActionCard(
-              icon: Icons.keyboard_return_rounded,
+              icon: Icons.assignment_return_rounded,
               label: 'Returns',
               subtitle: 'Return unsold tickets',
-              color: const Color(0xFFEA580C),
+              color: kRed,
+              bgColor: const Color(0xFFFCE8E6),
               onTap: () => widget.onNavigate(2),
             ),
             _ActionCard(
               icon: Icons.receipt_long_rounded,
               label: 'Invoice',
               subtitle: 'Build agent invoices',
-              color: const Color(0xFF2563EB),
+              color: kPrimary,
+              bgColor: kBlueLight,
               onTap: () => widget.onNavigate(3),
             ),
             _ActionCard(
-              icon: Icons.star_rounded,
+              icon: Icons.emoji_events_rounded,
               label: 'Winning',
               subtitle: 'Record winners',
-              color: const Color(0xFFD97706),
+              color: const Color(0xFFF29900),
+              bgColor: const Color(0xFFFFF8E1),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const WinningTicketsScreen()),
               ),
             ),
           ],
         ),
-
         const SizedBox(height: 24),
-        const _SectionHeading('About'),
+
+        // ── App info card ─────────────────────────────────────────────────────
+        Text('About',
+          style: GoogleFonts.inter(
+            fontSize: 13, fontWeight: FontWeight.w700,
+            color: kText, letterSpacing: 0.1)),
         const SizedBox(height: 10),
 
         Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: kCardBg,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE8E8E8)),
+            border: Border.all(color: kBorder),
           ),
           child: Row(children: [
             Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: kPrimary.withOpacity(0.10),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.smartphone_rounded, color: kPrimary, size: 22),
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
+              child: _SmallBrandMark(size: 36),
             ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Lottery Scanner', style: TextStyle(
-                  fontWeight: FontWeight.w800, fontSize: 13, color: kDark)),
-                SizedBox(height: 2),
+            const SizedBox(width: 14),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Ajith Rohana Enterprise',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700, fontSize: 13, color: kText)),
+                const SizedBox(height: 3),
                 Text('Scan NLB/DLB tickets · Sync to desktop in real-time',
-                  style: TextStyle(fontSize: 11, color: kGrey)),
-              ]),
-            ),
+                  style: GoogleFonts.inter(fontSize: 11, color: kTextSub)),
+              ],
+            )),
           ]),
         ),
-
-        const SizedBox(height: 24),
       ]),
     );
   }
 }
 
-// ── Connection Card ────────────────────────────────────────────────────────────
+// ── Small brand mark (2×2 color squares) ────────────────────────────────────
+
+class _SmallBrandMark extends StatelessWidget {
+  final double size;
+  const _SmallBrandMark({this.size = 32});
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+    size: Size(size, size),
+    painter: _MiniMarkPainter(),
+  );
+}
+
+class _MiniMarkPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    const gap = 3.0;
+    const r = Radius.circular(5);
+    final h = (size.width - gap) / 2;
+    final pairs = [
+      (Rect.fromLTWH(0, 0, h, h), const Color(0xFF4285F4)),
+      (Rect.fromLTWH(h + gap, 0, h, h), const Color(0xFFEA4335)),
+      (Rect.fromLTWH(0, h + gap, h, h), const Color(0xFFFBBC04)),
+      (Rect.fromLTWH(h + gap, h + gap, h, h), const Color(0xFF34A853)),
+    ];
+    for (final (rect, color) in pairs) {
+      canvas.drawRRect(RRect.fromRectAndRadius(rect, r), Paint()..color = color);
+    }
+  }
+  @override
+  bool shouldRepaint(_) => false;
+}
+
+// ── Connection card ────────────────────────────────────────────────────────────
 
 class _ConnectionCard extends StatelessWidget {
   final RelayStatus status;
   final Color connColor;
   final String connLabel;
   final String connSub;
+  final IconData connIcon;
   final VoidCallback onSettingsTap;
 
   const _ConnectionCard({
@@ -269,6 +284,7 @@ class _ConnectionCard extends StatelessWidget {
     required this.connColor,
     required this.connLabel,
     required this.connSub,
+    required this.connIcon,
     required this.onSettingsTap,
   });
 
@@ -277,64 +293,56 @@ class _ConnectionCard extends StatelessWidget {
     return GestureDetector(
       onTap: onSettingsTap,
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: kCardBg,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: connColor.withOpacity(0.25)),
+          border: Border.all(color: kBorder),
           boxShadow: [
             BoxShadow(
-              color: connColor.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10, offset: const Offset(0, 3)),
           ],
         ),
         child: Row(children: [
-          // Pulsing status dot
           Container(
-            width: 42,
-            height: 42,
+            width: 40, height: 40,
             decoration: BoxDecoration(
-              color: connColor.withOpacity(0.12),
+              color: connColor.withValues(alpha: 0.10),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              status == RelayStatus.connected
-                  ? Icons.wifi_rounded
-                  : status == RelayStatus.connecting
-                      ? Icons.wifi_find_rounded
-                      : Icons.wifi_off_rounded,
-              color: connColor,
-              size: 22,
-            ),
+            child: Icon(connIcon, color: connColor, size: 20),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(connLabel, style: TextStyle(
-                color: connColor, fontWeight: FontWeight.w800, fontSize: 13)),
+              Text(connLabel,
+                style: GoogleFonts.inter(
+                  color: connColor, fontWeight: FontWeight.w700, fontSize: 13)),
               const SizedBox(height: 2),
-              Text(connSub, style: const TextStyle(
-                color: kGrey, fontSize: 11),
+              Text(connSub,
+                style: GoogleFonts.inter(
+                  color: kTextSub, fontSize: 11),
                 maxLines: 1, overflow: TextOverflow.ellipsis),
             ],
           )),
-          Icon(Icons.arrow_forward_ios_rounded, size: 14, color: kGrey.withOpacity(0.6)),
+          Icon(Icons.arrow_forward_ios_rounded, size: 13,
+            color: kTextSub.withValues(alpha: 0.5)),
         ]),
       ),
     );
   }
 }
 
-// ── Quick Action Card ──────────────────────────────────────────────────────────
+// ── Quick action card ──────────────────────────────────────────────────────────
 
 class _ActionCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String subtitle;
   final Color color;
+  final Color bgColor;
   final VoidCallback onTap;
 
   const _ActionCard({
@@ -342,69 +350,50 @@ class _ActionCard extends StatelessWidget {
     required this.label,
     required this.subtitle,
     required this.color,
+    required this.bgColor,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE8E8E8)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0A000000),
-              blurRadius: 8,
-              offset: Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
+    return Material(
+      color: kCardBg,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        splashColor: color.withValues(alpha: 0.08),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: kBorder),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 22),
               ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(label, style: const TextStyle(
-                fontWeight: FontWeight.w800, fontSize: 13, color: kDark)),
-              const SizedBox(height: 2),
-              Text(subtitle, style: TextStyle(
-                fontSize: 10, color: kGrey.withOpacity(0.85)),
-                maxLines: 1, overflow: TextOverflow.ellipsis),
-            ]),
-          ],
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(label,
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700, fontSize: 13, color: kText)),
+                const SizedBox(height: 2),
+                Text(subtitle,
+                  style: GoogleFonts.inter(fontSize: 10, color: kTextSub),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              ]),
+            ],
+          ),
         ),
       ),
     );
   }
-}
-
-// ── Section heading ────────────────────────────────────────────────────────────
-
-class _SectionHeading extends StatelessWidget {
-  final String text;
-  const _SectionHeading(this.text);
-
-  @override
-  Widget build(BuildContext context) => Text(
-    text.toUpperCase(),
-    style: TextStyle(
-      fontSize: 10,
-      fontWeight: FontWeight.w800,
-      color: kGrey.withOpacity(0.8),
-      letterSpacing: 0.9,
-    ),
-  );
 }

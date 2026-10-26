@@ -68,7 +68,7 @@ class _PairingScreenState extends State<PairingScreen> {
                 color: Colors.black87,
                 child: Center(
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(Icons.qr_code_scanner, size: 80, color: kPrimary.withOpacity(0.7)),
+                    Icon(Icons.qr_code_scanner, size: 80, color: kPrimary.withValues(alpha: 0.7)),
                     const SizedBox(height: 16),
                     const Text('Pair with desktop', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),

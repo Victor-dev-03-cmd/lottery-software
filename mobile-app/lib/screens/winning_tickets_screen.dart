@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_scanner/mobile_scanner.dart' show BarcodeCapture;
 import '../app.dart';
 import '../models/ticket_data.dart';
@@ -33,27 +34,59 @@ class _WinningTicketsScreenState extends State<WinningTicketsScreen> {
     await SessionService().sendTicketData(_lastTicket!, 'winning');
     setState(() { _verified.insert(0, _lastTicket!); _lastTicket = null; });
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Winning ticket recorded'), backgroundColor: Colors.green),
+      SnackBar(
+        content: Text('Winning ticket recorded',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+        backgroundColor: kGreen,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: kBgMain,
       body: SafeArea(child: Column(children: [
+        // ── Screen header ──────────────────────────────────────────────────
         Container(
-          padding: const EdgeInsets.all(12),
-          color: const Color(0xFFFFFBEB),
-          child: const Row(children: [
-            Icon(Icons.star, color: Color(0xFFD97706)),
-            SizedBox(width: 8),
-            Text('Scan winning lottery tickets to record them',
-              style: TextStyle(fontSize: 12, color: Color(0xFF92400E))),
+          color: kCardBg,
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
+          child: Row(children: [
+            const Icon(Icons.emoji_events_rounded, color: kYellow, size: 24),
+            const SizedBox(width: 10),
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Winning Tickets', style: GoogleFonts.inter(
+                fontSize: 18, fontWeight: FontWeight.w700, color: kText)),
+              Text('Scan and record winning tickets', style: GoogleFonts.inter(
+                fontSize: 12, color: kTextSub)),
+            ]),
           ]),
         ),
+        const Divider(height: 1, color: kBorder),
+
+        // ── Info banner ────────────────────────────────────────────────────
+        Container(
+          margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF8E1),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: kYellow.withValues(alpha: 0.40)),
+          ),
+          child: Row(children: [
+            const Icon(Icons.info_outline_rounded, color: Color(0xFFF29900), size: 16),
+            const SizedBox(width: 8),
+            Expanded(child: Text(
+              'Scan winning lottery tickets to record them',
+              style: GoogleFonts.inter(
+                fontSize: 12, color: const Color(0xFF4A3000)),
+            )),
+          ]),
+        ),
+
         if (_scanning)
-          SizedBox(
+          Container(
+            margin: const EdgeInsets.only(top: 12),
             height: 280,
             child: ScannerView(
               overlayLabel: 'Scan winning ticket QR',
@@ -61,53 +94,64 @@ class _WinningTicketsScreenState extends State<WinningTicketsScreen> {
               onClose: () => setState(() => _scanning = false),
             ),
           ),
+
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(children: [
               if (!_scanning)
-                ElevatedButton.icon(
+                FilledButton.icon(
                   onPressed: () => setState(() { _scanning = true; _lastTicket = null; }),
-                  icon: const Icon(Icons.qr_code_scanner),
-                  label: const Text('Scan Winning Ticket'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD97706), foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 48),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
+                  label: Text('Scan Winning Ticket',
+                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600)),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFF29900),
+                    minimumSize: const Size(double.infinity, 52),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               if (_lastTicket != null) ...[
                 const SizedBox(height: 12),
                 ScanResultCard(ticket: _lastTicket!, highlight: true),
                 const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _recordWinning,
-                    icon: const Icon(Icons.check_circle),
-                    label: const Text('Record as Winning Ticket'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF16A34A), foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
+                FilledButton.icon(
+                  onPressed: _recordWinning,
+                  icon: const Icon(Icons.check_circle_rounded, size: 20),
+                  label: Text('Record as Winning Ticket',
+                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600)),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: kGreen,
+                    minimumSize: const Size(double.infinity, 52),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ],
               if (_verified.isNotEmpty) ...[
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 Row(children: [
-                  const Text('Recorded Winning Tickets', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                  Text('Recorded Winning Tickets',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w700, fontSize: 14, color: kText)),
                   const Spacer(),
-                  Text('${_verified.length}', style: const TextStyle(color: kPrimary, fontWeight: FontWeight.w800)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: kGreenBg, borderRadius: BorderRadius.circular(20)),
+                    child: Text('${_verified.length}',
+                      style: GoogleFonts.inter(
+                        fontSize: 12, fontWeight: FontWeight.w700, color: kGreen)),
+                  ),
                 ]),
                 const SizedBox(height: 8),
-                ..._verified.map((t) => ScanResultCard(ticket: t, compact: true)),
+                ..._verified.map((t) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: ScanResultCard(ticket: t, compact: true))),
               ],
             ]),
           ),
         ),
-      ])), // SafeArea + Column
+      ])),
     );
   }
 }

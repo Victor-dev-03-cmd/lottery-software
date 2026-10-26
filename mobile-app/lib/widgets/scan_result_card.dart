@@ -33,7 +33,7 @@ class ScanResultCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -80,7 +80,7 @@ class ScanResultCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: boardBg,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(13)),
-          border: Border(bottom: BorderSide(color: boardColor.withOpacity(0.15))),
+          border: Border(bottom: BorderSide(color: boardColor.withValues(alpha: 0.15))),
         ),
         child: Row(children: [
           _BoardBadge(color: boardColor, bg: Colors.white, label: ticket.board),
@@ -121,9 +121,9 @@ class ScanResultCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: boardColor.withOpacity(0.06),
+              color: boardColor.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(9),
-              border: Border.all(color: boardColor.withOpacity(0.20)),
+              border: Border.all(color: boardColor.withValues(alpha: 0.20)),
             ),
             child: Row(children: [
               Icon(Icons.qr_code_rounded, color: boardColor, size: 18),
@@ -179,7 +179,7 @@ class _BoardBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.30)),
+        border: Border.all(color: color.withValues(alpha: 0.30)),
       ),
       child: Text(
         label,
@@ -209,7 +209,7 @@ class _FieldRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(children: [
-      Icon(icon, size: 15, color: kGrey.withOpacity(0.7)),
+      Icon(icon, size: 15, color: kGrey.withValues(alpha: 0.7)),
       const SizedBox(width: 8),
       SizedBox(
         width: 90,

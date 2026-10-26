@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_scanner/mobile_scanner.dart' show BarcodeCapture;
 import 'package:vibration/vibration.dart';
 import '../app.dart';
@@ -38,7 +39,11 @@ class _StockReturnScreenState extends State<StockReturnScreen> {
     if (mounted) {
       setState(() => _sending = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sent to desktop'), backgroundColor: Colors.green),
+        SnackBar(
+          content: Text('Sent to desktop',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+          backgroundColor: kGreen,
+        ),
       );
     }
   }
@@ -46,8 +51,25 @@ class _StockReturnScreenState extends State<StockReturnScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: kBgMain,
       body: SafeArea(child: Column(children: [
+        // ── Screen header ────────────────────────────────────────────────────
+        Container(
+          color: kCardBg,
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
+          child: Row(children: [
+            const Icon(Icons.assignment_return_rounded, color: kPrimary, size: 22),
+            const SizedBox(width: 10),
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Returns', style: GoogleFonts.inter(
+                fontSize: 18, fontWeight: FontWeight.w700, color: kText)),
+              Text('Return unsold tickets', style: GoogleFonts.inter(
+                fontSize: 12, color: kTextSub)),
+            ]),
+          ]),
+        ),
+        const Divider(height: 1, color: kBorder),
+
         if (_scanning)
           SizedBox(
             height: 280,
@@ -62,15 +84,15 @@ class _StockReturnScreenState extends State<StockReturnScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(children: [
               if (!_scanning)
-                ElevatedButton.icon(
+                FilledButton.icon(
                   onPressed: () => setState(() { _scanning = true; _lastTicket = null; }),
-                  icon: const Icon(Icons.qr_code_scanner),
+                  icon: const Icon(Icons.qr_code_scanner, size: 20),
                   label: const Text('Scan Return Ticket'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFEA580C),
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 48),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: kRed,
+                    minimumSize: const Size(double.infinity, 52),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    textStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                 ),
               const SizedBox(height: 16),
@@ -79,32 +101,37 @@ class _StockReturnScreenState extends State<StockReturnScreen> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: _reasonCtrl,
+                  style: GoogleFonts.inter(fontSize: 14),
                   decoration: InputDecoration(
                     labelText: 'Return Reason',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kPrimary)),
-                    filled: true, fillColor: Colors.white,
+                    prefixIcon: const Icon(Icons.notes_rounded, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: kPrimary, width: 1.5)),
+                    filled: true, fillColor: kCardBg,
                   ),
                 ),
                 const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _sending ? null : _sendToDesktop,
-                    icon: const Icon(Icons.send),
-                    label: Text(_sending ? 'Sending…' : 'Send Return to Desktop'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: kPrimary, foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
+                FilledButton.icon(
+                  onPressed: _sending ? null : _sendToDesktop,
+                  icon: _sending
+                      ? const SizedBox(width: 18, height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.send_rounded, size: 18),
+                  label: Text(_sending ? 'Sending…' : 'Send Return to Desktop',
+                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600)),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: kGreen,
+                    minimumSize: const Size(double.infinity, 52),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ],
             ]),
           ),
         ),
-      ])), // SafeArea + Column
+      ])),
     );
   }
 

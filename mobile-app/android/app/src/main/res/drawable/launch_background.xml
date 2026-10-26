@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Light blue-white splash background — matches Flutter SplashScreen color -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white"/>
+    <item>
+        <color android:color="#F0F7FF"/>
+    </item>
 </layer-list>

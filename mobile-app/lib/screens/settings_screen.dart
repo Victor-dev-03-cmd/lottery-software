@@ -104,9 +104,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
   Color get _connColor => switch (_status) {
-    RelayStatus.connected    => const Color(0xFF16A34A),
-    RelayStatus.connecting   => const Color(0xFFF59E0B),
-    RelayStatus.disconnected => const Color(0xFFEF4444),
+    RelayStatus.connected    => kGreen,
+    RelayStatus.connecting   => kYellow,
+    RelayStatus.disconnected => kTextSub,
   };
 
   String get _connLabel => switch (_status) {
@@ -125,10 +125,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         slivers: [
           SliverAppBar(
             pinned: true,
-            backgroundColor: kDark,
+            backgroundColor: kCardBg,
             elevation: 0,
             title: const Text('Settings',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: kText)),
             centerTitle: false,
           ),
           SliverToBoxAdapter(
@@ -167,9 +167,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _connColor.withOpacity(0.25)),
+        border: Border.all(color: _connColor.withValues(alpha: 0.25)),
         boxShadow: [
-          BoxShadow(color: _connColor.withOpacity(0.07), blurRadius: 14, offset: const Offset(0, 4)),
+          BoxShadow(color: _connColor.withValues(alpha: 0.07), blurRadius: 14, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -177,7 +177,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(
             padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
-              color: _connColor.withOpacity(0.12),
+              color: _connColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
@@ -322,7 +322,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 fontFamily: 'monospace', fontSize: 14, fontWeight: FontWeight.w600),
               decoration: InputDecoration(
                 hintText: '192.168.x.x',
-                hintStyle: TextStyle(color: kGrey.withOpacity(0.5), fontFamily: 'monospace'),
+                hintStyle: TextStyle(color: kGrey.withValues(alpha: 0.5), fontFamily: 'monospace'),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 filled: true,
                 fillColor: const Color(0xFFF9FAFB),
