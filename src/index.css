@@ -1,3 +1,15 @@
+/* ── Fonts — bundled locally (no CDN required) ───────────────────────────── */
+/* Inter Variable: Latin, covers all UI text weights 100-900 in one file     */
+@import "@fontsource-variable/inter";
+/* Noto Sans Sinhala: individual weights for Sinhala text rendering           */
+@import "@fontsource/noto-sans-sinhala/400.css";
+@import "@fontsource/noto-sans-sinhala/600.css";
+@import "@fontsource/noto-sans-sinhala/700.css";
+
+/* ── Design tokens ───────────────────────────────────────────────────────── */
+@import "./tokens.css";
+
+/* ── Tailwind CSS v4 ─────────────────────────────────────────────────────── */
 @import "tailwindcss";
 
 @layer base {
@@ -6,35 +18,45 @@
   }
   body {
     margin: 0;
-    /* Inter for Latin; Nirmala UI = Windows built-in Sinhala; Noto Sans Sinhala = Google fallback */
-    font-family: Inter, 'Nirmala UI', 'Noto Sans Sinhala', 'Iskoola Pota', system-ui, -apple-system, sans-serif;
+    /* Inter Variable first — bundled locally; Nirmala UI = Windows built-in Sinhala */
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    color: var(--color-text-primary);
+    background: var(--color-surface-dim);
   }
-  /* Sinhala text helper class */
+  /* Sinhala text helper — preserves exact existing .si class behavior */
   .si {
     font-family: 'Nirmala UI', 'Noto Sans Sinhala', 'Iskoola Pota', sans-serif;
     line-height: 1.6;
   }
 }
 
-/* ── Global ultra-thin scrollbar ───────────────────────────────────────────── */
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Global ultra-thin scrollbar ────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 2px;
-  height: 2px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #D1D5DB;
-  border-radius: 2px;
+  background: var(--color-border);
+  border-radius: var(--radius-full);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #CF291D;
+  background: var(--color-brand);
 }
 * {
   scrollbar-width: thin;
-  scrollbar-color: #D1D5DB transparent;
+  scrollbar-color: var(--color-border) transparent;
 }
 
 /* Print styles */
