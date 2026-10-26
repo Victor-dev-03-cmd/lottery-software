@@ -1484,19 +1484,84 @@ async fn restore_db_from_path(app: tauri::AppHandle, src_path: String) -> Result
         data_dir.join("ajith_rohana.db")
     };
 
-    // Auto-backup current DB before overwriting
+    // Step 1: Validate source file before touching the live database.
+    // Re-uses the same two-step guard as backup_db_to_path.
+    let src_size = std::fs::metadata(&src_path)
+        .map(|m| m.len())
+        .map_err(|e| format!("Cannot read source file: {}", e))?;
+    if src_size < 4096 {
+        return Err(format!(
+            "The selected file is too small ({} bytes) to be a valid SQLite database. \
+             Restore cancelled — the current database has not been touched.",
+            src_size
+        ));
+    }
+    let src_for_check = src_path.clone();
+    let check_result = tokio::task::spawn_blocking(move || {
+        let conn = rusqlite::Connection::open_with_flags(
+            &src_for_check,
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+        )
+        .map_err(|e| format!("Cannot open backup file for verification: {}", e))?;
+        let result: String = conn
+            .query_row("PRAGMA integrity_check;", [], |row| row.get(0))
+            .map_err(|e| format!("PRAGMA integrity_check failed: {}", e))?;
+        Ok::<String, String>(result)
+    })
+    .await
+    .map_err(|e| format!("Verification thread panicked: {}", e))??;
+
+    if check_result != "ok" {
+        return Err(format!(
+            "The selected backup file failed integrity check (result: {}). \
+             Restore cancelled — the current database has not been touched.",
+            check_result
+        ));
+    }
+
+    // Step 2: Create a pre-restore backup of the current DB.
+    // Fail the entire operation if this backup cannot be created — the user
+    // must not lose the current database without a confirmed safety copy.
     let ts = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs();
     let backup_dir = data_dir.join("backups");
-    let _ = std::fs::create_dir_all(&backup_dir);
+    std::fs::create_dir_all(&backup_dir)
+        .map_err(|e| format!("Cannot create backups directory: {}", e))?;
+    let pre_restore_path = backup_dir.join(format!("pre_restore_{}.db", ts));
     if db_dest.exists() {
-        let _ = std::fs::copy(&db_dest, backup_dir.join(format!("pre_restore_{}.db", ts)));
+        std::fs::copy(&db_dest, &pre_restore_path)
+            .map_err(|e| format!(
+                "Pre-restore backup failed: {}. Restore cancelled — \
+                 the current database has not been touched.", e
+            ))?;
     }
 
-    std::fs::copy(&src_path, &db_dest)
-        .map_err(|e| format!("Restore failed: {}", e))?;
+    // Step 3: Write to a temp file first, then rename atomically.
+    // If the copy is interrupted mid-write, the live database is untouched.
+    let tmp_dest = db_dest.with_extension("db.restoring");
+    if let Err(e) = std::fs::copy(&src_path, &tmp_dest) {
+        let _ = std::fs::remove_file(&tmp_dest);
+        return Err(format!(
+            "Failed to write restore file: {}. \
+             The current database has not been changed. \
+             Pre-restore backup is at: {}",
+            e,
+            pre_restore_path.display()
+        ));
+    }
+    std::fs::rename(&tmp_dest, &db_dest).map_err(|e| {
+        let _ = std::fs::remove_file(&tmp_dest);
+        format!(
+            "Restore rename failed: {}. \
+             The current database may be in an inconsistent state. \
+             Pre-restore backup is at: {}",
+            e,
+            pre_restore_path.display()
+        )
+    })?;
+
     Ok(())
 }
 
