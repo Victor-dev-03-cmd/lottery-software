@@ -80,3 +80,92 @@ func TestBuildConflictTarget(t *testing.T) {
 		t.Errorf("composite: got %q", composite)
 	}
 }
+
+// TestAP04QueueIdExtractedBeforeLoop verifies that _queue_id is stripped from
+// the row map before the column-building loop, so it is never used as a
+// PostgreSQL column name. If present, hasQueueID must be true and the key removed.
+func TestAP04QueueIdExtractedBeforeLoop(t *testing.T) {
+	// Simulate a row payload as received from the Rust drain function
+	row := map[string]interface{}{
+		"id":           int64(42),
+		"invoice_status": "paid",
+		"_queue_id":    int64(200),
+	}
+
+	// Replicate the extraction logic from upsertRow
+	var queueID int64
+	hasQueueID := false
+	if raw, ok := row["_queue_id"]; ok {
+		if coerced := coerceValue(raw); coerced != nil {
+			if id, ok2 := coerced.(int64); ok2 {
+				queueID = id
+				hasQueueID = true
+			}
+		}
+		delete(row, "_queue_id")
+	}
+
+	if !hasQueueID {
+		t.Error("expected hasQueueID=true for row containing _queue_id")
+	}
+	if queueID != 200 {
+		t.Errorf("expected queueID=200, got %d", queueID)
+	}
+	if _, stillPresent := row["_queue_id"]; stillPresent {
+		t.Error("_queue_id must be removed from row before column loop")
+	}
+	// Business columns must remain
+	if _, ok := row["invoice_status"]; !ok {
+		t.Error("invoice_status should still be present after _queue_id extraction")
+	}
+}
+
+// TestAP04QueueIdAbsentIsNoGuard verifies that a row without _queue_id
+// sets hasQueueID=false, which means no WHERE guard is added (Full Sync path).
+func TestAP04QueueIdAbsentIsNoGuard(t *testing.T) {
+	row := map[string]interface{}{
+		"id":   int64(42),
+		"name": "Test",
+	}
+
+	hasQueueID := false
+	if _, ok := row["_queue_id"]; ok {
+		hasQueueID = true
+		delete(row, "_queue_id")
+	}
+
+	if hasQueueID {
+		t.Error("expected hasQueueID=false when _queue_id is absent (Full Sync path)")
+	}
+	if len(row) != 2 {
+		t.Errorf("row should be unchanged, got len=%d", len(row))
+	}
+}
+
+// TestAP04QueueIdAsFloat64IsCoerced verifies that JSON-decoded float64 values
+// (the default numeric type from serde_json via HTTP) are coerced to int64.
+func TestAP04QueueIdAsFloat64IsCoerced(t *testing.T) {
+	row := map[string]interface{}{
+		"id":        float64(42),
+		"_queue_id": float64(300),
+	}
+
+	var queueID int64
+	hasQueueID := false
+	if raw, ok := row["_queue_id"]; ok {
+		if coerced := coerceValue(raw); coerced != nil {
+			if id, ok2 := coerced.(int64); ok2 {
+				queueID = id
+				hasQueueID = true
+			}
+		}
+		delete(row, "_queue_id")
+	}
+
+	if !hasQueueID {
+		t.Error("float64 _queue_id should be coerced and accepted")
+	}
+	if queueID != 300 {
+		t.Errorf("expected queueID=300 after coercion, got %d", queueID)
+	}
+}

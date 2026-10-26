@@ -357,7 +357,7 @@ function DraggableCalc({ onClose }: { onClose: () => void }) {
 
 export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusRef }: Props) {
   const now = useClock();
-  const { role, clearRole } = useAuth();
+  const { role, clearRole, withAdminToken } = useAuth();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -438,7 +438,26 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
       ).catch(() => ({ api_server_url: "", api_device_key: "" }));
 
       if (cfg.api_server_url && cfg.api_device_key) {
-        // Go API full sync — one call per table, requires admin token
+        // D-04: Drain pending queue events before reading the SQLite snapshot.
+        // This minimises the stale-snapshot race: by flushing in-flight events
+        // first, the Full Sync reads a state that is already current in cloud.
+        // Remaining items (if drain has failures) are warned but do not block.
+        try {
+          const drainStats = await invoke<{ flushed: number; failed: number; remaining: number }>(
+            "drain_sync_queue_to_backend", { token: null }
+          );
+          if (drainStats.flushed > 0)
+            addLog(`ℹ Pre-sync drain: ${drainStats.flushed} queued events flushed`, "info");
+          if (drainStats.remaining > 0)
+            addLog(`⚠ ${drainStats.remaining} queue events still pending — full sync snapshot may not include latest changes`, "warn");
+        } catch {
+          addLog("ℹ Queue drain skipped — proceeding with full sync", "info");
+        }
+
+        // Go API full sync — requires a valid admin session token.
+        // withAdminToken() re-uses an existing session or auto-authenticates
+        // when no PIN is set; throws a clear error when a PIN is configured
+        // and the user has not logged in via the ADMIN button.
         const tables = [
           "agents","invoices","invoice_items","inventory_batches","payments",
           "ticket_returns","daily_collections","suppliers","purchase_invoices",
@@ -448,19 +467,24 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
           "company_settings",
         ];
         let totalFlushed = 0, totalFailed = 0;
-        for (const tbl of tables) {
-          try {
-            // Background mode — no admin token; server allows device-key-only for full sync
-            const s = await invoke<{ flushed: number; failed: number; remaining: number }>(
-              "full_sync_table_to_backend", { token: "", tableName: tbl }
-            ).catch(() => ({ flushed: 0, failed: 0, remaining: 0 }));
-            totalFlushed += s.flushed;
-            totalFailed  += s.failed;
-          } catch { /* skip table on error */ }
-        }
+        await withAdminToken(async (token) => {
+          for (const tbl of tables) {
+            try {
+              const s = await invoke<{ flushed: number; failed: number; remaining: number }>(
+                "full_sync_table_to_backend", { token, tableName: tbl }
+              );
+              totalFlushed += s.flushed;
+              totalFailed  += s.failed;
+              if (s.failed > 0) addLog(`⚠ ${tbl}: ${s.failed} row(s) failed`, "warn");
+            } catch (e) {
+              totalFailed++;
+              addLog(`✗ ${tbl}: ${String(e)}`, "error");
+            }
+          }
+        });
         if (totalFlushed > 0) addLog(`✓ Go API full sync — ${totalFlushed} records pushed`, "ok");
-        if (totalFailed  > 0) addLog(`⚠ ${totalFailed} records failed`, "warn");
-        if (totalFlushed === 0 && totalFailed === 0) addLog("✓ Go API — all tables up to date", "ok");
+        if (totalFailed  > 0) addLog(`⚠ ${totalFailed} total failures — check logs above`, "warn");
+        if (totalFlushed === 0 && totalFailed === 0) addLog("✓ Go API — all tables already up to date", "ok");
       } else {
         // Fallback: existing Supabase full sync (13 tables, unchanged)
         const stats = await invoke<{ flushed: number; failed: number; remaining: number }>(

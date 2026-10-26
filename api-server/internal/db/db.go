@@ -395,4 +395,39 @@ CREATE TABLE IF NOT EXISTS sync_log (
 	last_full_sync TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	row_count    BIGINT      NOT NULL DEFAULT 0
 );
+
+-- ── AP-04: Stale-event guard migrations ───────────────────────────────────────
+-- last_queue_id tracks the highest sync_queue.id that has successfully upserted
+-- each row. The SyncBatch handler rejects DO UPDATE when the incoming
+-- EXCLUDED.last_queue_id < existing last_queue_id, preventing a retried older
+-- queue event from overwriting a newer value already in PostgreSQL.
+--
+-- Applied with ADD COLUMN IF NOT EXISTS so this is idempotent on existing
+-- databases. New databases receive the column from the CREATE TABLE above.
+-- Only the 20 business tables in the sync allowlist receive this column;
+-- infrastructure tables (devices, app_config, revoked_tokens, sync_log) do not.
+--
+-- Single-device constraint: last_queue_id values are SQLite autoincrement IDs
+-- local to one device. This guard must be replaced before registering a second
+-- device. See DEFERRED_RISKS.md AP-04 / D-03.
+ALTER TABLE company_settings         ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE agents                   ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE lottery_games            ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE invoices                 ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE invoice_items            ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE inventory_batches        ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE payments                 ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE ticket_returns           ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE daily_collections        ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE lottery_results          ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE commission_schemes       ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE suppliers                ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE purchase_invoices        ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE purchase_invoice_items   ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE purchase_payments        ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE supplier_returns         ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE workers                  ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE worker_salaries          ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE petty_cash_transactions  ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE petty_cash_closings      ADD COLUMN IF NOT EXISTS last_queue_id BIGINT NOT NULL DEFAULT 0;
 `

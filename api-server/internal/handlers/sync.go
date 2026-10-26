@@ -121,10 +121,27 @@ func upsertRow(ctx context.Context, pool *pgxpool.Pool, table, conflictCol strin
 		return nil
 	}
 
-	cols := make([]string, 0, len(row))
-	vals := make([]interface{}, 0, len(row))
-	placeholders := make([]string, 0, len(row))
-	updates := make([]string, 0, len(row))
+	// AP-04: Extract _queue_id before the column loop so it is never treated as a
+	// business column. When present, it drives the stale-event guard:
+	//   DO UPDATE SET ... WHERE EXCLUDED.last_queue_id >= "<table>".last_queue_id
+	// Full Sync rows omit _queue_id; they upsert unconditionally (SQLite is authoritative).
+	// Single-device constraint: _queue_id is a SQLite autoincrement local to one device.
+	var queueID int64
+	hasQueueID := false
+	if raw, ok := row["_queue_id"]; ok {
+		if coerced := coerceValue(raw); coerced != nil {
+			if id, ok2 := coerced.(int64); ok2 {
+				queueID = id
+				hasQueueID = true
+			}
+		}
+		delete(row, "_queue_id")
+	}
+
+	cols := make([]string, 0, len(row)+1)
+	vals := make([]interface{}, 0, len(row)+1)
+	placeholders := make([]string, 0, len(row)+1)
+	updates := make([]string, 0, len(row)+1)
 	i := 1
 
 	for col, val := range row {
@@ -139,20 +156,44 @@ func upsertRow(ctx context.Context, pool *pgxpool.Pool, table, conflictCol strin
 		i++
 	}
 
+	if hasQueueID {
+		cols = append(cols, `"last_queue_id"`)
+		vals = append(vals, queueID)
+		placeholders = append(placeholders, fmt.Sprintf("$%d", i))
+		updates = append(updates, `"last_queue_id" = EXCLUDED."last_queue_id"`)
+	}
+
 	// Build conflict target — supports composite keys like "game_slug,draw_date"
 	conflictTarget := buildConflictTarget(conflictCol)
 
-	sql := fmt.Sprintf(
-		`INSERT INTO "%s" (%s) VALUES (%s)
-		 ON CONFLICT %s DO UPDATE SET %s, synced_at = NOW()`,
-		table,
-		strings.Join(cols, ", "),
-		strings.Join(placeholders, ", "),
-		conflictTarget,
-		strings.Join(updates, ", "),
-	)
+	var sqlStr string
+	if hasQueueID {
+		// Stale-event guard: skip the DO UPDATE when the incoming event is older than
+		// what PostgreSQL already has. INSERT (no conflict) is always unconditional.
+		sqlStr = fmt.Sprintf(
+			`INSERT INTO "%s" (%s) VALUES (%s)
+			 ON CONFLICT %s DO UPDATE SET %s, synced_at = NOW()
+			 WHERE EXCLUDED."last_queue_id" >= "%s"."last_queue_id"`,
+			table,
+			strings.Join(cols, ", "),
+			strings.Join(placeholders, ", "),
+			conflictTarget,
+			strings.Join(updates, ", "),
+			table,
+		)
+	} else {
+		sqlStr = fmt.Sprintf(
+			`INSERT INTO "%s" (%s) VALUES (%s)
+			 ON CONFLICT %s DO UPDATE SET %s, synced_at = NOW()`,
+			table,
+			strings.Join(cols, ", "),
+			strings.Join(placeholders, ", "),
+			conflictTarget,
+			strings.Join(updates, ", "),
+		)
+	}
 
-	_, err := pool.Exec(ctx, sql, vals...)
+	_, err := pool.Exec(ctx, sqlStr, vals...)
 	return err
 }
 

@@ -2569,8 +2569,16 @@ async fn drain_sync_queue_to_backend(
     let mut errors: Vec<(i64, String)> = vec![];
 
     for (id, table_name, operation, payload, on_conflict) in &items {
-        let payload_val: serde_json::Value = serde_json::from_str(payload)
+        let mut payload_val: serde_json::Value = serde_json::from_str(payload)
             .unwrap_or(serde_json::Value::Object(Default::default()));
+        // AP-04: Inject the queue item's SQLite autoincrement ID so the Go API
+        // can apply the stale-event guard (last_queue_id). The guard rejects a
+        // DO UPDATE when EXCLUDED.last_queue_id < the stored last_queue_id,
+        // preventing a retried older event from overwriting a newer cloud value.
+        // Single-device only — see DEFERRED_RISKS.md D-03.
+        if let serde_json::Value::Object(ref mut m) = payload_val {
+            m.insert("_queue_id".to_string(), serde_json::json!(*id));
+        }
 
         let result = if operation == "delete" {
             if let Some(rid) = payload_val.get("id").and_then(|v| v.as_i64()) {
