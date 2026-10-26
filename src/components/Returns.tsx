@@ -474,7 +474,7 @@ export default function Returns() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr style={{ background: "#F9FAFB", borderBottom: "1px solid #E8E8E8" }}>
-                          {["#", "Start Barcode", "End Barcode", "Qty", "Value (Rs.)", ""].map((h) => (
+                          {["#", "▶ First Ticket Barcode", "▷ Next Batch Starts", "Qty", "Value (Rs.)", ""].map((h) => (
                             <th
                               key={h}
                               className="px-3 py-2 text-left"
@@ -493,8 +493,8 @@ export default function Returns() {
                             style={{ borderBottom: "1px solid #F9F9F9" }}
                           >
                             <td className="px-3 py-2 text-xs text-gray-400">{idx + 1}</td>
-                            <td className="px-3 py-2 font-mono text-xs" style={{ color: "#1D1D1D" }}>{item.barcode_start}</td>
-                            <td className="px-3 py-2 font-mono text-xs" style={{ color: "#1D1D1D" }}>{item.barcode_end}</td>
+                            <td className="px-3 py-2 font-mono text-xs" style={{ color: "#1d4ed8", letterSpacing:"0.03em" }}>{item.barcode_start}</td>
+                            <td className="px-3 py-2 font-mono text-xs" style={{ color: "#6d28d9", letterSpacing:"0.03em" }}>{item.barcode_end}</td>
                             <td className="px-3 py-2 text-right text-sm" style={{ color: "#1D1D1D" }}>{item.qty.toLocaleString()}</td>
                             <td className="px-3 py-2 text-right text-sm font-semibold" style={{ color: "#d97706" }}>{fmt(item.value)}</td>
                             <td className="px-3 py-2">
@@ -726,17 +726,23 @@ export default function Returns() {
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <div>
                   <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>
-                    Barcode Start {selectedBatchId ? <span style={{ color:"#16A34A", fontWeight:600 }}>✓ auto-filled</span> : ""}
+                    ▶ First Ticket Barcode {selectedBatchId ? <span style={{ color:"#16A34A", fontWeight:600 }}>✓ auto-filled</span> : ""}
                   </label>
-                  <FocusInput type="text" value={form.barcode_start}
+                  <input type="text" inputMode="numeric" value={form.barcode_start}
                     onChange={e => setField("barcode_start", e.target.value)}
-                    placeholder="62900474690" mono />
+                    onFocus={e => e.target.select()}
+                    placeholder="Scan or enter start barcode"
+                    className="w-full rounded-lg px-2.5 py-2 text-xs font-mono focus:outline-none"
+                    style={{ border:"2px solid #2563EB", background:"#EFF6FF", color:"#1d4ed8", letterSpacing:"0.04em", minHeight:36 }} />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Barcode End (auto)</label>
-                  <FocusInput type="text" value={form.barcode_end}
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>▷ Next Batch Starts (auto)</label>
+                  <input type="text" inputMode="numeric" value={form.barcode_end}
                     onChange={e => setField("barcode_end", e.target.value)}
-                    placeholder="Auto-calculated" mono />
+                    onFocus={e => e.target.select()}
+                    placeholder="Auto-calculated"
+                    className="w-full rounded-lg px-2.5 py-2 text-xs font-mono focus:outline-none"
+                    style={{ border:"2px solid #7C3AED", background:"#F5F3FF", color:"#6d28d9", letterSpacing:"0.04em", minHeight:36 }} />
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Qty (auto)</label>

@@ -719,8 +719,8 @@ export default function SupplierReturns() {
           {/* Barcode row */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <FieldLabel>Barcode Start {selectedBatchId ? <span style={{ color:"#16A34A", fontWeight:600 }}>✓ auto-filled</span> : ""}</FieldLabel>
-              <FocusInput
+              <FieldLabel>▶ First Ticket Barcode {selectedBatchId ? <span style={{ color:"#16A34A", fontWeight:600 }}>✓ auto-filled</span> : ""}</FieldLabel>
+              <input
                 type="text"
                 inputMode="numeric"
                 value={form.barcode_start}
@@ -729,17 +729,17 @@ export default function SupplierReturns() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === "Tab") {
                     e.preventDefault();
-                    // advance to barcode_end input
                     (e.currentTarget.closest(".grid")?.querySelector("input:last-of-type") as HTMLElement)?.focus();
                   }
                 }}
-                placeholder="62900474690"
-                mono
+                placeholder="Scan or enter start barcode"
+                className="w-full rounded-lg px-2.5 py-2 text-xs font-mono focus:outline-none"
+                style={{ border:"2px solid #2563EB", background:"#EFF6FF", color:"#1d4ed8", letterSpacing:"0.04em", minHeight:36 }}
               />
             </div>
             <div>
-              <FieldLabel>Barcode End (auto)</FieldLabel>
-              <FocusInput
+              <FieldLabel>▷ Next Batch Starts (auto)</FieldLabel>
+              <input
                 type="text"
                 inputMode="numeric"
                 value={form.barcode_end}
@@ -748,12 +748,12 @@ export default function SupplierReturns() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === "Tab") {
                     e.preventDefault();
-                    // advance to qty input
                     (e.currentTarget.closest(".grid")?.nextElementSibling?.querySelector("input") as HTMLElement)?.focus();
                   }
                 }}
                 placeholder="Auto-calculated"
-                mono
+                className="w-full rounded-lg px-2.5 py-2 text-xs font-mono focus:outline-none"
+                style={{ border:"2px solid #7C3AED", background:"#F5F3FF", color:"#6d28d9", letterSpacing:"0.04em", minHeight:36 }}
               />
             </div>
           </div>
