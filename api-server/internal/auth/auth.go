@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -54,22 +55,26 @@ func HashPIN(pin string) (string, error) {
 }
 
 // VerifyPIN checks a plain PIN against the stored argon2id hash.
+// Format: $argon2id$v=19$m=65536,t=3,p=4$<saltHex>$<hashHex>
+// We split by '$' rather than using fmt.Sscanf because %s stops at whitespace,
+// not at '$', causing saltHex to consume the rest of the string including hashHex.
 func VerifyPIN(pin, stored string) bool {
+	// Parts after splitting "$argon2id$v=19$m=...,t=...,p=...$SALT$HASH" by "$":
+	// [0]=""  [1]="argon2id"  [2]="v=19"  [3]="m=...,t=...,p=..."  [4]=saltHex  [5]=hashHex
+	parts := strings.SplitN(stored, "$", 6)
+	if len(parts) != 6 || parts[1] != "argon2id" {
+		return false
+	}
 	var m, t uint32
 	var p uint8
-	var saltHex, hashHex string
-	_, err := fmt.Sscanf(stored,
-		"$argon2id$v=19$m=%d,t=%d,p=%d$%s$%s",
-		&m, &t, &p, &saltHex, &hashHex,
-	)
+	if _, err := fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &m, &t, &p); err != nil {
+		return false
+	}
+	salt, err := hex.DecodeString(parts[4])
 	if err != nil {
 		return false
 	}
-	salt, err := hex.DecodeString(saltHex)
-	if err != nil {
-		return false
-	}
-	expectedHash, err := hex.DecodeString(hashHex)
+	expectedHash, err := hex.DecodeString(parts[5])
 	if err != nil {
 		return false
 	}

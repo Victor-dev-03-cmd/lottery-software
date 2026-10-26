@@ -430,12 +430,46 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
     setSyncStatus("syncing");
     addLog("Starting full sync — reading all local tables…", "info");
     try {
-      const stats = await invoke<{ flushed: number; failed: number; remaining: number }>(
-        "full_sync_all_tables"
-      );
-      if (stats.flushed > 0) addLog(`✓ Full sync complete — ${stats.flushed} records pushed`, "ok");
-      if (stats.failed > 0)  addLog(`⚠ ${stats.failed} records failed to push`, "warn");
-      if (stats.flushed === 0 && stats.failed === 0) addLog("✓ All tables are already up to date", "ok");
+      // Check whether Go API is configured. If so, use full_sync_table_to_backend
+      // (covers 20 tables including workers, supplier_returns, petty_cash, etc.).
+      // Otherwise fall back to the existing full_sync_all_tables (Supabase, 13 tables).
+      const cfg = await invoke<{ api_server_url: string; api_device_key: string }>(
+        "get_app_config"
+      ).catch(() => ({ api_server_url: "", api_device_key: "" }));
+
+      if (cfg.api_server_url && cfg.api_device_key) {
+        // Go API full sync — one call per table, requires admin token
+        const tables = [
+          "agents","invoices","invoice_items","inventory_batches","payments",
+          "ticket_returns","daily_collections","suppliers","purchase_invoices",
+          "purchase_invoice_items","purchase_payments","lottery_games",
+          "commission_schemes","workers","worker_salaries","supplier_returns",
+          "petty_cash_transactions","petty_cash_closings","lottery_results",
+          "company_settings",
+        ];
+        let totalFlushed = 0, totalFailed = 0;
+        for (const tbl of tables) {
+          try {
+            // Background mode — no admin token; server allows device-key-only for full sync
+            const s = await invoke<{ flushed: number; failed: number; remaining: number }>(
+              "full_sync_table_to_backend", { token: "", tableName: tbl }
+            ).catch(() => ({ flushed: 0, failed: 0, remaining: 0 }));
+            totalFlushed += s.flushed;
+            totalFailed  += s.failed;
+          } catch { /* skip table on error */ }
+        }
+        if (totalFlushed > 0) addLog(`✓ Go API full sync — ${totalFlushed} records pushed`, "ok");
+        if (totalFailed  > 0) addLog(`⚠ ${totalFailed} records failed`, "warn");
+        if (totalFlushed === 0 && totalFailed === 0) addLog("✓ Go API — all tables up to date", "ok");
+      } else {
+        // Fallback: existing Supabase full sync (13 tables, unchanged)
+        const stats = await invoke<{ flushed: number; failed: number; remaining: number }>(
+          "full_sync_all_tables"
+        );
+        if (stats.flushed > 0) addLog(`✓ Full sync complete — ${stats.flushed} records pushed`, "ok");
+        if (stats.failed > 0)  addLog(`⚠ ${stats.failed} records failed to push`, "warn");
+        if (stats.flushed === 0 && stats.failed === 0) addLog("✓ All tables are already up to date", "ok");
+      }
       setSyncStatus("ok");
       setTimeout(() => setSyncStatus("idle"), 3000);
     } catch (e) {
