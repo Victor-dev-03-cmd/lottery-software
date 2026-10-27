@@ -392,7 +392,7 @@ export default function SoftwareUpdateTab() {
                   style={{ display: "flex", alignItems: "center", gap: 8, padding: "11px 24px",
                     borderRadius: 10, border: "none", background: "#4285F4", color: "#fff",
                     fontSize: 13, fontWeight: 800, cursor: "pointer",
-                    boxShadow: "0 4px 14px rgba(207,41,29,0.35)" }}>
+                    boxShadow: "0 4px 14px rgba(66,133,244,0.30)" }}>
                   <ImportCurve size={15} variant="Linear" color="currentColor"/> Download &amp; Install Now
                 </button>
                 <p style={{ fontSize: 11, color: "#9CA3AF", margin: 0 }}>

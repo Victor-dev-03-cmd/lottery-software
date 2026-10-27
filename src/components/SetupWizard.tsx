@@ -68,7 +68,7 @@ export default function SetupWizard({ onComplete, defaultDataDir }: Props) {
     >
       {/* Background glow */}
       <div className="absolute inset-0 pointer-events-none"
-        style={{ background: "radial-gradient(ellipse 50% 35% at 50% 50%, rgba(207,41,29,0.10) 0%, transparent 70%)" }} />
+        style={{ background: "radial-gradient(ellipse 50% 35% at 50% 50%, rgba(66,133,244,0.10) 0%, transparent 70%)" }} />
 
       {/* Wizard card */}
       <div
@@ -80,7 +80,7 @@ export default function SetupWizard({ onComplete, defaultDataDir }: Props) {
           style={{ borderBottom: "1px solid #2A2A2A" }}>
           <div className="flex items-center justify-center mb-4">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-              style={{ background: "#4285F4", boxShadow: "0 0 30px rgba(207,41,29,0.3)" }}>
+              style={{ background: "#4285F4", boxShadow: "0 0 30px rgba(66,133,244,0.25)" }}>
               <Tag size={28} variant="Bold" color="currentColor" className="text-white"/>
             </div>
           </div>
@@ -155,7 +155,7 @@ export default function SetupWizard({ onComplete, defaultDataDir }: Props) {
               <div
                 className="flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all"
                 style={{
-                  background: dbChoice === "default" ? "rgba(207,41,29,0.08)" : "#2A2A2A",
+                  background: dbChoice === "default" ? "rgba(66,133,244,0.10)" : "#2A2A2A",
                   border: `1.5px solid ${dbChoice === "default" ? "#4285F4" : "#374151"}`,
                 }}
                 onClick={() => setDbChoice("default")}>
@@ -189,7 +189,7 @@ export default function SetupWizard({ onComplete, defaultDataDir }: Props) {
               <div
                 className="flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all"
                 style={{
-                  background: dbChoice === "custom" ? "rgba(207,41,29,0.08)" : "#2A2A2A",
+                  background: dbChoice === "custom" ? "rgba(66,133,244,0.10)" : "#2A2A2A",
                   border: `1.5px solid ${dbChoice === "custom" ? "#4285F4" : "#374151"}`,
                 }}
                 onClick={() => dbChoice !== "custom" ? pickFolder() : undefined}>

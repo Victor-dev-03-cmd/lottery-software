@@ -1,0 +1,629 @@
+================================================================================
+  AJITH ROHANA ENTERPRISE — LOTTERY MANAGER
+  Complete Project History & Technology Reference
+  GitHub: https://github.com/Victor-dev-03-cmd/lottery-software
+  Current Version: 1.0.30
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. PROJECT OVERVIEW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Business: Ajith Rohana Enterprise — a Sri Lankan NLB/DLB lottery ticket
+distributor operating under Nimalsiri Enterprises.
+
+The software manages the full lifecycle of lottery ticket distribution:
+  - Purchasing tickets from Nimalsiri Enterprises (supplier)
+  - Issuing tickets to agents on credit
+  - Collecting payments from agents
+  - Recording winning tickets
+  - Returning unsold tickets
+  - Financial reporting (profit/loss, commissions, daily collections)
+
+The system has TWO components:
+  1. Desktop Application  — Windows & Linux, runs offline with local SQLite DB
+  2. Mobile Companion App — Android Flutter app, scans tickets in the field
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. TECHNOLOGY STACK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── DESKTOP APPLICATION ──────────────────────────────────────────────────────
+
+Framework:    Tauri v2 (Rust backend + React/TypeScript frontend)
+              tauri = "2"
+              tauri-plugin-sql (SQLite)
+              tauri-plugin-updater (auto-updates)
+              tauri-plugin-process (relaunch after update)
+              tauri-plugin-dialog (file dialogs)
+              tauri-plugin-opener (open files/URLs)
+
+Frontend:     React 19 + TypeScript 5.8
+              Vite 7 (build tool)
+              Bun (package manager & task runner)
+              TailwindCSS v4 (utility classes)
+              Lucide React (icon library)
+              Recharts (analytics charts)
+              @supabase/supabase-js (optional cloud backup)
+
+Backend Rust: axum 0.7 (built-in HTTP API server on port 7423)
+              tower-http 0.5 (CORS middleware)
+              reqwest 0.12 (HTTP client for scraping lottery results)
+              scraper 0.21 (HTML parsing)
+              rusqlite 0.31 (bundled SQLite — no external DB needed)
+              tokio 1 (async runtime)
+              serde / serde_json (serialization)
+              qrcode 0.14 (QR code generation)
+              base64 0.22
+              uuid 1 (session IDs)
+              mdns-sd 0.12 (mDNS LAN discovery)
+              headless_chrome 1.0 (browser automation for JS-heavy pages)
+
+Database:     SQLite (local, bundled via rusqlite)
+              File: ajith_rohana.db in AppData/Roaming/
+
+CI/CD:        GitHub Actions (.github/workflows/release.yml)
+              tauri-apps/tauri-action@v0.5.2
+              swatinem/rust-cache@v2 (Rust build cache)
+              oven-sh/setup-bun@v1
+
+── MOBILE APPLICATION ───────────────────────────────────────────────────────
+
+Framework:    Flutter 3.16+ (Dart 3.0+)
+Target:       Android (minimum SDK 21)
+
+Dependencies:
+  mobile_scanner ^5.2.3    — QR/barcode camera scanner
+  qr_flutter ^4.1.0        — QR code display widget
+  shared_preferences ^2.3.2 — persistent key-value storage (session data)
+  intl ^0.19.0             — date formatting
+  uuid ^4.4.2              — session ID generation
+  permission_handler ^11.3.1 — camera/torch permissions
+  vibration ^3.0.0         — haptic feedback on scan
+
+Android Build:
+  AGP (Android Gradle Plugin): 9.1.0
+  Kotlin: 2.4.0
+  Gradle: 9.3.1
+  compileSdk / targetSdk: 36
+  Build files: Kotlin DSL (.kts format)
+
+── CONNECTIVITY (Mobile ↔ Desktop) ──────────────────────────────────────────
+
+Primary (LAN):  Flutter HTTP POST → Desktop axum server (/api/v1/scan)
+                Desktop emits Tauri event → React frontend auto-fills form
+Relay (Cloud):  WebSocket → Go relay server (relay-server/ directory)
+Discovery:      UDP broadcast beacon (port 7422) every 5 seconds
+                mDNS advertisement (_lottery._tcp.local.)
+                QR code pairing (lottery://pair?host=IP:7423)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. DESKTOP APPLICATION — ALL SCREENS & FEATURES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── OVERVIEW ─────────────────────────────────────────────────────────────────
+
+Dashboard.tsx         — KPI cards (revenue, outstanding, agent count, stock)
+Alerts.tsx            — Low-stock alerts, overdue payment alerts
+
+── PURCHASING ───────────────────────────────────────────────────────────────
+
+Purchases.tsx         — Stock Purchases from Nimalsiri Enterprises
+  • Purchase invoice creation with line items
+  • Each item: game name (logo picker), draw number, barcode start/end, qty, price
+  • Auto-fill from mobile scan via Tauri event "mobile:ticket"
+  • Deduplication guard: same barcode+draw within 2.5s is ignored
+  • Per-row draw_date stored from mobile QR scan
+  • Barcode auto-calculation: end = start + qty
+  • Scanner +1 correction toggle (for scanners that read one before start)
+  • Partial payment tracking (cash at delivery + later settlements)
+  • Supplier return credit integration
+  • Batch sales tracker: how many tickets from each batch have been invoiced
+
+SupplierReturns.tsx   — Return unsold tickets back to Nimalsiri
+  • Select batch to return from (shows remaining stock)
+  • Auto-fills barcode start from next_start_barcode of selected batch
+  • Credits returns against purchase invoice outstanding balance
+
+Inventory.tsx         — Stock inventory view (all batches, remaining qty)
+
+── SALES ────────────────────────────────────────────────────────────────────
+
+NewInvoice.tsx        — Create agent invoice (issue tickets to agents)
+  • Ticket picker with logo images
+  • Batch selector: chooses which purchase batch to issue from
+  • Barcode auto-range calculation
+  • Discount per line item
+  • Linked to purchase batch for sold-qty tracking
+  • Mobile scan integration (real-time row fill from scanner)
+
+InvoiceList.tsx       — List of all invoices
+DraftInvoices.tsx     — Saved but not confirmed invoices
+ConfirmedInvoices.tsx — Confirmed/waiting payment invoices
+CancelledInvoices.tsx — Cancelled invoice records
+
+InvoicePrint.tsx      — Print/PDF invoice generation (A4 format)
+InvoiceModel.tsx      — Invoice model/template management
+shared/InvoiceA4Preview.tsx — A4 invoice preview component
+
+── COLLECTIONS ──────────────────────────────────────────────────────────────
+
+DailyCollection.tsx   — Record daily payments from agents
+Commission.tsx        — Agent commission calculations
+PettyCash.tsx         — Petty cash expense tracking (cash flow)
+
+── AGENTS ───────────────────────────────────────────────────────────────────
+
+AgentsManager.tsx     — Agent profile management (name, credit limit, etc.)
+AgentDashboard.tsx    — Per-agent view: outstanding, invoices, history
+DistributionSummary.tsx — Ticket distribution summary per agent
+
+Returns.tsx           — Agent ticket returns (scan-based)
+  • Barcode scanner input (physical scanner via keyboard wedge)
+  • Scan start barcode → scan end barcode → qty auto-calculated
+  • Batch selector to verify return is from correct stock
+  • Links return to original invoice batch
+
+── ANALYTICS ────────────────────────────────────────────────────────────────
+
+Reports.tsx           — Sales/purchase reports with date filters
+ProfitAnalytics.tsx   — Profit & margin analysis
+AIAnalytics.tsx       — AI-powered insights (Claude API integration)
+  • Natural language queries about business data
+  • Supports: suspend agent credit, restore credit, generate PO,
+    update stock threshold, flag urgent collection, daily summary
+
+Ledger.tsx            — Full ledger / transaction history
+
+── LIVE RESULTS ─────────────────────────────────────────────────────────────
+
+LiveResults.tsx       — Scrape NLB/DLB winning numbers in real-time
+  • Supports all 8 NLB games and 8 DLB games
+  • HTML scraper via Rust (reqwest + scraper crate)
+  • Chrome headless fallback for JavaScript-rendered pages
+  • Caches results in SQLite lottery_results table
+  • Auto-sync background task
+  • Draw number calculation by game schedule
+  • NOTE: Python dependency REMOVED — pure Rust implementation
+
+Supported NLB Games: Ada Sampatha, Govisetha, Mega Power, NLB Jaya,
+                     Handahana, Mahajana Sampatha, Dhana Nidhanaya, Suba Dawasak
+
+Supported DLB Games: Ada Kotipathi, Jaya Sampatha, Kapruka, Lagna Wasana,
+                     Sasiri, Shanida Wasanawa, Super Ball, Supiri Dana Sampatha
+
+── SETTINGS ─────────────────────────────────────────────────────────────────
+
+Settings.tsx          — Application settings (9 tabs):
+  General             — Company name, address, logo
+  Games               — Lottery game list, prices, cost prices
+  Financial           — Payment terms, credit limits
+  Printing            — Invoice print settings
+  Backup & Security   — Admin PIN, Supabase backup config, DB reset
+  Mobile App          — QR pairing (LAN direct + Cloud relay)
+  AI Configuration    — Claude API key
+  Software Updates    — In-app updater with download progress
+  Import Data         — Import from CSV/Excel
+
+SoftwareUpdateTab.tsx — Auto-updater UI
+  • Uses tauri-plugin-updater to check/download/install
+  • Shows download progress bar
+  • Restart dialog after install (user chooses "Restart Now" or "Later")
+
+UpdateNotifier.tsx    — Floating bottom-right update toast
+
+── OTHER UI COMPONENTS ──────────────────────────────────────────────────────
+
+TicketLogoPicker.tsx  — Lottery ticket logo/image picker with search
+Payroll.tsx           — Worker payroll management
+SetupWizard.tsx       — First-run setup wizard
+SplashScreen.tsx      — Loading screen
+PinModal.tsx          — Admin PIN entry modal
+RoleSelectModal.tsx   — Role selection
+PrintExport.tsx       — Export/print utilities
+ImportDataTab.tsx     — CSV data import
+layout/Sidebar.tsx    — Left navigation sidebar
+layout/TopBar.tsx     — Top navigation bar with search + clock
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. DESKTOP BACKEND (Rust lib.rs) — KEY COMMANDS & LOGIC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Tauri Commands (called from React via invoke()):
+  get_app_config / save_app_config      — App settings in JSON
+  get_db_path / get_db_connection_string — SQLite file location
+  backup_db_to_path / restore_db_from_path — Manual backup/restore
+  list_backups                           — List backup files
+  fetch_live_results(board, games)       — Scrape NLB/DLB results
+  fetch_single_result(board, slug, date, draw) — Single game result
+  start_background_sync                  — Auto-sync all games
+  refresh_single_game(slug, board)       — Force refresh one game
+  start_api_server                       — Launch axum HTTP server
+  get_api_key                            — Companion API key
+  push_to_supabase / pull_from_supabase  — Supabase sync
+  save_supabase_config_secure            — Store Supabase credentials
+  begin_admin_session / end_admin_session / verify_admin_session — PIN auth
+  drain_sync_queue / full_sync_all_tables — Supabase sync queue
+  ai_query / save_ai_api_key / execute_ai_action — AI features
+  get_local_ip                           — LAN IP address
+  get_server_qr_code / get_qr_for_url   — QR code generation
+  start_discovery_beacon                 — UDP + mDNS broadcast
+  get_qr_for_url(url)                   — Generic QR generator
+
+Built-in HTTP API (axum, port 7423):
+  GET  /api/v1/health      — Health check (public)
+  GET  /api/v1/results     — Lottery results
+  GET  /api/v1/stock       — Stock inventory
+  GET  /api/v1/agents      — Agent list
+  GET  /api/v1/invoices    — Invoice list
+  POST /api/v1/purchases   — Add stock purchase
+  POST /api/v1/returns     — Record stock return
+  POST /api/v1/scan        — Receive mobile scan → emit Tauri event
+  Auth: x-api-key: LOTTERY_COMPANION (fixed companion key)
+
+Event System (Tauri emit/listen):
+  "mobile:ticket"    — Fired when mobile POSTs to /api/v1/scan
+                       React listener in Purchases.tsx auto-fills form rows
+  "sync-started"     — Background sync started
+  "sync-finished"    — Background sync complete
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. DATABASE SCHEMA (SQLite — ajith_rohana.db)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Tables:
+  agents                   — Agent profiles (name, credit_limit, phone)
+  invoices                 — Sales invoices to agents
+  invoice_items            — Line items (ticket_name, barcode_start/end, qty, price)
+  ticket_returns           — Agent ticket returns
+  supplier_returns         — Returns to Nimalsiri
+  purchase_invoices        — Stock purchases from Nimalsiri
+  purchase_invoice_items   — Purchase line items (game, barcode, qty, draw_number, draw_date)
+  purchase_payments        — Payments made to Nimalsiri
+  inventory_batches        — Ticket stock batches (tracks remaining qty, next_start_barcode)
+  lottery_results          — Cached NLB/DLB winning numbers
+  lottery_games            — Game config (name, unit_price, cost_price, draw schedule)
+  app_settings             — Application settings (key-value)
+  daily_collections        — Daily cash collection records
+  commissions              — Agent commission records
+  petty_cash               — Petty cash expenses
+  payroll                  — Worker salary records
+  sync_queue               — Supabase sync pending operations
+  draw_numbers             — Pre-computed draw number calendar
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. MOBILE APP — ALL SCREENS & LOGIC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Navigation: 5-tab bottom navigation bar
+  Tab 0: Home (dashboard)
+  Tab 1: Purchases
+  Tab 2: Returns
+  Tab 3: Invoice
+  Tab 4: Settings
+
+── SCREENS ──────────────────────────────────────────────────────────────────
+
+home_screen.dart
+  • Dashboard with connection status badge (green/amber/red)
+  • 2×2 quick action cards: Purchases, Returns, Invoice, Winning
+  • Tapping badge → navigates to Settings tab
+  • Collapsing SliverAppBar with gradient header
+
+main_screen.dart
+  • 5-tab NavigationBar scaffold
+  • IndexedStack keeps all screen states alive
+  • HomeScreen receives onNavigate(index) callback
+
+stock_purchase_screen.dart
+  • QR scan button → opens camera scanner
+  • Scan result card: game name, draw no, draw date, barcode
+  • Purchase details form: Game, Draw No, Draw Date, Barcode Start, Barcode End, Qty, Price
+  • Auto-fills all fields from QR scan
+  • "Sent to Desktop" badge when sync succeeds
+  • Recent scan history
+
+stock_return_screen.dart
+  • Scan return ticket QR
+  • Return reason input
+  • Send to desktop
+
+invoice_screen.dart
+  • Continuous scanning for batch invoice building
+  • Swipe-to-dismiss items
+  • Send all items to desktop at once
+
+winning_tickets_screen.dart
+  • Scan winning tickets to record them
+  • Shows recorded winning ticket history
+
+settings_screen.dart
+  • Connection status card (wifi icon, current host, Disconnect button)
+  • QR Pairing section: inline ScannerView (torch + overlay), Scan/Cancel button
+  • Manual IP connection: text field + Connect button
+  • App info section
+
+pairing_screen.dart  (legacy, still accessible via route)
+  • Scan desktop pairing QR code
+  • Shows connection result
+
+── WIDGETS ──────────────────────────────────────────────────────────────────
+
+scanner_view.dart     — Reusable camera widget used on ALL scan screens
+  • MobileScannerController with QR-only filter (BarcodeFormat.qrCode)
+  • Torch/flashlight button (top-left): amber highlight when on
+  • Close button (top-right)
+  • Handles controller lifecycle (init + dispose)
+  • Auto-turns off torch when closed
+  • qrOnly: false for pairing screen (accepts all formats)
+
+scanner_overlay.dart  — Modern scanner viewfinder overlay
+  • CustomPainter dark backdrop with transparent hole (even-odd path)
+  • Corner bracket accents: 2.8px red (#CF291D) L-brackets, rounded tips
+  • Animated scan line: 5-stop gradient, 1.6s ease animation
+  • Label in frosted pill container below frame
+
+scan_result_card.dart — Ticket scan confirmation card
+  • Full card: header strip with board colour (NLB=blue, DLB=orange)
+  • Draw No, Draw Date rows with icons
+  • Barcode section: tinted box, large monospace text
+  • DLB: shows both cleaned numeric barcode AND raw QR serial
+  • Compact mode for history list
+
+── SERVICES ─────────────────────────────────────────────────────────────────
+
+session_service.dart  — Desktop connection & data transfer
+  Two modes:
+    LAN Direct: HTTP POST to http://IP:7423/api/v1/scan
+                Health check every 20s via GET /api/v1/health
+    Relay:      WebSocket to Go relay server
+                Auto-reconnect with exponential backoff
+  joinFromQR(qrData):
+    Parses: lottery://pair?host=IP:7423  (LAN direct)
+            lottery://pair?session=X&relay=ws://HOST  (relay)
+            lottery://IP:7423  (legacy format)
+  sendTicketData(ticket, action):
+    Sends to /api/v1/scan with full ticket payload
+
+qr_parser.dart        — NLB/DLB ticket QR code parser
+  Detection logic:
+    NLB: contains 'nlb.lk' OR game name in _nlbNames map
+    DLB: contains 'dlb.lk' OR game name in _dlbNames map
+    Fallback: contains() check if startsWith() misses (encoding headers)
+
+  NLB format: "SUBA DAWASAK 0455 2026/10/13 088004550203409 ..."
+    Extracts: game name, draw number, draw date, serial (10-16 digit token)
+    Fallback: regex scan for 9-16 digit sequence
+
+  DLB format: "SASIRI 1143 2026.10.13 1143 - 23456 - 2 - 15 ..."
+    Extracts: game name, draw number, draw date
+    Serial: 4-group regex (\d{3,6}-\d{2,12}-\d{1,4}-\d{1,4})
+    Fallbacks: 3-group, standalone 5-14 digit, contiguous regex scan
+
+  barcodeStart getter in TicketData:
+    NLB: serialNumber as-is (numeric)
+    DLB: strip all dashes/spaces (1047-672103968-5-01 → 1047672103968501)
+
+── MODELS ───────────────────────────────────────────────────────────────────
+
+ticket_data.dart
+  Fields: board, gameName, drawNumber, drawDate, serialNumber, rawQr, scannedAt
+  Computed: barcodeStart (cleaned numeric for desktop)
+  toJson(): serializes for HTTP POST
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. MOBILE ↔ DESKTOP REAL-TIME SYNC FLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1: Pairing
+  Desktop: Settings → Mobile App → shows QR code (lottery://pair?host=IP:7423)
+  Mobile:  Settings → Scan Desktop QR → connects to desktop HTTP server
+  Result:  sessionService._desktopHost = "192.168.x.x:7423"
+
+Step 2: Scanning a ticket
+  Mobile: Camera scans NLB/DLB ticket QR code
+  Parser: Extracts game, draw, date, barcode
+  Form:   Auto-fills Purchase Details (barcode start, draw no, date)
+  Badge:  "Sent to Desktop" shown on success
+
+Step 3: Push to Desktop
+  Mobile HTTP POST → http://IP:7423/api/v1/scan
+  Headers: Content-Type: application/json
+           x-api-key: LOTTERY_COMPANION
+  Body: { game_name, draw_number, draw_date, barcode_start, board, raw_qr }
+
+Step 4: Desktop receives
+  Rust handler receives POST → emits Tauri event "mobile:ticket"
+  React (Purchases.tsx) listener fires:
+    - Dedup check: same key within 2.5s → discard (prevents duplicates)
+    - If form closed: opens New Purchase form, pre-fills first row
+    - If form open: fills last empty row, adds new empty row
+  Flash notification: "📱 Game Name · Draw XXXX received" (3.5s)
+
+Step 5: User completes the purchase
+  User fills in: barcode_end (scan end ticket), qty, price
+  Clicks "Save Purchase" → saved to SQLite inventory_batches
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. AUTO-UPDATER SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Plugin:     tauri-plugin-updater v2
+Endpoint:   https://github.com/Victor-dev-03-cmd/lottery-software/
+            releases/latest/download/latest.json
+
+Update manifest (latest.json) format:
+  {
+    "version": "1.0.30",
+    "platforms": {
+      "windows-x86_64": { "url": "..._x64-setup.nsis.zip", "signature": "..." },
+      "linux-x86_64":   { "url": "..._amd64.AppImage.tar.gz", "signature": "..." }
+    }
+  }
+
+CRITICAL: Tauri updater requires SPECIFIC archive formats:
+  Windows: _x64-setup.nsis.zip   (NOT the plain .exe installer)
+  Linux:   _amd64.AppImage.tar.gz (NOT the raw .AppImage)
+
+GitHub Actions workflow (.github/workflows/release.yml):
+  Job 1: verify-version  — Confirms git tag == tauri.conf.json version
+  Job 2: publish-tauri   — Builds Windows + Linux installers
+  Job 3: ensure-manifest — Creates updater archives from installers,
+                           signs if TAURI_SIGNING_PRIVATE_KEY is set,
+                           uploads latest.json
+
+Signing key: minisign keypair
+  Public key in tauri.conf.json: plugins.updater.pubkey
+  Private key: TAURI_SIGNING_PRIVATE_KEY (GitHub secret)
+  dangerousInsecure: true currently set (skip verification until secret added)
+
+Release procedure:
+  1. Update "version" in src-tauri/tauri.conf.json
+  2. git add + git commit + git push origin main
+  3. git tag vX.Y.Z + git push origin vX.Y.Z
+  → CI builds, packages, and publishes automatically
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. KEY BUG FIXES & TECHNICAL DECISIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Flutter Android Build Issues (solved):
+  - AGP 9.1.0 + Kotlin 2.4.0 + Gradle 9.3.1 (Flutter snap template versions)
+  - afterEvaluate{} removed → plugins.withId() (Gradle 9 breaking change)
+  - Kotlin DSL (.kts) files required (not .gradle)
+  - vibration plugin compileSdk fixed via subprojects override
+  - All build files use declarative plugins{} block
+
+QR Scanner Issues (solved):
+  - BarcodeFormat.all is not List<BarcodeFormat> → conditional controller
+  - Linear barcode false-positive → formats: [BarcodeFormat.qrCode] filter
+  - DLB Sasiri barcode regex too strict (\d{6,10}) → (\d{2,12}) permissive
+
+Desktop Form Issues (solved):
+  - Race condition (queue/drain) → atomic setFormItems([item, EMPTY_ITEM()])
+  - Duplicate rows from double-fire → deduplication ref guard (2.5s window)
+  - .at(-1) ES2022 not in tsconfig lib → [arr.length-1]
+
+Auto-updater Issues (solved):
+  - "Invalid encoding in minisign data" → empty "signature":"" crashes minisign
+    even with dangerousInsecure:true → must OMIT field, not set to ""
+  - 404 on update download → was pointing to .exe instead of .nsis.zip
+  - CI never generated .nsis.zip → TAURI_SIGNING_PRIVATE_KEY not in secrets
+    → ensure-manifest now builds archives itself from existing installers
+
+Python Dependency (removed):
+  - fetch_via_python() wrote nlb_dlb_scraper.py to /tmp and called python.exe
+  - On Windows without Python → Microsoft Store Python installer popup
+  - Fix: pure Rust HTML scraper (reqwest + scraper) already existed as fallback
+    → deleted fetch_via_python(), Python is no longer needed
+
+Supabase Dependency in Flutter (removed):
+  - supabase_flutter removed from pubspec.yaml
+  - session_service.dart rewritten with pure dart:io WebSocket + HttpClient
+  - No more "check Supabase settings" error messages
+
+SafeArea Fix (mobile):
+  - Scan button was clipping under Android status bar
+  - All 4 scan screens wrapped in SafeArea
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. FILE STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+lottery_software/
+├── src/                          ← React frontend
+│   ├── components/               ← All UI screens (see section 3)
+│   ├── services/
+│   │   ├── database.ts           ← All SQLite queries via tauri-plugin-sql
+│   │   └── supabase.ts           ← Supabase backup (optional)
+│   ├── contexts/
+│   │   └── AuthContext.tsx       ← Admin PIN session management
+│   ├── utils/
+│   │   ├── barcode.ts            ← cleanBarcode, calcEndBarcode, calcQtyFromBarcodes
+│   │   └── drawNumbers.ts        ← Draw number prediction by game schedule
+│   └── types/index.ts            ← TypeScript interfaces
+│
+├── src-tauri/                    ← Rust backend
+│   ├── src/lib.rs                ← All Tauri commands (~2800 lines)
+│   ├── Cargo.toml                ← Rust dependencies
+│   └── tauri.conf.json           ← App config + updater config
+│
+├── mobile-app/                   ← Flutter Android app
+│   ├── lib/
+│   │   ├── main.dart             ← Entry point
+│   │   ├── app.dart              ← MaterialApp + routes
+│   │   ├── models/ticket_data.dart
+│   │   ├── screens/              ← 8 screen files
+│   │   ├── services/
+│   │   │   ├── session_service.dart  ← LAN/relay connection
+│   │   │   └── qr_parser.dart        ← NLB/DLB QR parsing
+│   │   └── widgets/
+│   │       ├── scanner_view.dart     ← Reusable camera widget
+│   │       ├── scanner_overlay.dart  ← Viewfinder UI
+│   │       └── scan_result_card.dart ← Ticket preview card
+│   └── android/                  ← Android project (Kotlin DSL)
+│
+├── relay-server/                 ← Go WebSocket relay (optional cloud mode)
+├── lottery_scripts/              ← Legacy Python scripts (no longer used)
+└── .github/workflows/release.yml ← CI/CD pipeline
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. CURRENT VERSION & RELEASE HISTORY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+v1.0.30 (latest) — Real-time mobile scan, barcode fields, updater fix
+v1.0.29          — Removed Python dependency, pure Rust scraper
+v1.0.28          — Updater signature fix, restart dialog
+v1.0.27          — Safe area fix, atomic form fill, barcode corrections
+v1.0.26          — Mobile home dashboard, settings tab, 5-tab navigation
+v1.0.25          — Dedicated Mobile App settings tab, removed Supabase from Flutter
+v1.0.24          — Mobile UI polish, QR scanner fixes (broken release)
+v1.0.22          — Mobile companion app (Flutter replacement of Expo Go)
+
+Repository: https://github.com/Victor-dev-03-cmd/lottery-software
+Owner:      Victor-dev-03-cmd (Ajith Rohana Enterprise)
+Powered by: ASROZ
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. IMPORTANT NOTES FOR CONTINUING DEVELOPMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. To release a new version:
+   a) Update "version" in src-tauri/tauri.conf.json
+   b) git commit -m "chore: bump version to X.Y.Z"
+   c) git push origin main
+   d) git tag vX.Y.Z && git push origin vX.Y.Z
+
+2. The auto-updater still needs TAURI_SIGNING_PRIVATE_KEY added to GitHub
+   repository secrets for fully signed updates. Currently dangerousInsecure:true.
+
+3. Barcode convention:
+   - "Barcode Start" = first ticket in the batch (first physical barcode)
+   - "Barcode End"   = EXCLUSIVE end = first barcode of the NEXT batch
+   - Qty = Barcode End - Barcode Start (exclusive convention)
+   - NLB barcodes: 13-15 digits (e.g., 088004550203409)
+   - DLB barcodes: 14-16 digits after stripping dashes
+
+4. The SQLite database is at:
+   Windows: C:\Users\{user}\AppData\Roaming\com.ajithrohana.lotterymanager\ajith_rohana.db
+   Linux:   ~/.local/share/com.ajithrohana.lotterymanager/ajith_rohana.db
+
+5. Mobile app connects to desktop via:
+   QR code at: Settings → Mobile App → scan with phone
+   Format: lottery://pair?host=192.168.x.x:7423
+
+================================================================================
+END OF PROJECT HISTORY
+Generated: 2026-10-26
+================================================================================

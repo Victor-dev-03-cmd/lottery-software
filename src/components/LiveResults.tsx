@@ -910,7 +910,7 @@ export default function LiveResults() {
           <button onClick={handleFetch} disabled={loading}
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-50"
             style={{ background:loading?"#374151":"linear-gradient(135deg,#4285F4,#1A73E8)",
-              boxShadow:loading?"none":"0 4px 14px rgba(207,41,29,0.35)" }}>
+              boxShadow:loading?"none":"0 4px 14px rgba(66,133,244,0.30)" }}>
             {loading ? <><Refresh2 size={15} variant="Linear" color="currentColor" className="animate-spin"/> Fetching…</> : <><Flash size={15} variant="Linear" color="currentColor"/> Fetch Live Results</>}
           </button>
           <button onClick={()=>setShowModal(true)}

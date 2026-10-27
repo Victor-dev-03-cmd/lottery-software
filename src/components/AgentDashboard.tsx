@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   RefreshCw, UserPlus,
   TrendingUp, Banknote, Ticket, AlertTriangle,
@@ -168,25 +168,37 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
   // Full precision — no abbreviations (Rs. 685,300.00 instead of Rs. 685.3k)
   const fmts = (n: number) => `Rs. ${new Intl.NumberFormat("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)}`;
 
-  const visible = rows.filter(r => !filter || r.name.toLowerCase().includes(filter.toLowerCase()));
-  const totals  = visible.reduce((a, r) => ({
-    total_tickets: a.total_tickets + r.total_tickets, total_value: a.total_value + r.total_value,
-    winnings_tickets: a.winnings_tickets + r.winnings_tickets, total_cash: a.total_cash + r.total_cash,
-    paid_cash: a.paid_cash + r.paid_cash, amount_over: a.amount_over + r.amount_over,
-    loan_amount: a.loan_amount + r.loan_amount,
-  }), { total_tickets:0, total_value:0, winnings_tickets:0, total_cash:0, paid_cash:0, amount_over:0, loan_amount:0 });
+  const visible = useMemo(
+    () => rows.filter(r => !filter || r.name.toLowerCase().includes(filter.toLowerCase())),
+    [rows, filter]
+  );
+  const totals = useMemo(
+    () => visible.reduce((a, r) => ({
+      total_tickets: a.total_tickets + r.total_tickets, total_value: a.total_value + r.total_value,
+      winnings_tickets: a.winnings_tickets + r.winnings_tickets, total_cash: a.total_cash + r.total_cash,
+      paid_cash: a.paid_cash + r.paid_cash, amount_over: a.amount_over + r.amount_over,
+      loan_amount: a.loan_amount + r.loan_amount,
+    }), { total_tickets:0, total_value:0, winnings_tickets:0, total_cash:0, paid_cash:0, amount_over:0, loan_amount:0 }),
+    [visible]
+  );
 
   // Guard: negative balances = advance credits, not shown as debt
-  const totalOut = Math.max(0, rows.reduce((s, r) => s + Math.max(0, r.outstanding_balance), 0));
+  const totalOut = useMemo(
+    () => Math.max(0, rows.reduce((s, r) => s + Math.max(0, r.outstanding_balance), 0)),
+    [rows]
+  );
   const collRate = periodStats && periodStats.total_invoiced > 0
     ? Math.round((periodStats.total_collected / periodStats.total_invoiced) * 100)
     : 0;
 
-  const outPie = rows
-    .filter(r => r.outstanding_balance > 0)          // skip advance credits (negative)
-    .sort((a, b) => b.outstanding_balance - a.outstanding_balance)
-    .slice(0, 5)
-    .map(r => ({ name: r.name.split(" ")[0], value: Math.max(0, Math.round(r.outstanding_balance)) }));
+  const outPie = useMemo(
+    () => rows
+      .filter(r => r.outstanding_balance > 0)          // skip advance credits (negative)
+      .sort((a, b) => b.outstanding_balance - a.outstanding_balance)
+      .slice(0, 5)
+      .map(r => ({ name: r.name.split(" ")[0], value: Math.max(0, Math.round(r.outstanding_balance)) })),
+    [rows]
+  );
 
   const PIE_COLORS = ["#EA4335", "#FBBC05", "#4285F4", "#34A853", "#9C27B0"];
 
@@ -291,7 +303,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
           {/* Hero — period revenue */}
           <div className="rounded-2xl p-5 relative overflow-hidden animate-fade-in-up"
-            style={{ background: loading ? "#E8B4B0" : "#4285F4" }}>
+            style={{ background: loading ? "#C5D8FB" : "#4285F4" }}>
             <div className="absolute top-3 right-3 w-9 h-9 rounded-xl flex items-center justify-center"
               style={{ background: "rgba(255,255,255,0.15)" }}>
               <TrendingUp size={18} className="text-white" />

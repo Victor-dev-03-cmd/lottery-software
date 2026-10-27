@@ -167,7 +167,7 @@ export default function PrintExport({ onNavigate }: Props) {
                   </p>
                 </div>
                 <div className="text-right">
-                  <div className="inline-block px-4 py-2 rounded-xl" style={{ background:"rgba(207,41,29,0.2)", border:"1px solid rgba(207,41,29,0.4)" }}>
+                  <div className="inline-block px-4 py-2 rounded-xl" style={{ background:"rgba(66,133,244,0.20)", border:"1px solid rgba(66,133,244,0.40)" }}>
                     <p className="text-[10px] uppercase font-bold tracking-widest" style={{ color:"#4285F4" }}>Monthly Report</p>
                     <p className="text-lg font-black text-white">{monthLabel}</p>
                     <p className="text-[10px]" style={{ color:"rgba(255,255,255,0.5)" }}>Generated: {fmtDate(today)}</p>

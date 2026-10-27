@@ -157,7 +157,7 @@ export default function AgentsManager() {
                       : <UserSquare size={40} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
                     }
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"
-                      style={{ background: "rgba(207,41,29,0.75)" }}>
+                      style={{ background: "rgba(32,33,36,0.65)" }}>
                       <Camera size={16} variant="Linear" color="currentColor" className="text-white" />
                     </div>
                   </div>

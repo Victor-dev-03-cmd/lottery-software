@@ -925,7 +925,7 @@ export default function Purchases() {
               <div className="flex gap-2 pt-1">
                 <button onClick={handleSave}
                   className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-bold text-white hover:opacity-90"
-                  style={{ background:"linear-gradient(135deg,#4285F4,#1A73E8)", boxShadow:"0 4px 14px rgba(207,41,29,0.3)" }}>
+                  style={{ background:"linear-gradient(135deg,#4285F4,#1A73E8)", boxShadow:"0 4px 14px rgba(66,133,244,0.25)" }}>
                   <Save2 size={14} variant="Linear" color="currentColor"/> Save Purchase
                 </button>
                 <button onClick={() => { setShowForm(false); setEdit(null); }}

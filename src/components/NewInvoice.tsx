@@ -1156,7 +1156,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                     <p style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", margin: 0 }}>{company?.phone}</p>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ background: "rgba(207,41,29,0.25)", border: "1px solid rgba(207,41,29,0.4)",
+                    <div style={{ background: "rgba(66,133,244,0.22)", border: "1px solid rgba(66,133,244,0.40)",
                       borderRadius: 8, padding: "8px 14px" }}>
                       <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase",
                         letterSpacing: "0.1em", color: "#4285F4", margin: "0 0 2px" }}>Invoice</p>

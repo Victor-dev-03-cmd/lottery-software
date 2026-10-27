@@ -24,7 +24,7 @@ export default function SplashScreen({ message = "Initializing…" }: Props) {
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse 60% 40% at 50% 50%, rgba(207,41,29,0.12) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse 60% 40% at 50% 50%, rgba(66,133,244,0.12) 0%, transparent 70%)",
         }}
       />
 
@@ -32,7 +32,7 @@ export default function SplashScreen({ message = "Initializing…" }: Props) {
       <div className="relative flex flex-col items-center gap-6 z-10">
         <div
           className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg"
-          style={{ background: "#4285F4", boxShadow: "0 0 40px rgba(207,41,29,0.35)" }}
+          style={{ background: "#4285F4", boxShadow: "0 0 40px rgba(66,133,244,0.30)" }}
         >
           <Tag size={38} variant="Bold" color="currentColor" className="text-white"/>
         </div>
