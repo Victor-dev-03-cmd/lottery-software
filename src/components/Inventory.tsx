@@ -14,6 +14,7 @@ import {
 } from "../services/database";
 import type { InventoryBatch, LotteryGame } from "../types";
 
+import { useLanguage } from "../i18n";
 // ── All 16 known NLB/DLB games ────────────────────────────────────────────────
 const ALL_GAMES: { name: string; board: "NLB" | "DLB" }[] = [
   { name: "Ada Sampatha",         board: "NLB" },
@@ -61,6 +62,7 @@ const EMPTY = (): InventoryBatch => ({
 });
 
 export default function Inventory() {
+  const { t } = useLanguage();
   const [batches, setBatches] = useState<(InventoryBatch & { remaining_qty: number })[]>([]);
   const [games, setGames] = useState<LotteryGame[]>([]);
   const [form, setForm] = useState<InventoryBatch | null>(null);
@@ -166,7 +168,7 @@ export default function Inventory() {
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
           <Home2 size={12} variant="Linear" color="currentColor" />
           <ArrowRight2 size={11} variant="Linear" color="currentColor" />
-          <span className="font-semibold" style={{ color: "#1D1D1D" }}>Inventory</span>
+          <span className="font-semibold" style={{ color: "#1D1D1D" }}>{t("nav_inventory")}</span>
         </nav>
       </div>
 

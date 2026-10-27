@@ -19,7 +19,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type { AgentSummary, Invoice, DailyRevenue, AgentPerformance, View, SupplierAgingBracket } from "../types";
 
 const C = {
-  red:   "#CF291D", redDk: "#B50717",
+  red:   "#EA4335", redDk: "#C62828",
   muted: "#1D1D1D", silver: "#BFBFBF",
   surf:  "#ECECEC", white: "#FFFFFF",
   bdr:   "#E8E8E8", txt2: "#6B7280", txt3: "#9CA3AF",
@@ -207,9 +207,9 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
             <button key={p} onClick={() => handlePeriod(p)}
               className="px-3 py-1 rounded-md text-xs font-semibold transition-all"
               style={{
-                background: period===p ? C.red : C.white,
+                background: period===p ? "#4285F4" : C.white,
                 color:      period===p ? C.white : C.txt2,
-                border:     `1px solid ${period===p ? C.red : C.bdr}`,
+                border:     `1px solid ${period===p ? "#4285F4" : C.bdr}`,
               }}>
               {p}
             </button>
@@ -256,7 +256,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
               Ajith Rohana Enterprise ·{" "}
               {new Date().toLocaleDateString("en-LK", { month:"long", day:"numeric", year:"numeric" })}
               {" "}·{" "}
-              <span className="font-semibold" style={{ color: C.red }}>{PERIOD_LABEL[period]}</span>
+              <span className="font-semibold" style={{ color: "#4285F4" }}>{PERIOD_LABEL[period]}</span>
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -269,12 +269,12 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
               <button key={view} onClick={() => onNavigate(view)}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
                 style={{
-                  background: primary ? C.red : C.white,
+                  background: primary ? "#4285F4" : C.white,
                   color:      primary ? C.white : C.muted,
-                  border:     `1px solid ${primary ? C.red : C.bdr}`,
+                  border:     `1px solid ${primary ? "#4285F4" : C.bdr}`,
                 }}
-                onMouseEnter={e => { if(primary) (e.currentTarget as HTMLButtonElement).style.background = C.redDk; }}
-                onMouseLeave={e => { if(primary) (e.currentTarget as HTMLButtonElement).style.background = C.red; }}>
+                onMouseEnter={e => { if(primary) (e.currentTarget as HTMLButtonElement).style.background = "#1A73E8"; }}
+                onMouseLeave={e => { if(primary) (e.currentTarget as HTMLButtonElement).style.background = "#4285F4"; }}>
                 {label}
               </button>
             ))}
@@ -290,7 +290,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
           {/* Hero — period revenue */}
           <div className="rounded-2xl p-5 relative overflow-hidden"
-            style={{ background: loading ? "#E8B4B0" : C.red }}>
+            style={{ background: loading ? "#E8B4B0" : "#4285F4" }}>
             <div className="absolute top-3 right-3 w-9 h-9 rounded-xl flex items-center justify-center"
               style={{ background: "rgba(255,255,255,0.15)" }}>
               <TrendingUp size={18} className="text-white" />
@@ -839,7 +839,7 @@ function KpiWhite({ icon, label, labelSi, value, sub, trend, trendColor="#16a34a
     <div onClick={onClick}
       className="rounded-2xl p-5 transition-all shadow-sm"
       style={{ background:"#FFFFFF", border:`1px solid #E8E8E8`,
-        borderTop:"3px solid #CF291D", cursor: onClick?"pointer":undefined }}>
+        borderTop:"3px solid #4285F4", cursor: onClick?"pointer":undefined }}>
       <div className="flex items-center justify-between mb-3">
         <div className="w-8 h-8 rounded-xl flex items-center justify-center"
           style={{ background:"#F4F4F4", color:"#374151" }}>

@@ -14,6 +14,7 @@ import { cleanBarcode, calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, la
 import { getDrawNumber, getDrawInfo } from "../utils/drawNumbers";
 import TicketLogoPicker, { resolveLogoUrl } from "./TicketLogoPicker";
 
+import { useLanguage } from "../i18n";
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const fmt = (n: number) =>
@@ -209,6 +210,7 @@ const EMPTY_PAYMENT = (purchaseId: number): PurchasePayment => ({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function Purchases() {
+  const { t } = useLanguage();
   const { withAdminToken } = useAuth();
   const [purchases, setPurchases]     = useState<PurchaseInvoice[]>([]);
   const [totalOwed, setTotalOwed]     = useState(0);
@@ -512,7 +514,7 @@ export default function Purchases() {
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
           <Home2 size={12} variant="Linear" color="currentColor"/><ArrowRight2 size={11} variant="Linear" color="currentColor"/>
-          <span className="font-semibold" style={{ color: "#1D1D1D" }}>Stock Purchases</span>
+          <span className="font-semibold" style={{ color: "#1D1D1D" }}>{t("nav_purchases")}</span>
         </nav>
         <div className="flex gap-2">
           <button onClick={load} disabled={loading}

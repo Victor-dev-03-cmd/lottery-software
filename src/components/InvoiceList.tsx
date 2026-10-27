@@ -4,12 +4,14 @@ import { Printer, Refresh2, AddCircle, Home2, ArrowRight2, DocumentText, Lock1 }
 import { getInvoices } from "../services/database";
 import type { Invoice, View } from "../types";
 
+import { useLanguage } from "../i18n";
 interface Props {
   onNavigate: (view: View, invoiceId?: number) => void;
   refreshKey: number;
 }
 
 export default function InvoiceList({ onNavigate, refreshKey }: Props) {
+  const { t } = useLanguage();
   
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +66,7 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
           <Home2 size={12} variant="Linear" color="currentColor" />
           <ArrowRight2 size={11} variant="Linear" color="currentColor" />
-          <span className="font-semibold" style={{ color: "#1D1D1D" }}>Invoices</span>
+          <span className="font-semibold" style={{ color: "#1D1D1D" }}>{t("nav_paid_invoices")}</span>
         </nav>
       </div>
 
@@ -72,7 +74,7 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
         {/* Page header row */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#1D1D1D" }}>Invoices</h1>
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#1D1D1D" }}>{t("nav_paid_invoices")}</h1>
             <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>All delivery invoices</p>
           </div>
           <div className="flex gap-2 flex-wrap">

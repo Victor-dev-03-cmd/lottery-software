@@ -8,6 +8,7 @@ import {
 } from "../services/database";
 import { SI, StatLabel, SectionLabel } from "../utils/si";
 
+import { useLanguage } from "../i18n";
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
@@ -52,6 +53,7 @@ const EMPTY_CLOSING = (date: string): PettyCashClosing => ({
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 export default function PettyCash() {
+  const { t } = useLanguage();
   
   const [date, setDate]             = useState(today());
   const [txs, setTxs]               = useState<PettyCashTx[]>([]);
@@ -215,7 +217,7 @@ export default function PettyCash() {
       <div className="flex items-center px-6 pt-4 pb-2">
         <nav className="flex items-center gap-1 text-xs" style={{ color:"#9CA3AF" }}>
           <Home2 size={12} variant="Linear" color="currentColor"/><ArrowRight2 size={11} variant="Linear" color="currentColor"/>
-          <span style={{ color:"#1D1D1D", fontWeight:600 }}>Petty Cash</span>
+          <span style={{ color:"#1D1D1D", fontWeight:600 }}>{t("nav_petty_cash")}</span>
         </nav>
       </div>
 
@@ -225,7 +227,7 @@ export default function PettyCash() {
           <div>
             <h1 className="text-2xl font-bold" style={{ color:"#1D1D1D" }}>
               <Wallet size={16} variant="Linear" color="currentColor" style={{ display:"inline", marginRight:8, verticalAlign:"middle" }}/>
-              Petty Cash
+              {t("nav_petty_cash")}
             </h1>
             <p className="text-xs mt-0.5" style={{ color:"#9CA3AF" }}>
               Daily cash flow · income vs expenses · drawer reconciliation

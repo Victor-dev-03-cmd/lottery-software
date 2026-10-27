@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ShieldCheck, User, Eye, EyeOff, LogIn } from "lucide-react";
+import { ShieldTick, UserSquare, Eye, EyeSlash, Login } from "iconsax-react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAuth, UserRole } from "../contexts/AuthContext";
 import { verifyCashierPin, hashPin } from "../hooks/usePinGuard";
@@ -73,8 +73,8 @@ export default function RoleSelectModal({ onSelected }: Props) {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ background: "linear-gradient(135deg,#CF291D,#B50717)", boxShadow: "0 8px 32px rgba(207,41,29,0.4)" }}>
-            <ShieldCheck size={30} className="text-white"/>
+            style={{ background: "linear-gradient(135deg,#4285F4,#B50717)", boxShadow: "0 8px 32px rgba(66,133,244,0.4)" }}>
+            <ShieldTick size={30} variant="Linear" color="currentColor" className="text-white"/>
           </div>
           <h1 className="text-2xl font-black text-white mb-1">Select Access Role</h1>
           <p className="text-sm" style={{ color: "#9CA3AF" }}>Choose your access level for this session</p>
@@ -89,8 +89,8 @@ export default function RoleSelectModal({ onSelected }: Props) {
               style={{ background: "linear-gradient(135deg,#1D1D1D,#374151)", border: "1px solid #4B5563",
                 boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}>
               <div className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg,#CF291D,#B50717)" }}>
-                <ShieldCheck size={22} className="text-white"/>
+                style={{ background: "linear-gradient(135deg,#4285F4,#B50717)" }}>
+                <ShieldTick size={22} variant="Linear" color="currentColor" className="text-white"/>
               </div>
               <div className="text-center">
                 <p className="font-black text-white text-base">Admin</p>
@@ -99,7 +99,7 @@ export default function RoleSelectModal({ onSelected }: Props) {
               <div className="flex flex-wrap gap-1 justify-center">
                 {["Ledger","Reports","Settings","Purchases"].map(f => (
                   <span key={f} className="px-1.5 py-0.5 rounded text-[9px] font-semibold"
-                    style={{ background: "rgba(207,41,29,0.2)", color: "#CF291D" }}>{f}</span>
+                    style={{ background: "rgba(66,133,244,0.2)", color: "#4285F4" }}>{f}</span>
                 ))}
               </div>
             </button>
@@ -111,7 +111,7 @@ export default function RoleSelectModal({ onSelected }: Props) {
                 boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}>
               <div className="w-12 h-12 rounded-xl flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg,#1e40af,#3b82f6)" }}>
-                <User size={22} className="text-white"/>
+                <UserSquare size={22} variant="Linear" color="currentColor" className="text-white"/>
               </div>
               <div className="text-center">
                 <p className="font-black text-white text-base">Cashier</p>
@@ -131,8 +131,8 @@ export default function RoleSelectModal({ onSelected }: Props) {
             style={{ background: "linear-gradient(135deg,#1D1D1D,#374151)", border: "1px solid #4B5563" }}>
             <div className="flex items-center gap-3 mb-5">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ background: picking === "admin" ? "linear-gradient(135deg,#CF291D,#B50717)" : "linear-gradient(135deg,#1e40af,#3b82f6)" }}>
-                {picking === "admin" ? <ShieldCheck size={18} className="text-white"/> : <User size={18} className="text-white"/>}
+                style={{ background: picking === "admin" ? "linear-gradient(135deg,#4285F4,#B50717)" : "linear-gradient(135deg,#1e40af,#3b82f6)" }}>
+                {picking === "admin" ? <ShieldTick size={18} variant="Linear" color="currentColor" className="text-white"/> : <UserSquare size={18} variant="Linear" color="currentColor" className="text-white"/>}
               </div>
               <div>
                 <p className="font-bold text-white capitalize">{picking} PIN Required</p>
@@ -151,25 +151,25 @@ export default function RoleSelectModal({ onSelected }: Props) {
                 onKeyDown={e => e.key === "Enter" && handlePinSubmit()}
                 placeholder="Enter PIN…"
                 className="w-full rounded-xl px-4 py-3 text-white text-lg font-mono text-center tracking-widest focus:outline-none"
-                style={{ background: "#111", border: `1px solid ${error ? "#CF291D" : "#374151"}`,
-                  caretColor: "#CF291D" }}
+                style={{ background: "#111", border: `1px solid ${error ? "#4285F4" : "#374151"}`,
+                  caretColor: "#4285F4" }}
                 maxLength={8}
               />
               <button onClick={() => setShowPin(s => !s)}
                 className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "#6B7280" }}>
-                {showPin ? <EyeOff size={16}/> : <Eye size={16}/>}
+                {showPin ? <EyeSlash size={16} variant="Linear" color="currentColor"/> : <Eye size={16} variant="Linear" color="currentColor"/>}
               </button>
             </div>
 
             {error && (
-              <p className="text-xs text-center mb-3" style={{ color: "#CF291D" }}>{error}</p>
+              <p className="text-xs text-center mb-3" style={{ color: "#4285F4" }}>{error}</p>
             )}
 
             <div className="flex gap-2">
               <button onClick={handlePinSubmit} disabled={loading || pin.length === 0}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50"
-                style={{ background: "linear-gradient(135deg,#CF291D,#B50717)" }}>
-                <LogIn size={15}/> {loading ? "Verifying…" : "Enter"}
+                style={{ background: "linear-gradient(135deg,#4285F4,#B50717)" }}>
+                <Login size={15} variant="Linear" color="currentColor"/> {loading ? "Verifying…" : "Enter"}
               </button>
               <button onClick={() => { setPicking(null); setPin(""); setError(""); }}
                 className="px-4 py-2.5 rounded-xl text-sm font-medium"

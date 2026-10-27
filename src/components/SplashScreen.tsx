@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Ticket } from "lucide-react";
+import { Tag } from "iconsax-react";
 
 interface Props {
   message?: string;
@@ -32,9 +32,9 @@ export default function SplashScreen({ message = "Initializing…" }: Props) {
       <div className="relative flex flex-col items-center gap-6 z-10">
         <div
           className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg"
-          style={{ background: "#CF291D", boxShadow: "0 0 40px rgba(207,41,29,0.35)" }}
+          style={{ background: "#4285F4", boxShadow: "0 0 40px rgba(207,41,29,0.35)" }}
         >
-          <Ticket size={38} className="text-white" />
+          <Tag size={38} variant="Bold" color="currentColor" className="text-white"/>
         </div>
 
         {/* Brand name */}
@@ -45,7 +45,7 @@ export default function SplashScreen({ message = "Initializing…" }: Props) {
           >
             Ajith Rohana
           </h1>
-          <p className="text-base font-semibold mt-0.5" style={{ color: "#CF291D" }}>
+          <p className="text-base font-semibold mt-0.5" style={{ color: "#4285F4" }}>
             Lottery Manager
           </p>
           <p className="text-xs mt-1" style={{ color: "#6B7280" }}>
@@ -61,7 +61,7 @@ export default function SplashScreen({ message = "Initializing…" }: Props) {
           <div
             className="h-full rounded-full"
             style={{
-              background: "#CF291D",
+              background: "#4285F4",
               animation: "loadProgress 2.5s ease-in-out infinite",
             }}
           />
@@ -87,7 +87,7 @@ export default function SplashScreen({ message = "Initializing…" }: Props) {
         </div>
         <span
           className="text-sm font-bold tracking-wide"
-          style={{ color: "#CF291D", letterSpacing: "0.08em" }}
+          style={{ color: "#4285F4", letterSpacing: "0.08em" }}
         >
           ASROZ
         </span>

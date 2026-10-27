@@ -48,7 +48,7 @@ const TAB_SI: Record<Tab, string> = {
 };
 
 export default function Settings() {
-  const { lang } = useLanguage();
+  const { t, lang } = useLanguage();
   const [activeTab, setActiveTab] = useState<Tab>("general");
   const [saved, setSaved] = useState(false);
 
@@ -76,13 +76,13 @@ export default function Settings() {
         {saved && (
           <div className="fixed top-4 right-4 flex items-center gap-2 px-4 py-2 rounded-xl shadow-lg text-sm z-50 text-white"
             style={{ background: "#10b981" }}>
-            <CheckCircle size={15} /> Settings saved
+            <CheckCircle size={15} /> {t("action_save")} ✓
           </div>
         )}
 
         {/* Top tab bar */}
         <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#fff", border: "1px solid #E8E8E8" }}>
-          <div style={{ display: "flex", overflowX: "auto", borderBottom: "2px solid #F3F4F6", gap: 0, padding: "0 8px" }}>
+          <div style={{ display: "flex", overflowX: "auto", WebkitOverflowScrolling: "touch" as unknown as "auto", scrollbarWidth: "thin", borderBottom: "2px solid #F1F3F4", gap: 0, padding: "0 8px" }}>
             {TABS.map((t) => (
               <button key={t.key} onClick={() => setActiveTab(t.key)}
                 className="flex items-center gap-2 text-sm transition-all whitespace-nowrap"

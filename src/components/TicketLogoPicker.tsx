@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Search } from "lucide-react";
+import { CloseCircle, SearchNormal1 } from "iconsax-react";
 
 // All available logos — filename maps to display name
 const NLB_LOGOS: { name: string; file: string }[] = [
@@ -87,14 +87,14 @@ export default function TicketLogoPicker({ onSelect, onClose, currentValue }: Pr
             <p style={{ fontSize: 11, color: "#9CA3AF", margin: "2px 0 0" }}>Click a ticket logo to select it</p>
           </div>
           <button onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", color: "#9CA3AF", fontSize: 20 }}>
-            <X size={18} />
+            <CloseCircle size={18} variant="Linear" color="currentColor"/>
           </button>
         </div>
 
         {/* Search */}
         <div style={{ padding: "10px 18px 6px" }}>
           <div style={{ position: "relative" }}>
-            <Search size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#9CA3AF" }} />
+            <SearchNormal1 size={13} variant="Linear" color="#9CA3AF" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }}/>
             <input
               autoFocus
               value={search}
@@ -144,11 +144,11 @@ export default function TicketLogoPicker({ onSelect, onClose, currentValue }: Pr
                     style={{
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
                       padding: "10px 6px", borderRadius: 10, cursor: "pointer",
-                      border: `2px solid ${isSelected ? "#CF291D" : "#E5E7EB"}`,
+                      border: `2px solid ${isSelected ? "#4285F4" : "#E5E7EB"}`,
                       background: isSelected ? "#FEF2F2" : "#FAFAFA",
                       transition: "all 0.12s",
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = "#CF291D"; e.currentTarget.style.background = "#FEF2F2"; }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = "#4285F4"; e.currentTarget.style.background = "#FEF2F2"; }}
                     onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.borderColor = "#E5E7EB"; e.currentTarget.style.background = "#FAFAFA"; }}}
                   >
                     <img
@@ -157,10 +157,10 @@ export default function TicketLogoPicker({ onSelect, onClose, currentValue }: Pr
                       style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 6 }}
                       onError={e => { (e.currentTarget as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%23F3F4F6'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='24'%3E🎫%3C/text%3E%3C/svg%3E"; }}
                     />
-                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#CF291D" : "#374151", textAlign: "center", lineHeight: 1.3 }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#4285F4" : "#374151", textAlign: "center", lineHeight: 1.3 }}>
                       {logo.name}
                     </span>
-                    {isSelected && <span style={{ fontSize: 9, color: "#CF291D", fontWeight: 700 }}>✓ Selected</span>}
+                    {isSelected && <span style={{ fontSize: 9, color: "#4285F4", fontWeight: 700 }}>✓ Selected</span>}
                   </button>
                 );
               })}

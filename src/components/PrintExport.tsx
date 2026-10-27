@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import {
-  Printer, FileText, Home, ChevronRight, RefreshCw,
-  Building2, DollarSign, Package,
-  CheckCircle, AlertTriangle,
-} from "lucide-react";
+  Printer, DocumentText, Home2, ArrowRight2, Refresh2,
+  Buildings2, DollarCircle, Box1,
+  TickCircle, Warning2,
+} from "iconsax-react";
 import {
   getCompanySettings, getPeriodStats, getAgentSummaries,
   getPayrollSummary, getSupplierOutstanding,
@@ -81,19 +81,19 @@ export default function PrintExport({ onNavigate }: Props) {
       {/* Breadcrumb */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2 no-print">
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
-          <Home size={12}/><ChevronRight size={11}/>
+          <Home2 size={12} variant="Linear" color="#9CA3AF"/><ArrowRight2 size={11} variant="Linear" color="#9CA3AF"/>
           <span className="font-semibold" style={{ color: "#1D1D1D" }}>Print & Export</span>
         </nav>
         <div className="flex gap-2">
           <button onClick={load} disabled={loading}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium"
             style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", color:"#1D1D1D" }}>
-            <RefreshCw size={13} className={loading ? "animate-spin" : ""}/> Refresh
+            <Refresh2 size={13} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""}/> Refresh
           </button>
           <button onClick={handlePrint}
             className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold text-white hover:opacity-90"
-            style={{ background:"#CF291D", boxShadow:"0 4px 14px rgba(207,41,29,0.35)" }}>
-            <Printer size={15}/> Print Now
+            style={{ background:"#4285F4", boxShadow:"0 4px 14px rgba(66,133,244,0.35)" }}>
+            <Printer size={15} variant="Linear" color="currentColor"/> Print Now
           </button>
         </div>
       </div>
@@ -112,18 +112,18 @@ export default function PrintExport({ onNavigate }: Props) {
         {/* Mode selector */}
         <div className="flex gap-3 no-print">
           {[
-            { key: "a4-monthly", label: "A4 Monthly Report", sub: "Full management report", icon: <FileText size={18}/> },
-            { key: "thermal-daily", label: "Thermal Daily Bill", sub: "80mm thermal receipt", icon: <Printer size={18}/> },
+            { key: "a4-monthly", label: "A4 Monthly Report", sub: "Full management report", icon: <DocumentText size={18} variant="Linear" color="currentColor"/> },
+            { key: "thermal-daily", label: "Thermal Daily Bill", sub: "80mm thermal receipt", icon: <Printer size={18} variant="Linear" color="currentColor"/> },
           ].map(m => (
             <button key={m.key} onClick={() => setMode(m.key as PrintMode)}
               className="flex items-center gap-3 px-5 py-3 rounded-2xl text-left transition-all"
               style={{
-                background: mode === m.key ? "#CF291D" : "#FFFFFF",
-                border: `2px solid ${mode === m.key ? "#CF291D" : "#E8E8E8"}`,
+                background: mode === m.key ? "#4285F4" : "#FFFFFF",
+                border: `2px solid ${mode === m.key ? "#4285F4" : "#E8E8E8"}`,
                 color: mode === m.key ? "#FFFFFF" : "#1D1D1D",
                 minWidth: 220,
               }}>
-              <span style={{ color: mode === m.key ? "#FFFFFF" : "#CF291D" }}>{m.icon}</span>
+              <span style={{ color: mode === m.key ? "#FFFFFF" : "#4285F4" }}>{m.icon}</span>
               <div>
                 <p className="font-bold text-sm">{m.label}</p>
                 <p className="text-[11px] mt-0.5" style={{ color: mode === m.key ? "rgba(255,255,255,0.7)" : "#9CA3AF" }}>{m.sub}</p>
@@ -135,7 +135,7 @@ export default function PrintExport({ onNavigate }: Props) {
         {/* Preview notice */}
         <div className="no-print flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium"
           style={{ background:"#EFF6FF", border:"1px solid #BFDBFE", color:"#1e40af" }}>
-          <Printer size={13}/> The document below is exactly what will print. Click "Print Now" to send to printer or save as PDF.
+          <Printer size={13} variant="Linear" color="currentColor"/> The document below is exactly what will print. Click "Print Now" to send to printer or save as PDF.
         </div>
 
         {/* ── A4 REPORT (visible in browser + prints in A4) ── */}
@@ -149,8 +149,8 @@ export default function PrintExport({ onNavigate }: Props) {
                 <div>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                      style={{ background:"#CF291D" }}>
-                      <Building2 size={20} className="text-white"/>
+                      style={{ background:"#4285F4" }}>
+                      <Buildings2 size={20} variant="Linear" color="currentColor" className="text-white"/>
                     </div>
                     <div>
                       <h1 className="text-xl font-black text-white">{company?.name ?? "Ajith Rohana Enterprise"}</h1>
@@ -168,7 +168,7 @@ export default function PrintExport({ onNavigate }: Props) {
                 </div>
                 <div className="text-right">
                   <div className="inline-block px-4 py-2 rounded-xl" style={{ background:"rgba(207,41,29,0.2)", border:"1px solid rgba(207,41,29,0.4)" }}>
-                    <p className="text-[10px] uppercase font-bold tracking-widest" style={{ color:"#CF291D" }}>Monthly Report</p>
+                    <p className="text-[10px] uppercase font-bold tracking-widest" style={{ color:"#4285F4" }}>Monthly Report</p>
                     <p className="text-lg font-black text-white">{monthLabel}</p>
                     <p className="text-[10px]" style={{ color:"rgba(255,255,255,0.5)" }}>Generated: {fmtDate(today)}</p>
                   </div>
@@ -178,15 +178,15 @@ export default function PrintExport({ onNavigate }: Props) {
 
             {/* Executive Summary */}
             <div className="px-8 py-5" style={{ borderBottom:"2px solid #F3F4F6" }}>
-              <h2 className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color:"#CF291D" }}>
+              <h2 className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color:"#4285F4" }}>
                 Executive Summary · Last 30 Days
               </h2>
               <div className="grid grid-cols-4 gap-4">
                 {[
-                  { label:"Total Invoiced",    val: stats30?.total_invoiced ?? 0,    color:"#1D1D1D", icon:<DollarSign size={16}/> },
-                  { label:"Cash Collected",    val: stats30?.total_collected ?? 0,   color:"#16a34a", icon:<CheckCircle size={16}/> },
-                  { label:"Outstanding",       val: stats30?.total_outstanding ?? 0, color:"#CF291D", icon:<AlertTriangle size={16}/> },
-                  { label:"Tickets Issued",    val: stats30?.total_tickets ?? 0,     color:"#2563eb", icon:<Package size={16}/>, isInt: true },
+                  { label:"Total Invoiced",    val: stats30?.total_invoiced ?? 0,    color:"#1D1D1D", icon:<DollarCircle size={16} variant="Linear" color="currentColor"/> },
+                  { label:"Cash Collected",    val: stats30?.total_collected ?? 0,   color:"#16a34a", icon:<TickCircle size={16} variant="Linear" color="currentColor"/> },
+                  { label:"Outstanding",       val: stats30?.total_outstanding ?? 0, color:"#EA4335", icon:<Warning2 size={16} variant="Linear" color="currentColor"/> },
+                  { label:"Tickets Issued",    val: stats30?.total_tickets ?? 0,     color:"#2563eb", icon:<Box1 size={16} variant="Linear" color="currentColor"/>, isInt: true },
                 ].map(c => (
                   <div key={c.label} className="rounded-xl p-3" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", borderTop:`3px solid ${c.color}`, boxShadow:"0 1px 4px rgba(0,0,0,0.04)" }}>
                     <div className="flex items-center gap-1.5 mb-2" style={{ color: c.color }}>{c.icon}</div>
@@ -203,15 +203,15 @@ export default function PrintExport({ onNavigate }: Props) {
             <div className="grid grid-cols-2 gap-0" style={{ borderBottom:"2px solid #F3F4F6" }}>
               {/* Revenue & Expenses */}
               <div className="px-8 py-5" style={{ borderRight:"1px solid #F3F4F6" }}>
-                <h3 className="text-xs font-bold uppercase tracking-wider mb-3 pl-2" style={{ color:"#374151", borderLeft:"3px solid #CF291D" }}>
+                <h3 className="text-xs font-bold uppercase tracking-wider mb-3 pl-2" style={{ color:"#374151", borderLeft:"3px solid #4285F4" }}>
                   Revenue & Expenses
                 </h3>
                 <table className="w-full text-xs">
                   <tbody>
                     {[
                       { label:"Gross Revenue",        val: stats30?.total_collected ?? 0,  color:"#16a34a" },
-                      { label:"Supplier Cost (est.)", val: supplierOwed,                    color:"#CF291D", neg: true },
-                      { label:"Monthly Payroll",      val: payroll.total_payroll,           color:"#CF291D", neg: true },
+                      { label:"Supplier Cost (est.)", val: supplierOwed,                    color:"#EA4335", neg: true },
+                      { label:"Monthly Payroll",      val: payroll.total_payroll,           color:"#EA4335", neg: true },
                       { label:"Agent Commissions",    val: (stats30?.total_invoiced ?? 0) * 0.05, color:"#7c3aed", neg: true },
                     ].map((r, i) => (
                       <tr key={i} style={{ borderBottom:"1px solid #F9F9F9" }}>
@@ -223,7 +223,7 @@ export default function PrintExport({ onNavigate }: Props) {
                     ))}
                     <tr style={{ borderTop:"2px solid #E8E8E8" }}>
                       <td className="py-2 font-bold" style={{ color:"#1D1D1D" }}>Net Profit (est.)</td>
-                      <td className="py-2 text-right font-black" style={{ color: netProfit >= 0 ? "#16a34a" : "#CF291D" }}>
+                      <td className="py-2 text-right font-black" style={{ color: netProfit >= 0 ? "#16a34a" : "#EA4335" }}>
                         Rs. {fmt(Math.abs(netProfit))} {netProfit < 0 ? "(Loss)" : ""}
                       </td>
                     </tr>
@@ -233,7 +233,7 @@ export default function PrintExport({ onNavigate }: Props) {
 
               {/* Payroll summary */}
               <div className="px-8 py-5">
-                <h3 className="text-xs font-bold uppercase tracking-wider mb-3 pl-2" style={{ color:"#374151", borderLeft:"3px solid #CF291D" }}>
+                <h3 className="text-xs font-bold uppercase tracking-wider mb-3 pl-2" style={{ color:"#374151", borderLeft:"3px solid #4285F4" }}>
                   Payroll Summary — {monthLabel}
                 </h3>
                 <table className="w-full text-xs">
@@ -276,16 +276,16 @@ export default function PrintExport({ onNavigate }: Props) {
                       <td className="px-3 py-2 font-medium" style={{ color:"#1D1D1D" }}>{a.name}</td>
                       <td className="px-3 py-2" style={{ color:"#6B7280" }}>Rs. {fmt(a.total_value)}</td>
                       <td className="px-3 py-2" style={{ color:"#16a34a" }}>Rs. {fmt(a.total_cash)}</td>
-                      <td className="px-3 py-2 font-bold" style={{ color:"#CF291D" }}>Rs. {fmt(Math.max(0, a.outstanding_balance))}</td>
+                      <td className="px-3 py-2 font-bold" style={{ color:"#EA4335" }}>Rs. {fmt(Math.max(0, a.outstanding_balance))}</td>
                       <td className="px-3 py-2">
                         <span className="px-2 py-0.5 rounded-full text-[9px] font-bold"
-                          style={{ background:"#FEE2E2", color:"#CF291D" }}>Outstanding</span>
+                          style={{ background:"#FCE8E6", color:"#EA4335" }}>Outstanding</span>
                       </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr style={{ background:"#374151", borderTop:"2px solid #CF291D" }}>
+                  <tr style={{ background:"#374151", borderTop:"2px solid #EA4335" }}>
                     <td className="px-3 py-2 font-bold text-white text-xs">TOTAL</td>
                     <td className="px-3 py-2 text-white text-xs font-semibold">Rs. {fmt(agents.reduce((s,a)=>s+a.total_value,0))}</td>
                     <td className="px-3 py-2 text-white text-xs font-semibold">Rs. {fmt(agents.reduce((s,a)=>s+a.total_cash,0))}</td>
@@ -303,7 +303,7 @@ export default function PrintExport({ onNavigate }: Props) {
               </h3>
               <div className="grid grid-cols-4 gap-2">
                 {inventory.map(inv => {
-                  const color = inv.velocity_pct > 80 ? "#CF291D" : inv.velocity_pct > 60 ? "#d97706" : "#16a34a";
+                  const color = inv.velocity_pct > 80 ? "#EA4335" : inv.velocity_pct > 60 ? "#d97706" : "#16a34a";
                   return (
                     <div key={inv.game_name} className="rounded-lg p-2.5" style={{ border:`1px solid ${color}30`, background:`${color}08` }}>
                       <p className="text-[10px] font-bold truncate" style={{ color:"#1D1D1D" }}>{inv.game_name}</p>
@@ -365,7 +365,7 @@ export default function PrintExport({ onNavigate }: Props) {
               {agents.filter(a => a.outstanding_balance > 0).slice(0, 5).map(a => (
                 <div key={a.agent_id} className="flex justify-between text-[10px] mb-1">
                   <span className="truncate max-w-[160px]" style={{ color:"#374151" }}>{a.name}</span>
-                  <span className="font-bold" style={{ color:"#CF291D" }}>Rs. {new Intl.NumberFormat("en-LK",{minimumFractionDigits:2}).format(a.outstanding_balance)}</span>
+                  <span className="font-bold" style={{ color:"#EA4335" }}>Rs. {new Intl.NumberFormat("en-LK",{minimumFractionDigits:2}).format(a.outstanding_balance)}</span>
                 </div>
               ))}
             </div>
@@ -392,7 +392,7 @@ export default function PrintExport({ onNavigate }: Props) {
               <p className="text-[11px] font-bold mb-2">SUPPLIER (NIMALSIRI)</p>
               <div className="flex justify-between text-[10px]">
                 <span style={{ color:"#6B7280" }}>Amount Owed</span>
-                <span className="font-bold" style={{ color: supplierOwed > 0 ? "#CF291D" : "#16a34a" }}>
+                <span className="font-bold" style={{ color: supplierOwed > 0 ? "#EA4335" : "#16a34a" }}>
                   Rs. {fmt(supplierOwed)}
                 </span>
               </div>

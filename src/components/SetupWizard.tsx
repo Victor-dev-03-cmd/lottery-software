@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Ticket, FolderOpen, HardDrive, CheckCircle, ArrowRight } from "lucide-react";
+import { Tag, FolderOpen, Driver, TickCircle, ArrowRight2 } from "iconsax-react";
 
 interface AppConfig {
   db_directory: string;
@@ -80,8 +80,8 @@ export default function SetupWizard({ onComplete, defaultDataDir }: Props) {
           style={{ borderBottom: "1px solid #2A2A2A" }}>
           <div className="flex items-center justify-center mb-4">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-              style={{ background: "#CF291D", boxShadow: "0 0 30px rgba(207,41,29,0.3)" }}>
-              <Ticket size={28} className="text-white" />
+              style={{ background: "#4285F4", boxShadow: "0 0 30px rgba(207,41,29,0.3)" }}>
+              <Tag size={28} variant="Bold" color="currentColor" className="text-white"/>
             </div>
           </div>
           <h1 className="text-xl font-black text-white">Ajith Rohana Lottery Manager</h1>
@@ -94,10 +94,10 @@ export default function SetupWizard({ onComplete, defaultDataDir }: Props) {
                 <div
                   className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all"
                   style={{
-                    background: step === s ? "#CF291D" : step > s ? "#16a34a" : "#374151",
+                    background: step === s ? "#4285F4" : step > s ? "#16a34a" : "#374151",
                     color: "#FFFFFF",
                   }}>
-                  {step > s ? <CheckCircle size={14} /> : s}
+                  {step > s ? <TickCircle size={14} variant="Linear" color="currentColor"/> : s}
                 </div>
                 {s < 2 && <div className="w-8 h-px" style={{ background: step > s ? "#16a34a" : "#374151" }} />}
               </div>
@@ -127,15 +127,15 @@ export default function SetupWizard({ onComplete, defaultDataDir }: Props) {
                   "Reports, analytics, and outstanding alerts",
                 ].map((f) => (
                   <div key={f} className="flex items-center gap-2.5">
-                    <CheckCircle size={14} style={{ color: "#CF291D", flexShrink: 0 }} />
+                    <TickCircle size={14} variant="Linear" color="#4285F4" style={{ flexShrink: 0 }}/>
                     <span className="text-sm" style={{ color: "#9CA3AF" }}>{f}</span>
                   </div>
                 ))}
               </div>
               <button onClick={() => setStep(2)}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 mt-2"
-                style={{ background: "#CF291D" }}>
-                Get Started <ArrowRight size={16} />
+                style={{ background: "#4285F4" }}>
+                Get Started <ArrowRight2 size={16} variant="Linear" color="currentColor"/>
               </button>
             </div>
           )}
@@ -156,25 +156,25 @@ export default function SetupWizard({ onComplete, defaultDataDir }: Props) {
                 className="flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all"
                 style={{
                   background: dbChoice === "default" ? "rgba(207,41,29,0.08)" : "#2A2A2A",
-                  border: `1.5px solid ${dbChoice === "default" ? "#CF291D" : "#374151"}`,
+                  border: `1.5px solid ${dbChoice === "default" ? "#4285F4" : "#374151"}`,
                 }}
                 onClick={() => setDbChoice("default")}>
                 {/* Radio */}
                 <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0"
-                  style={{ borderColor: dbChoice === "default" ? "#CF291D" : "#4B5563" }}>
+                  style={{ borderColor: dbChoice === "default" ? "#4285F4" : "#4B5563" }}>
                   {dbChoice === "default" && (
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#CF291D" }} />
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#4285F4" }} />
                   )}
                 </div>
                 {/* Icon */}
-                <HardDrive size={18} className="shrink-0"
-                  style={{ color: dbChoice === "default" ? "#CF291D" : "#6B7280" }} />
+                <Driver size={18} variant="Linear" className="shrink-0"
+                  color={dbChoice === "default" ? "#4285F4" : "#6B7280"} />
                 {/* Text */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-white leading-tight">
                     Default Location
                     <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded"
-                      style={{ background:"rgba(207,41,29,0.2)", color:"#CF291D" }}>
+                      style={{ background:"rgba(66,133,244,0.15)", color:"#4285F4" }}>
                       Recommended
                     </span>
                   </p>
@@ -190,24 +190,24 @@ export default function SetupWizard({ onComplete, defaultDataDir }: Props) {
                 className="flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all"
                 style={{
                   background: dbChoice === "custom" ? "rgba(207,41,29,0.08)" : "#2A2A2A",
-                  border: `1.5px solid ${dbChoice === "custom" ? "#CF291D" : "#374151"}`,
+                  border: `1.5px solid ${dbChoice === "custom" ? "#4285F4" : "#374151"}`,
                 }}
                 onClick={() => dbChoice !== "custom" ? pickFolder() : undefined}>
                 {/* Radio */}
                 <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0"
-                  style={{ borderColor: dbChoice === "custom" ? "#CF291D" : "#4B5563" }}>
+                  style={{ borderColor: dbChoice === "custom" ? "#4285F4" : "#4B5563" }}>
                   {dbChoice === "custom" && (
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#CF291D" }} />
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#4285F4" }} />
                   )}
                 </div>
                 {/* Icon */}
-                <FolderOpen size={18} className="shrink-0"
-                  style={{ color: dbChoice === "custom" ? "#CF291D" : "#6B7280" }} />
+                <FolderOpen size={18} variant="Linear" className="shrink-0"
+                  color={dbChoice === "custom" ? "#4285F4" : "#6B7280"} />
                 {/* Text */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-white leading-tight">Custom Location</p>
                   <p className="text-[11px] mt-1 truncate"
-                    style={{ color: customDir ? "#CF291D" : "#4B5563" }}
+                    style={{ color: customDir ? "#4285F4" : "#4B5563" }}
                     title={customDir ? `${customDir}/ajith_rohana.db` : ""}>
                     {customDir
                       ? `${shortPath(customDir)}/ajith_rohana.db`
@@ -251,9 +251,9 @@ export default function SetupWizard({ onComplete, defaultDataDir }: Props) {
                   onClick={handleFinish}
                   disabled={saving || (dbChoice === "custom" && !customDir)}
                   className="flex-2 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 disabled:opacity-50 flex-1"
-                  style={{ background: "#CF291D" }}>
+                  style={{ background: "#4285F4" }}>
                   {saving ? "Setting up…" : "Launch App"}
-                  {!saving && <ArrowRight size={15} />}
+                  {!saving && <ArrowRight2 size={15} variant="Linear" color="currentColor"/>}
                 </button>
               </div>
             </div>
@@ -264,7 +264,7 @@ export default function SetupWizard({ onComplete, defaultDataDir }: Props) {
         <div className="px-8 py-4 text-center" style={{ borderTop: "1px solid #2A2A2A" }}>
           <p className="text-[10px]" style={{ color: "#374151" }}>
             Powered by{" "}
-            <span className="font-bold" style={{ color: "#CF291D" }}>ASROZ</span>
+            <span className="font-bold" style={{ color: "#4285F4" }}>ASROZ</span>
             {" "}Enterprise Software Solutions
           </p>
         </div>

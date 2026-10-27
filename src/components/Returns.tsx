@@ -11,6 +11,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, lastTicketBarcode, cleanBarcode } from "../utils/barcode";
 import TicketLogoPicker, { resolveLogoUrl } from "./TicketLogoPicker";
 
+import { useLanguage } from "../i18n";
 interface ScannedItem {
   barcode_start: string;
   barcode_end: string;
@@ -41,6 +42,7 @@ const EMPTY = (agentId = 0): TicketReturn => ({
 });
 
 export default function Returns() {
+  const { t } = useLanguage();
   // useAuth kept for future role-based features
   void useAuth;
   const [returns, setReturns] = useState<TicketReturn[]>([]);
@@ -265,7 +267,7 @@ export default function Returns() {
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
           <Home2 size={12} variant="Linear" color="currentColor" />
           <ArrowRight2 size={11} variant="Linear" color="currentColor" />
-          <span className="font-semibold" style={{ color: "#1D1D1D" }}>Return &amp; Settlement</span>
+          <span className="font-semibold" style={{ color: "#1D1D1D" }}>{t("nav_returns")}</span>
         </nav>
       </div>
 

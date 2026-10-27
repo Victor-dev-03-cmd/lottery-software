@@ -5,6 +5,7 @@ import { getAgents, saveAgent, deleteAgent } from "../services/database";
 import { usePinGuardContext } from "../App";
 import type { Agent } from "../types";
 
+import { useLanguage } from "../i18n";
 const SL_BANKS = [
   "Amana Bank PLC",
   "Axis Bank Ltd",
@@ -40,6 +41,7 @@ const EMPTY_AGENT = (): Agent => ({
 });
 
 export default function AgentsManager() {
+  const { t } = useLanguage();
   
   const [agents, setAgents]       = useState<Agent[]>([]);
   const [form, setForm]           = useState<Agent | null>(null);
@@ -121,7 +123,7 @@ export default function AgentsManager() {
       <div className="px-6 pb-6 space-y-5">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#1D1D1D" }}>Agent Profiles</h1>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#1D1D1D" }}>{t("nav_agents_list")}</h1>
           <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
             Manage sub-dealer accounts, credit limits and bank details
           </p>

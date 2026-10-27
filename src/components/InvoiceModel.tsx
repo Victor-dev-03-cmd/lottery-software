@@ -14,7 +14,7 @@ import InvoiceA4Preview from "./shared/InvoiceA4Preview";
 
 // ── Color presets ──────────────────────────────────────────────────────────────
 const COLOR_PRESETS = [
-  { label: "Red / Black",   primary: "#CF291D", accent: "#1D1D1D" },
+  { label: "Red / Black",   primary: "#4285F4", accent: "#1D1D1D" },
   { label: "Navy / Gold",   primary: "#1E3A5F", accent: "#D97706" },
   { label: "Forest / Dark", primary: "#16A34A", accent: "#1D1D1D" },
   { label: "Violet / Gray", primary: "#7C3AED", accent: "#374151" },
@@ -23,7 +23,7 @@ const COLOR_PRESETS = [
 ];
 
 const DEFAULT_TEMPLATE: InvoiceTemplate = {
-  primaryColor: "#CF291D", accentColor: "#1D1D1D", logoData: "",
+  primaryColor: "#4285F4", accentColor: "#1D1D1D", logoData: "",
   showBarcodes: true, showDiscount: true, showRoute: true,
   showSalesRep: true, showCommission: true,
   footerText: "Thank you for your business.",
@@ -96,7 +96,7 @@ function Section({
     <div style={{ borderBottom: "1px solid #F3F4F6" }}>
       <button type="button" onClick={() => collapsible && setOpen(v => !v)}
         style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "12px 20px", border: "none", background: "none", cursor: collapsible ? "pointer" : "default", textAlign: "left" }}>
-        <span style={{ color: "#CF291D", display: "flex", alignItems: "center", flexShrink: 0 }}>{icon}</span>
+        <span style={{ color: "#4285F4", display: "flex", alignItems: "center", flexShrink: 0 }}>{icon}</span>
         <span style={{ fontSize: 11, fontWeight: 700, color: "#374151", flex: 1, letterSpacing: "0.06em", textTransform: "uppercase" }}>{title}</span>
         {collapsible && <span style={{ color: "#9CA3AF" }}>{open ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}</span>}
       </button>
@@ -193,7 +193,7 @@ export default function InvoiceModel() {
         {/* Header */}
         <div style={{ padding: "14px 20px 12px", background: "linear-gradient(135deg,#0F172A 0%,#1E293B 100%)", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 12 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg,#CF291D,#B50717)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg,#4285F4,#1A73E8)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <FileText size={15} color="#fff"/>
             </div>
             <div>
@@ -205,7 +205,7 @@ export default function InvoiceModel() {
           {/* Action buttons row */}
           <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
             <button type="button" onClick={handleSave} disabled={saving}
-              style={{ flex: 1, padding: "8px 0", border: "none", borderRadius: 7, background: saved ? "#16A34A" : "#CF291D", color: "#fff", fontSize: 12, fontWeight: 700, cursor: saving ? "wait" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "background 0.2s" }}>
+              style={{ flex: 1, padding: "8px 0", border: "none", borderRadius: 7, background: saved ? "#16A34A" : "#4285F4", color: "#fff", fontSize: 12, fontWeight: 700, cursor: saving ? "wait" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "background 0.2s" }}>
               {saved ? <><CheckCircle2 size={13}/>Saved!</> : saving ? <><RefreshCw size={13} style={{ animation: "spin 0.8s linear infinite" }}/>Saving…</> : <><Save size={13}/>Save</>}
             </button>
             <button type="button" onClick={handleReset} title="Reset to defaults"
@@ -291,7 +291,7 @@ export default function InvoiceModel() {
             ) : (
               <button type="button" onClick={() => logoRef.current?.click()}
                 style={{ width: "100%", padding: "16px 0", border: "2px dashed #D1D5DB", borderRadius: 10, background: "#F9FAFB", color: "#9CA3AF", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 7, transition: "border-color 0.15s,color 0.15s" }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor="#CF291D"; e.currentTarget.style.color="#CF291D"; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor="#4285F4"; e.currentTarget.style.color="#4285F4"; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor="#D1D5DB"; e.currentTarget.style.color="#9CA3AF"; }}>
                 <Building2 size={20}/>
                 <span>Click to upload logo</span>
@@ -354,7 +354,7 @@ export default function InvoiceModel() {
         {/* Toolbar */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 20px", background: "#fff", borderBottom: "1px solid #E5E7EB", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Eye size={14} style={{ color: "#CF291D" }}/>
+            <Eye size={14} style={{ color: "#4285F4" }}/>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>Live Preview</span>
             <span style={{ fontSize: 10, background: "#ECFDF5", color: "#16A34A", padding: "2px 8px", borderRadius: 20, fontWeight: 600, border: "1px solid #A7F3D0" }}>Real-time</span>
           </div>
@@ -362,7 +362,7 @@ export default function InvoiceModel() {
             <span style={{ fontSize: 11, color: "#9CA3AF", marginRight: 2 }}>Zoom:</span>
             {[0.45, 0.55, 0.65, 0.75, 0.85].map(z => (
               <button key={z} type="button" onClick={() => setZoom(z)}
-                style={{ padding: "3px 9px", border: `1px solid ${zoom === z ? "#CF291D" : "#E5E7EB"}`, borderRadius: 6, background: zoom === z ? "#FEF2F2" : "#fff", color: zoom === z ? "#CF291D" : "#6B7280", fontSize: 11, fontWeight: zoom === z ? 700 : 500, cursor: "pointer" }}>
+                style={{ padding: "3px 9px", border: `1px solid ${zoom === z ? "#4285F4" : "#E5E7EB"}`, borderRadius: 6, background: zoom === z ? "#FEF2F2" : "#fff", color: zoom === z ? "#4285F4" : "#6B7280", fontSize: 11, fontWeight: zoom === z ? 700 : 500, cursor: "pointer" }}>
                 {Math.round(z * 100)}%
               </button>
             ))}

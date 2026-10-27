@@ -4,6 +4,7 @@ import { getAgents, getPayments, savePayment, deletePayment, getAgentInvoiceLedg
 import type { Agent, Payment, PaymentType, InvoiceLedgerRow } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 
+import { useLanguage } from "../i18n";
 const PAYMENT_TYPES: { value: PaymentType; label: string }[] = [
   { value: "cash", label: "Cash" },
   { value: "cheque", label: "Cheque" },
@@ -53,6 +54,7 @@ const EMPTY_SPLIT = (): PaymentSplit => ({
 });
 
 export default function Ledger() {
+  const { t } = useLanguage();
   const { withAdminToken } = useAuth();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<number | "">("");
@@ -164,7 +166,7 @@ export default function Ledger() {
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
           <Home2 size={12} variant="Linear" color="currentColor" />
           <ArrowRight2 size={11} variant="Linear" color="currentColor" />
-          <span className="font-semibold" style={{ color: "#1D1D1D" }}>Payment Ledger</span>
+          <span className="font-semibold" style={{ color: "#1D1D1D" }}>{t("nav_ledger")}</span>
         </nav>
         <div className="flex gap-2">
           {selectedAgent !== "" && (
@@ -191,7 +193,7 @@ export default function Ledger() {
         {/* Page header */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#1D1D1D" }}>Payment Ledger</h1>
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#1D1D1D" }}>{t("nav_ledger")}</h1>
             <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Cash, cheque & winning ticket tracking per agent</p>
           </div>
         </div>

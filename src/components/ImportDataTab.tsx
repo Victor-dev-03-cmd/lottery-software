@@ -213,7 +213,7 @@ export default function ImportDataTab() {
 
       {/* ── Type selector ── */}
       <div style={{ background: "#fff", border: "1px solid #E8E8E8", borderRadius: 14, overflow: "hidden" }}>
-        <div style={{ padding: "12px 20px", borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
+        <div style={{ padding: "12px 20px", borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
           <p style={{ fontWeight: 700, fontSize: 13, color: "#1D1D1D", margin: 0 }}>📥 Import Historical Data from Excel / CSV</p>
           <p style={{ fontSize: 11, color: "#9CA3AF", margin: "3px 0 0" }}>
             Export your Excel sheet as <strong>.csv</strong> → upload here. Download a template first to see the exact columns needed.
@@ -231,12 +231,12 @@ export default function ImportDataTab() {
                 <button key={t} type="button" onClick={() => switchType(t)}
                   style={{
                     padding: "12px 8px", borderRadius: 10, textAlign: "center",
-                    border: `2px solid ${active ? "#CF291D" : "#E5E7EB"}`,
+                    border: `2px solid ${active ? "#4285F4" : "#E5E7EB"}`,
                     background: active ? "#FEF2F2" : "#FAFAFA",
                     cursor: "pointer", transition: "border-color 0.15s, background 0.15s",
                   }}>
                   <div style={{ fontSize: 24, marginBottom: 5 }}>{c.emoji}</div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: active ? "#CF291D" : "#374151" }}>{c.label}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: active ? "#4285F4" : "#374151" }}>{c.label}</div>
                   <div style={{ fontSize: 10, color: "#9CA3AF", marginTop: 2, lineHeight: 1.3 }}>{c.description}</div>
                 </button>
               );
@@ -254,7 +254,7 @@ export default function ImportDataTab() {
           </div>
           <button type="button"
             onClick={() => downloadCSV(`template_${type}.csv`, cfg.headers, [cfg.sampleRow])}
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 16px", border: "none", borderRadius: 8, background: "#CF291D", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 16px", border: "none", borderRadius: 8, background: "#4285F4", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
             ⬇ Download Template
           </button>
         </div>
@@ -267,7 +267,7 @@ export default function ImportDataTab() {
           <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
             {cfg.instructions.map((ins, i) => (
               <li key={i} style={{ fontSize: 11, color: "#6B7280", display: "flex", gap: 6, marginBottom: 3 }}>
-                <span style={{ color: "#CF291D", flexShrink: 0 }}>•</span>{ins}
+                <span style={{ color: "#4285F4", flexShrink: 0 }}>•</span>{ins}
               </li>
             ))}
           </ul>
@@ -286,7 +286,7 @@ export default function ImportDataTab() {
             onDrop={e => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
             onClick={() => fileRef.current?.click()}
             style={{
-              border: `2px dashed ${dragOver ? "#CF291D" : "#D1D5DB"}`,
+              border: `2px dashed ${dragOver ? "#4285F4" : "#D1D5DB"}`,
               borderRadius: 10, padding: "28px 20px", textAlign: "center",
               background: dragOver ? "#FEF2F2" : "#F9FAFB", cursor: "pointer",
               transition: "border-color 0.15s, background 0.15s",
@@ -321,7 +321,7 @@ export default function ImportDataTab() {
                 Clear
               </button>
               <button type="button" onClick={handleImport} disabled={importing || validRows.length === 0}
-                style={{ padding: "5px 14px", border: "none", borderRadius: 7, background: validRows.length > 0 ? "#CF291D" : "#D1D5DB", color: "#fff", fontSize: 12, fontWeight: 700, cursor: validRows.length > 0 && !importing ? "pointer" : "not-allowed" }}>
+                style={{ padding: "5px 14px", border: "none", borderRadius: 7, background: validRows.length > 0 ? "#4285F4" : "#D1D5DB", color: "#fff", fontSize: 12, fontWeight: 700, cursor: validRows.length > 0 && !importing ? "pointer" : "not-allowed" }}>
                 {importing ? "Importing…" : `⬆ Import ${validRows.length} Records`}
               </button>
             </div>

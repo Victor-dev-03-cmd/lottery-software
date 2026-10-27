@@ -17,7 +17,7 @@ import { useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
-import { RefreshCw, Download, CheckCircle, AlertTriangle, ExternalLink } from "lucide-react";
+import { Refresh2, ImportCurve, TickCircle, Warning2, ExportCircle } from "iconsax-react";
 
 const GITHUB_API = "https://api.github.com/repos/Victor-dev-03-cmd/lottery-software/releases/latest";
 
@@ -52,7 +52,7 @@ function ReleaseNotes({ body }: { body: string }) {
         if (t.startsWith("# "))  return <p key={i} style={{ fontWeight: 800, fontSize: 13, color: "#111827", margin: "10px 0 4px" }}>{t.slice(2)}</p>;
         if (t.startsWith("- ") || t.startsWith("• ")) return (
           <div key={i} style={{ display: "flex", gap: 6, fontSize: 12, color: "#374151", marginBottom: 3 }}>
-            <span style={{ color: "#CF291D", flexShrink: 0 }}>•</span>
+            <span style={{ color: "#4285F4", flexShrink: 0 }}>•</span>
             <span>{t.slice(2)}</span>
           </div>
         );
@@ -164,7 +164,7 @@ export default function SoftwareUpdateTab() {
 
       {/* Current version + check button */}
       <div style={{ ...card }}>
-        <div style={{ padding: "14px 20px", borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
+        <div style={{ padding: "14px 20px", borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
           <p style={{ fontWeight: 700, fontSize: 14, color: "#1D1D1D", margin: 0 }}>
             Software Updates
           </p>
@@ -186,11 +186,11 @@ export default function SoftwareUpdateTab() {
               style={{
                 display: "flex", alignItems: "center", gap: 7,
                 padding: "9px 20px", borderRadius: 9, border: "none",
-                background: (phase === "checking" || phase === "downloading") ? "#9CA3AF" : "#CF291D",
+                background: (phase === "checking" || phase === "downloading") ? "#9CA3AF" : "#4285F4",
                 color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
                 transition: "opacity 0.15s",
               }}>
-              <RefreshCw size={14} className={phase === "checking" ? "animate-spin" : ""} />
+              <Refresh2 size={14} variant="Linear" color="currentColor" className={phase === "checking" ? "animate-spin" : ""}/>
               {phase === "checking" ? "Checking…" : "Check for Updates"}
             </button>
           </div>
@@ -204,7 +204,7 @@ export default function SoftwareUpdateTab() {
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px",
           background: "#F0FFF4", border: "1px solid #BBF7D0", borderRadius: 12,
           fontSize: 13, fontWeight: 600, color: "#16A34A" }}>
-          <CheckCircle size={18} />
+          <TickCircle size={18} variant="Linear" color="currentColor"/>
           You are running the latest version ({currentVer}). No updates available.
         </div>
       )}
@@ -212,8 +212,8 @@ export default function SoftwareUpdateTab() {
       {/* Error */}
       {phase === "error" && (
         <div style={{ padding: "14px 20px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: "#CF291D", marginBottom: 6 }}>
-            <AlertTriangle size={16} /> Update check failed
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: "#4285F4", marginBottom: 6 }}>
+            <Warning2 size={16} variant="Linear" color="currentColor"/> Update check failed
           </div>
           <p style={{ fontSize: 12, color: "#374151", margin: 0 }}>{errMsg}</p>
           <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 8, margin: "8px 0 0" }}>
@@ -266,7 +266,7 @@ export default function SoftwareUpdateTab() {
               </div>
               <a href={ghRelease.html_url} target="_blank" rel="noreferrer"
                 style={{ display:"flex", alignItems:"center", gap:5, fontSize:11, color:"#64748B", textDecoration:"none" }}>
-                <ExternalLink size={12}/> View on GitHub
+                <ExportCircle size={12} variant="Linear" color="currentColor"/> View on GitHub
               </a>
             </div>
             <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -300,7 +300,7 @@ export default function SoftwareUpdateTab() {
                     style={{ display:"flex", alignItems:"center", gap:8, padding:"11px 22px",
                       borderRadius:10, background:"#374151", color:"#fff",
                       fontSize:13, fontWeight:700, textDecoration:"none" }}>
-                    <Download size={15}/>
+                    <ImportCurve size={15} variant="Linear" color="currentColor"/>
                     Manual Download — {primaryLabel} ({(primaryAsset.size / 1024 / 1024).toFixed(1)} MB)
                   </a>
                   <p style={{ fontSize:11, color:"#9CA3AF", margin:0 }}>
@@ -312,7 +312,7 @@ export default function SoftwareUpdateTab() {
                   style={{ display:"flex", alignItems:"center", gap:8, padding:"11px 22px",
                     borderRadius:10, background:"#374151", color:"#fff",
                     fontSize:13, fontWeight:800, textDecoration:"none" }}>
-                  <ExternalLink size={15}/> Open GitHub Releases
+                  <ExportCircle size={15} variant="Linear" color="currentColor"/> Open GitHub Releases
                 </a>
               )}
             </div>
@@ -338,7 +338,7 @@ export default function SoftwareUpdateTab() {
             <a href="https://github.com/Victor-dev-03-cmd/lottery-software/releases/latest"
               target="_blank" rel="noreferrer"
               style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#64748B", textDecoration: "none" }}>
-              <ExternalLink size={12} /> View on GitHub
+              <ExportCircle size={12} variant="Linear" color="currentColor"/> View on GitHub
             </a>
           </div>
 
@@ -376,7 +376,7 @@ export default function SoftwareUpdateTab() {
                   <div style={{
                     height: "100%", borderRadius: 999, transition: "width 0.3s",
                     width: phase === "installing" || phase === "done" ? "100%" : `${pct}%`,
-                    background: phase === "done" ? "#16A34A" : "linear-gradient(90deg,#CF291D,#991B1B)",
+                    background: phase === "done" ? "#16A34A" : "linear-gradient(90deg,#4285F4,#991B1B)",
                   }}/>
                 </div>
                 {phase === "downloading" && total > 0 && (
@@ -390,10 +390,10 @@ export default function SoftwareUpdateTab() {
               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                 <button onClick={handleInstall}
                   style={{ display: "flex", alignItems: "center", gap: 8, padding: "11px 24px",
-                    borderRadius: 10, border: "none", background: "#CF291D", color: "#fff",
+                    borderRadius: 10, border: "none", background: "#4285F4", color: "#fff",
                     fontSize: 13, fontWeight: 800, cursor: "pointer",
                     boxShadow: "0 4px 14px rgba(207,41,29,0.35)" }}>
-                  <Download size={15} /> Download &amp; Install Now
+                  <ImportCurve size={15} variant="Linear" color="currentColor"/> Download &amp; Install Now
                 </button>
                 <p style={{ fontSize: 11, color: "#9CA3AF", margin: 0 }}>
                   The app will restart automatically after installation.
@@ -405,7 +405,7 @@ export default function SoftwareUpdateTab() {
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px",
                 background: "#F0FFF4", borderRadius: 8, border: "1px solid #BBF7D0",
                 fontSize: 12, fontWeight: 700, color: "#16A34A" }}>
-                <CheckCircle size={15} />
+                <TickCircle size={15} variant="Linear" color="currentColor"/>
                 Installing update…
               </div>
             )}
@@ -417,7 +417,7 @@ export default function SoftwareUpdateTab() {
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <div style={{ width: 44, height: 44, borderRadius: 12, background: "#16A34A",
                     display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <CheckCircle size={24} style={{ color: "#fff" }} />
+                    <TickCircle size={24} variant="Linear" color="#fff"/>
                   </div>
                   <div>
                     <p style={{ fontSize: 15, fontWeight: 800, color: "#F1F5F9", margin: 0 }}>

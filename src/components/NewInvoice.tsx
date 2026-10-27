@@ -16,6 +16,7 @@ import {
 import type { Agent, LotteryGame, Invoice, InvoiceItem, View } from "../types";
 import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, cleanBarcode } from "../utils/barcode";
 
+import { useLanguage } from "../i18n";
 interface Props {
   editInvoiceId?: number | null;
   onSaved: (id: number, view: View) => void;
@@ -32,6 +33,7 @@ const EMPTY_ITEM = (): InvoiceItem => ({
 });
 
 export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
+  const { t } = useLanguage();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [games, setGames] = useState<LotteryGame[]>([]);
   const [stockMap, setStockMap] = useState<Record<string, number>>({}); // game_name → available qty
@@ -345,7 +347,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
           <span>Sales</span>
           <ArrowRight2 size={11} variant="Linear" color="currentColor" />
           <span className="font-semibold" style={{ color: "#1D1D1D" }}>
-            {editInvoiceId ? "Edit Invoice" : "New Invoice"}
+            {editInvoiceId ? t("edit_invoice_title") : t("nav_new_invoice")}
           </span>
         </nav>
 
@@ -403,7 +405,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
         {/* Page title */}
         <div>
           <h1 className="text-xl font-bold tracking-tight" style={{ color: "#1D1D1D" }}>
-            {editInvoiceId ? "Edit Invoice" : "New Invoice"}
+            {editInvoiceId ? t("edit_invoice_title") : t("nav_new_invoice")}
           </h1>
           <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
             {editInvoiceId ? "Update invoice details and line items" : "Create a new delivery invoice for an agent"}

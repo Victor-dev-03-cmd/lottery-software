@@ -71,7 +71,7 @@ export default function UpdateNotifier() {
       overflow: "hidden", animation: "slideUp 0.3s ease",
     }}>
       {/* Top accent */}
-      <div style={{ height: 3, background: "linear-gradient(90deg,#CF291D,#B50717)" }} />
+      <div style={{ height: 3, background: "linear-gradient(90deg,#4285F4,#B50717)" }} />
 
       <div style={{ padding: "14px 16px" }}>
         {state === "available" && (
@@ -102,7 +102,7 @@ export default function UpdateNotifier() {
                 Later
               </button>
               <button onClick={installUpdate}
-                style={{ flex: 2, padding: "7px 0", border: "none", borderRadius: 7, background: "#CF291D", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                style={{ flex: 2, padding: "7px 0", border: "none", borderRadius: 7, background: "#4285F4", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                 ⬇ Update Now
               </button>
             </div>
@@ -119,7 +119,7 @@ export default function UpdateNotifier() {
               </div>
             </div>
             <div style={{ background: "#F3F4F6", borderRadius: 999, height: 6, overflow: "hidden" }}>
-              <div style={{ height: "100%", background: "#CF291D", borderRadius: 999, width: `${progress}%`, transition: "width 0.3s" }} />
+              <div style={{ height: "100%", background: "#4285F4", borderRadius: 999, width: `${progress}%`, transition: "width 0.3s" }} />
             </div>
             <div style={{ textAlign: "right", fontSize: 11, color: "#9CA3AF", marginTop: 4 }}>{progress}%</div>
           </div>

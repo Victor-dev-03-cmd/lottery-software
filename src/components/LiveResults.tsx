@@ -12,6 +12,7 @@ import { saveLotteryResult, getLatestLotteryResult, getLotteryResultByDate } fro
 import { pushResultToCloud, pullResultsFromCloud, subscribeToCloudUpdates } from "../services/supabase";
 import { resolveLogoUrl } from "./TicketLogoPicker";
 
+import { useLanguage } from "../i18n";
 // ── Game catalog ──────────────────────────────────────────────────────────────
 
 interface GameInfo {
@@ -439,6 +440,7 @@ function ManualEntryModal({ game, initialResult, onSave, onClose }: ModalProps) 
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function LiveResults() {
+  const { t } = useLanguage();
   const [board, setBoard]           = useState<"NLB" | "DLB">("NLB");
   const [selectedGame, setSelected] = useState<GameInfo>(NLB_GAMES[0]);
   const [result, setResult]         = useState<LotteryResult | null>(null);
@@ -673,7 +675,7 @@ export default function LiveResults() {
         <nav className="flex items-center gap-1 text-xs" style={{ color:"#9CA3AF" }}>
           
           <Home2 size={12} variant="Linear" color="#9AA0A6"/><ArrowRight2 size={11} variant="Linear" color="#9AA0A6"/>
-          <span className="font-semibold" style={{ color:"#1D1D1D" }}>Live Results</span>
+          <span className="font-semibold" style={{ color:"#1D1D1D" }}>{t("nav_live_results")}</span>
         </nav>
       </div>
 

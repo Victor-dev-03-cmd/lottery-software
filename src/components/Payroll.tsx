@@ -8,6 +8,7 @@ import {
 } from "../services/database";
 import type { Worker, WorkerRole, WorkerSalary, SalaryType } from "../types";
 import { useAuth } from "../contexts/AuthContext";
+import { useLanguage } from "../i18n";
 // SI imported for bilingual string access (used inline in JSX)
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -93,6 +94,7 @@ function FormField({ label, required = false, children }: {
 
 // ─── main component ──────────────────────────────────────────────────────────
 export default function Payroll() {
+  const { t } = useLanguage();
   const { withAdminToken } = useAuth();
 
   const [tab, setTab]           = useState<"workers" | "payroll">("workers");
@@ -307,7 +309,7 @@ export default function Payroll() {
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
           <Home2 size={12} variant="Linear" color="currentColor" />
           <ArrowRight2 size={11} variant="Linear" color="currentColor" />
-          <span className="font-semibold" style={{ color: "#1D1D1D" }}>Workers &amp; Salary</span>
+          <span className="font-semibold" style={{ color: "#1D1D1D" }}>{t("nav_payroll")}</span>
           <span className="ml-2 text-[11px] font-medium" style={{ color: "#9CA3AF" }}>
             · {activeWorkers.length} active
           </span>

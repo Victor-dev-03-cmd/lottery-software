@@ -4,6 +4,7 @@ import { AddCircle, Printer, Trash, CloseCircle, Save2, Home2, ArrowRight2 } fro
 import { getAgents, getDailyCollections, saveDailyCollection, deleteDailyCollection, getCollectionDates } from "../services/database";
 import type { Agent, DailyCollection } from "../types";
 
+import { useLanguage } from "../i18n";
 const EMPTY = (date: string): DailyCollection => ({
   collection_date: date,
   collector_name: "",
@@ -20,6 +21,7 @@ const EMPTY = (date: string): DailyCollection => ({
 });
 
 export default function DailyCollectionView() {
+  const { t } = useLanguage();
   
   const [agents, setAgents] = useState<Agent[]>([]);
   const [dates, setDates] = useState<{ date: string; total: number; count: number }[]>([]);
@@ -85,7 +87,7 @@ export default function DailyCollectionView() {
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
           <Home2 size={12} variant="Linear" color="currentColor" />
           <ArrowRight2 size={11} variant="Linear" color="currentColor" />
-          <span className="font-semibold" style={{ color: "#1D1D1D" }}>Daily Collections</span>
+          <span className="font-semibold" style={{ color: "#1D1D1D" }}>{t("nav_daily_collections")}</span>
         </nav>
         <div className="flex gap-2">
           <input
@@ -116,7 +118,7 @@ export default function DailyCollectionView() {
         {/* Page header */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#1D1D1D" }}>Daily Collections</h1>
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#1D1D1D" }}>{t("nav_daily_collections")}</h1>
             <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Cash collected by route and field collectors</p>
             <p className="text-xs mt-1 font-medium" style={{ color: "#D97706" }}>
               ⚠ Collection entries here are an operational log only. To update an agent's outstanding balance, record a payment in the Payment Ledger.

@@ -38,7 +38,7 @@ function urgencyColor(days: number) {
   if (days <= 7)  return { color: "#16a34a", bg: "#DCFCE7", border: "#BBF7D0", label: "Current" };
   if (days <= 30) return { color: "#d97706", bg: "#FEF9C3", border: "#FDE68A", label: "Overdue" };
   if (days <= 60) return { color: "#ea580c", bg: "#FFEDD5", border: "#FED7AA", label: "High Risk" };
-  return { color: "#CF291D", bg: "#FEE2E2", border: "#FECACA", label: "Critical" };
+  return { color: "#EA4335", bg: "#FEE2E2", border: "#FECACA", label: "Critical" };
 }
 
 function urgencyIcon(days: number) {
@@ -252,7 +252,7 @@ export default function Alerts() {
         {(supplierOwed > 0 || supplierAging.length > 0) && (
           <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
             <div className="px-5 py-3.5 flex items-center gap-3"
-              style={{ background: "linear-gradient(135deg,#7f1d1d,#CF291D)", borderBottom: "2px solid #B50717" }}>
+              style={{ background: "linear-gradient(135deg,#1a56db,#4285F4)", borderBottom: "2px solid #1A73E8" }}>
               <ShoppingCart size={16} className="text-white"/>
               <div className="flex-1">
                 <p className="text-sm font-bold text-white">Nimalsiri Enterprises — Supplier Dues</p>
@@ -266,7 +266,7 @@ export default function Alerts() {
             {supplierAging.length > 0 && (
               <div className="p-4 grid gap-3" style={{ gridTemplateColumns: `repeat(${supplierAging.length}, 1fr)` }}>
                 {supplierAging.map(b => {
-                  const c = b.days_max <= 7 ? "#16a34a" : b.days_max <= 14 ? "#d97706" : b.days_max <= 30 ? "#ea580c" : "#CF291D";
+                  const c = b.days_max <= 7 ? "#16a34a" : b.days_max <= 14 ? "#d97706" : b.days_max <= 30 ? "#ea580c" : "#EA4335";
                   return (
                     <div key={b.bracket} className="rounded-lg p-3 text-center"
                       style={{ background: "#FFF8F8", border: `1px solid ${c}25` }}>
@@ -295,8 +295,8 @@ export default function Alerts() {
           {[
             {
               key: "agents" as SectionFilter,
-              color: "#CF291D", bg: "#FEF2F2", border: "#FECACA",
-              icon: <Bell size={15} style={{ color: "#CF291D" }}/>,
+              color: "#EA4335", bg: "#FEF2F2", border: "#FECACA",
+              icon: <Bell size={15} style={{ color: "#EA4335" }}/>,
               value: agentAlerts.length,
               label: "Agents Outstanding",
               sub: `Rs. ${fmt(totalAlertOutstanding)} total`,
@@ -347,12 +347,12 @@ export default function Alerts() {
 
                 {/* Section header with language selector */}
                 <div className="px-4 py-3 flex items-center gap-3"
-                  style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
-                  <Bell size={14} style={{ color: "#CF291D" }}/>
+                  style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
+                  <Bell size={14} style={{ color: "#4285F4" }}/>
                   <span className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Payment Reminders</span>
                   {agentAlerts.length > 0 && (
                     <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-                      style={{ background: "#FEE2E2", color: "#CF291D" }}>
+                      style={{ background: "#FCE8E6", color: "#EA4335" }}>
                       {agentAlerts.length}
                     </span>
                   )}
@@ -424,7 +424,7 @@ export default function Alerts() {
                             </p>
 
                             {/* Outstanding amount */}
-                            <p className="text-sm font-black" style={{ color: "#CF291D" }}>
+                            <p className="text-sm font-black" style={{ color: "#4285F4" }}>
                               Rs. {fmt(alert.totalOutstanding)}
                             </p>
 
@@ -472,11 +472,11 @@ export default function Alerts() {
                                 <tbody>
                                   {alert.entries.map((e, i) => (
                                     <tr key={i} style={{ borderTop: "1px solid #F0F0F0" }}>
-                                      <td className="py-1.5 text-xs font-mono font-semibold" style={{ color: "#CF291D" }}>#{e.invoice_number}</td>
+                                      <td className="py-1.5 text-xs font-mono font-semibold" style={{ color: "#EA4335" }}>#{e.invoice_number}</td>
                                       <td className="py-1.5 text-xs" style={{ color: "#6B7280" }}>{fmtDate(e.invoice_date)}</td>
-                                      <td className="py-1.5 text-xs text-right font-semibold" style={{ color: "#CF291D" }}>Rs. {fmt(e.outstanding_balance)}</td>
+                                      <td className="py-1.5 text-xs text-right font-semibold" style={{ color: "#EA4335" }}>Rs. {fmt(e.outstanding_balance)}</td>
                                       <td className="py-1.5 text-xs text-right font-semibold"
-                                        style={{ color: e.days_old > 30 ? "#CF291D" : "#6B7280" }}>{e.days_old}d</td>
+                                        style={{ color: e.days_old > 30 ? "#EA4335" : "#6B7280" }}>{e.days_old}d</td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -489,7 +489,7 @@ export default function Alerts() {
 
                     {/* Footer totals row */}
                     <div className="px-4 py-2.5 flex items-center justify-between"
-                      style={{ background: "#374151", borderTop: "2px solid #CF291D" }}>
+                      style={{ background: "#374151", borderTop: "2px solid #4285F4" }}>
                       <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#9CA3AF" }}>
                         {agentAlerts.length} agents · {agentAlerts.reduce((s,a)=>s+a.entries.length,0)} invoices
                       </span>
@@ -528,7 +528,7 @@ export default function Alerts() {
                         style={{ borderTop: "1px solid #F3F4F6" }}>
                         <td className="px-4 py-2.5 text-sm font-medium" style={{ color: "#1D1D1D" }}>{s.game_name}</td>
                         <td className="px-4 py-2.5 text-sm text-right font-bold"
-                          style={{ color: s.remaining_qty === 0 ? "#CF291D" : "#ea580c" }}>
+                          style={{ color: s.remaining_qty === 0 ? "#EA4335" : "#ea580c" }}>
                           {s.remaining_qty.toLocaleString()}
                         </td>
                         <td className="px-4 py-2.5 text-sm text-right" style={{ color: "#6B7280" }}>
