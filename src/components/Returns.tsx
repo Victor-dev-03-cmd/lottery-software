@@ -788,14 +788,14 @@ export default function Returns() {
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-all"
                   style={{ background: "#4285F4" }}
                 >
-                  <Save2 size={14} variant="Linear" color="currentColor" /> Save Return
+                  <Save2 size={14} variant="Linear" color="currentColor" /> {t("action_save")} Return
                 </button>
                 <button
                   onClick={() => resetForm()}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all"
                   style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
                 >
-                  <CloseCircle size={14} variant="Linear" color="currentColor" /> Cancel
+                  <CloseCircle size={14} variant="Linear" color="currentColor" /> {t("action_cancel")}
                 </button>
               </div>
             </div>

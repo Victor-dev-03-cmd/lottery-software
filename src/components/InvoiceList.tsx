@@ -83,14 +83,14 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
             >
-              <Refresh2 size={14} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""} /> Refresh
+              <Refresh2 size={14} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""} />{t("action_refresh")}
             </button>
             <button
               onClick={() => onNavigate("new-invoice")}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
               style={{ background: "#4285F4" }}
             >
-              <AddCircle size={14} variant="Linear" color="currentColor" /> New Invoice
+              <AddCircle size={14} variant="Linear" color="currentColor" />{t("topbar_new_invoice")}
             </button>
           </div>
         </div>
@@ -231,7 +231,7 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
                           className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-white"
                           style={{ background: inv.outstanding_balance > 0 ? "#EA4335" : "#16a34a" }}
                         >
-                          {inv.outstanding_balance > 0 ? "Outstanding" : "Settled"}
+                          {inv.outstanding_balance > 0 ? t("status_overdue") : t("status_settled")}
                         </span>
                       </td>
                       <td className="px-4 py-3">
