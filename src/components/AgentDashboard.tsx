@@ -4,6 +4,7 @@ import {
   TrendingUp, Banknote, Ticket, AlertTriangle,
   Home, ChevronRight, Download, Users, ShoppingCart, Clock,
 } from "lucide-react";
+import { EmptyReports } from "./illustrations";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area,
@@ -481,7 +482,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
                 </p>
               </div>
               <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
-                style={{ background: "#FFF1F0", color: C.red }}>
+                style={{ background: "#EAF1FB", color: "#4285F4" }}>
                 ● LIVE
               </span>
             </div>
@@ -497,11 +498,11 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
                   <AreaChart data={daily} margin={{ top:4, right:4, left:-22, bottom:0 }}>
                     <defs>
                       <linearGradient id="rg" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor={C.red} stopOpacity={0.15}/>
-                        <stop offset="95%" stopColor={C.red} stopOpacity={0}/>
+                        <stop offset="5%"  stopColor="#4285F4" stopOpacity={0.18}/>
+                        <stop offset="95%" stopColor="#4285F4" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="2 4" stroke="#F3F4F6"/>
+                    <CartesianGrid strokeDasharray="2 4" stroke="#F1F3F4"/>
                     <XAxis dataKey="day" tick={{ fontSize:10, fill:C.txt3 }}
                       tickFormatter={v=>v.slice(5)} axisLine={false} tickLine={false}/>
                     <YAxis tick={{ fontSize:10, fill:C.txt3 }}
@@ -509,10 +510,10 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
                     <Tooltip
                       contentStyle={{ background:C.muted, border:"none", borderRadius:10, color:"#fff", fontSize:11, padding:"8px 12px" }}
                       formatter={v=>[`Rs. ${fmt(Number(v))}`, "Revenue"]}
-                      cursor={{ stroke: C.red, strokeWidth:1, strokeDasharray:"4 4" }}
+                      cursor={{ stroke: "#4285F4", strokeWidth:1, strokeDasharray:"4 4" }}
                     />
-                    <Area type="monotone" dataKey="total" stroke={C.red} strokeWidth={2.5}
-                      fill="url(#rg)" dot={false} activeDot={{ r:5, fill:C.red, strokeWidth:0 }}/>
+                    <Area type="monotone" dataKey="total" stroke="#4285F4" strokeWidth={2.5}
+                      fill="url(#rg)" dot={false} activeDot={{ r:5, fill:"#4285F4", strokeWidth:0 }}/>
                   </AreaChart>
                 </ResponsiveContainer>
               )}
@@ -590,8 +591,8 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
                     <Tooltip contentStyle={{ background:C.muted, border:"none", borderRadius:10, color:"#fff", fontSize:11, padding:"8px 12px" }}
                       formatter={(v,n) => [`Rs. ${fmt(Number(v))}`, n==="outstanding" ? "Outstanding" : "Total Value"]}/>
                     <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize:11, paddingTop:8, color:C.txt3 }}/>
-                    <Bar dataKey="total_value" name="Total Value" fill={C.red} radius={[4,4,0,0]}/>
-                    <Bar dataKey="outstanding"  name="Outstanding" fill={C.silver} radius={[4,4,0,0]}/>
+                    <Bar dataKey="total_value" name="Total Value" fill="#4285F4" radius={[4,4,0,0]}/>
+                    <Bar dataKey="outstanding"  name="Outstanding" fill="#EA4335" radius={[4,4,0,0]} fillOpacity={0.75}/>
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -605,24 +606,35 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
               <p className="font-semibold text-sm" style={{ color: C.muted }}>Quick Actions</p>
             </div>
             <div className="px-4 pb-4 space-y-3">
+              {/* Primary action */}
+              <button onClick={() => onNavigate("new-invoice")}
+                className="w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 active:scale-95"
+                style={{ background: "#4285F4" }}>
+                + New Invoice
+              </button>
+              {/* Secondary actions — neutral surface */}
               <div className="grid grid-cols-2 gap-2">
-                {[
-                  { l:"+ New Invoice",    v:"new-invoice"  as View, bg:C.red,     icon:"📋" },
-                  { l:"Stock Purchases",  v:"purchases"    as View, bg:"#b45309",  icon:"🛒" },
-                  { l:"Returns",          v:"returns"      as View, bg:C.muted,    icon:"↩" },
-                  { l:"Alerts",           v:"alerts"       as View, bg:C.redDk,    icon:"🔔" },
-                  { l:"Collections",      v:"collections"  as View, bg:"#374151",  icon:"💰" },
-                  { l:"Inventory",        v:"inventory"    as View, bg:"#4B5563",  icon:"📦" },
-                  { l:"Distribution",     v:"distribution" as View, bg:"#1e40af",  icon:"👥" },
-                  { l:"Add Agent",        v:"agents"       as View, bg:"#131313",  icon:"➕" },
-                ].map(({l,v,bg}) => (
-                  <button key={v} onClick={()=>onNavigate(v)}
-                    className="py-2 rounded-xl text-[11px] font-semibold text-white transition-all hover:opacity-90 active:scale-95 text-center"
-                    style={{ background:bg }}>
+                {([
+                  { l: "Collections",  v: "collections"  as View },
+                  { l: "Purchases",    v: "purchases"    as View },
+                  { l: "Inventory",    v: "inventory"    as View },
+                  { l: "Distribution", v: "distribution" as View },
+                  { l: "Returns",      v: "returns"      as View },
+                  { l: "Add Agent",    v: "agents"       as View },
+                ] as { l: string; v: View }[]).map(({ l, v }) => (
+                  <button key={v} onClick={() => onNavigate(v)}
+                    className="py-2 rounded-xl text-[11px] font-semibold transition-all hover:bg-gray-50 active:scale-95 text-center"
+                    style={{ background: C.white, border: `1px solid ${C.bdr}`, color: C.muted }}>
                     {l}
                   </button>
                 ))}
               </div>
+              {/* Alerts — semantic danger */}
+              <button onClick={() => onNavigate("alerts")}
+                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold transition-all hover:opacity-90 active:scale-95"
+                style={{ background: "#FCE8E6", border: `1px solid #F5C6C2`, color: "#EA4335" }}>
+                🔔 View Alerts
+              </button>
               {perf.slice(0,3).length > 0 && (
                 <div className="border-t pt-3 space-y-2" style={{ borderColor: C.surf }}>
                   <div className="text-[10px] font-bold uppercase" style={{ color: C.silver }}>Agent Collection Rate</div>
@@ -676,7 +688,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
                 </p>
               </div>
               <button onClick={() => onNavigate("invoices")}
-                className="text-xs font-semibold hover:underline" style={{ color: C.red }}>
+                className="text-xs font-semibold hover:underline" style={{ color: "#4285F4" }}>
                 View all →
               </button>
             </div>
@@ -698,7 +710,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
                     return (
                       <tr key={inv.id} className="transition-colors hover:bg-gray-50/80"
                         style={{ borderBottom:`1px solid #F9F9F9` }}>
-                        <td className="px-5 py-3 font-mono font-bold text-sm" style={{ color:C.red }}>
+                        <td className="px-5 py-3 font-mono font-bold text-sm" style={{ color:"#4285F4" }}>
                           #{inv.invoice_number}
                         </td>
                         <td className="px-5 py-3 font-medium text-sm" style={{ color:C.muted }}>
@@ -728,7 +740,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
         <div className="rounded-2xl overflow-hidden shadow-sm"
           style={{ background: C.white, border:`1px solid ${C.bdr}` }}>
           <div className="flex items-center justify-between px-5 py-3"
-            style={{ background:"#374151", borderBottom:`2px solid ${C.red}` }}>
+            style={{ background:"#374151", borderBottom:"2px solid #4285F4" }}>
             <div className="flex items-center gap-3">
               <Users size={15} className="text-white"/>
               <div>
@@ -747,7 +759,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
               </button>
               <button onClick={() => onNavigate("agents")}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white"
-                style={{ background:C.red }}>
+                style={{ background:"#4285F4" }}>
                 <UserPlus size={12}/> Manage
               </button>
             </div>
@@ -774,13 +786,13 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
                 {!loading && visible.length === 0 && (
                   <tr><td colSpan={8} className="px-5 py-10 text-center text-sm" style={{ color:C.silver }}>
                     {rows.length===0
-                      ? <span>No agents yet.{" "}<button onClick={()=>onNavigate("agents")} className="underline font-semibold" style={{ color:C.red }}>Add your first agent →</button></span>
+                      ? <span>No agents yet.{" "}<button onClick={()=>onNavigate("agents")} className="underline font-semibold" style={{ color:"#4285F4" }}>Add your first agent →</button></span>
                       : "No results match filter."}
                   </td></tr>
                 )}
                 {visible.map((r,i) => (
                   <tr key={r.agent_id}
-                    className="transition-colors hover:bg-red-50/30"
+                    className="transition-colors hover:bg-blue-50/20"
                     style={{ background: r.outstanding_balance>0 ? "#FFF8F8" : i%2===0 ? "#FFFFFF" : "#F9FAFB",
                       borderBottom:`1px solid #F5F5F5` }}>
                     <td className="px-4 py-2.5 font-semibold text-xs" style={{ color:C.muted }}>
@@ -806,8 +818,8 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
               </tbody>
               {!loading && visible.length > 0 && (
                 <tfoot>
-                  <tr style={{ background:"#374151", borderTop:`2px solid ${C.red}` }}>
-                    <td className="px-4 py-3 text-xs font-bold uppercase" style={{ color:C.red }}>Total</td>
+                  <tr style={{ background:"#374151", borderTop:"2px solid #4285F4" }}>
+                    <td className="px-4 py-3 text-xs font-bold uppercase" style={{ color:"#93c5fd" }}>Total</td>
                     {[totals.total_tickets.toLocaleString(), fmt(totals.total_value),
                       fmt(totals.winnings_tickets), fmt(totals.total_cash),
                       fmt(totals.paid_cash), fmt(totals.amount_over), fmt(totals.loan_amount)].map((v,i) => (
@@ -838,11 +850,11 @@ function KpiWhite({ icon, label, labelSi, value, sub, trend, trendColor="#34A853
   return (
     <div onClick={onClick}
       className="rounded-2xl p-5 transition-all shadow-sm"
-      style={{ background:"#FFFFFF", border:`1px solid #E8E8E8`,
+      style={{ background:"#FFFFFF", border:`1px solid #E0E3E7`,
         borderTop:"3px solid #4285F4", cursor: onClick?"pointer":undefined }}>
       <div className="flex items-center justify-between mb-3">
         <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-          style={{ background:"#F4F4F4", color:"#5F6368" }}>
+          style={{ background:"#EAF1FB", color:"#4285F4" }}>
           {icon}
         </div>
       </div>
@@ -858,10 +870,12 @@ function KpiWhite({ icon, label, labelSi, value, sub, trend, trendColor="#34A853
   );
 }
 
-function EmptyChart({ h=180, msg="No data yet", color="#BFBFBF" }: { h?:number; msg?:string; color?:string }) {
+function EmptyChart({ h=180, msg="No data yet", color="#9AA0A6" }: { h?:number; msg?:string; color?:string }) {
+  const showIllus = h >= 160;
   return (
-    <div className="flex items-center justify-center text-xs font-medium" style={{ height:h, color }}>
-      {msg}
+    <div className="flex flex-col items-center justify-center gap-2 animate-fade-in" style={{ height: h }}>
+      {showIllus && <EmptyReports size={72} />}
+      <p className="text-xs font-medium" style={{ color }}>{msg}</p>
     </div>
   );
 }
