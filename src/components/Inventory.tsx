@@ -162,13 +162,13 @@ export default function Inventory() {
   const totalRemaining = batches.reduce((s, b) => s + b.remaining_qty, 0);
 
   return (
-    <div style={{ background: "#F5F5F5", minHeight: "100%" }}>
+    <div style={{ background: "#F8F9FA", minHeight: "100%" }}>
       {/* Breadcrumb */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
-        <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
+        <nav className="flex items-center gap-1 text-xs" style={{ color: "#9AA0A6" }}>
           <Home2 size={12} variant="Linear" color="currentColor" />
           <ArrowRight2 size={11} variant="Linear" color="currentColor" />
-          <span className="font-semibold" style={{ color: "#1D1D1D" }}>{t("nav_inventory")}</span>
+          <span className="font-semibold" style={{ color: "#202124" }}>{t("nav_inventory")}</span>
         </nav>
       </div>
 
@@ -177,8 +177,8 @@ export default function Inventory() {
         <div className="mx-6 mt-2 px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2"
           style={{
             background: syncMsg.startsWith("✓") ? "#F0FFF4" : "#FCE8E6",
-            border: `1px solid ${syncMsg.startsWith("✓") ? "#BBF7D0" : "#FECACA"}`,
-            color: syncMsg.startsWith("✓") ? "#16a34a" : "#EA4335",
+            border: `1px solid ${syncMsg.startsWith("✓") ? "#CEEAD6" : "#FECACA"}`,
+            color: syncMsg.startsWith("✓") ? "#34A853" : "#EA4335",
           }}>
           {syncMsg}
         </div>
@@ -188,10 +188,10 @@ export default function Inventory() {
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#1D1D1D" }}>
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#202124" }}>
               Stock Management
             </h1>
-            <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
+            <p className="text-xs mt-0.5" style={{ color: "#9AA0A6" }}>
               Track lottery ticket batches
             </p>
           </div>
@@ -206,17 +206,17 @@ export default function Inventory() {
             {/* Grid / List toggle */}
             <div style={{ display:"flex", borderRadius:8, border:"1px solid #E5E7EB", overflow:"hidden" }}>
               <button onClick={() => setViewMode("grid")}
-                style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", border:"none", fontSize:12, fontWeight:600, cursor:"pointer", background: viewMode==="grid"?"#4285F4":"#fff", color: viewMode==="grid"?"#fff":"#6B7280" }}>
+                style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", border:"none", fontSize:12, fontWeight:600, cursor:"pointer", background: viewMode==="grid"?"#4285F4":"#fff", color: viewMode==="grid"?"#fff":"#5F6368" }}>
                 <Grid2 size={16} variant="Linear" color="currentColor"/> Grid
               </button>
               <button onClick={() => setViewMode("list")}
-                style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", border:"none", fontSize:12, fontWeight:600, cursor:"pointer", background: viewMode==="list"?"#4285F4":"#fff", color: viewMode==="list"?"#fff":"#6B7280" }}>
+                style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", border:"none", fontSize:12, fontWeight:600, cursor:"pointer", background: viewMode==="list"?"#4285F4":"#fff", color: viewMode==="list"?"#fff":"#5F6368" }}>
                 <AlignLeft size={16} variant="Linear" color="currentColor"/> List
               </button>
             </div>
             <button onClick={load} disabled={loading}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:bg-gray-50 disabled:opacity-50"
-              style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", color:"#1D1D1D" }}>
+              style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", color:"#202124" }}>
               <Refresh2 size={14} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""}/>
             </button>
             <button onClick={handleSync} disabled={syncing || loading}
@@ -227,7 +227,7 @@ export default function Inventory() {
             </button>
             <button onClick={() => setForm(EMPTY())}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all"
-              style={{ background:"#F9FAFB", border:"1px solid #E5E7EB", color:"#6B7280" }}>
+              style={{ background:"#F9FAFB", border:"1px solid #E5E7EB", color:"#5F6368" }}>
               <AddCircle size={15} variant="Linear" color="currentColor"/> Add Batch
             </button>
           </div>
@@ -245,7 +245,7 @@ export default function Inventory() {
             label="Distributed"
             value={totalDistributed.toLocaleString()}
             sub="issued to agents"
-            accent="#16a34a"
+            accent="#34A853"
           />
           <StatCard
             label="Remaining"
@@ -257,7 +257,7 @@ export default function Inventory() {
             label="Low Stock Alerts"
             value={String(lowStockCount)}
             sub={lowStockCount > 0 ? "batches need attention" : "all batches healthy"}
-            accent={lowStockCount > 0 ? "#EA4335" : "#9CA3AF"}
+            accent={lowStockCount > 0 ? "#EA4335" : "#9AA0A6"}
           />
         </div>
 
@@ -271,10 +271,10 @@ export default function Inventory() {
               className="flex items-center justify-between px-5 py-3.5"
               style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}
             >
-              <span className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>
+              <span className="font-semibold text-sm" style={{ color: "#202124" }}>
                 {form.id ? "Edit Batch" : "New Stock Batch"}
               </span>
-              <button style={{ color: "#9CA3AF" }} onClick={() => setForm(null)}>
+              <button style={{ color: "#9AA0A6" }} onClick={() => setForm(null)}>
                 <CloseCircle size={14} variant="Linear" color="currentColor" />
               </button>
             </div>
@@ -283,7 +283,7 @@ export default function Inventory() {
                 <div>
                   <label
                     className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}
+                    style={{ color: "#9AA0A6" }}
                   >
                     Game Name *
                   </label>
@@ -311,7 +311,7 @@ export default function Inventory() {
                 <div>
                   <label
                     className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}
+                    style={{ color: "#9AA0A6" }}
                   >
                     Batch Date
                   </label>
@@ -324,7 +324,7 @@ export default function Inventory() {
                 <div>
                   <label
                     className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}
+                    style={{ color: "#9AA0A6" }}
                   >
                     Barcode Start *
                   </label>
@@ -339,7 +339,7 @@ export default function Inventory() {
                 <div>
                   <label
                     className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}
+                    style={{ color: "#9AA0A6" }}
                   >
                     Barcode End *
                     <span title="Auto-calculated from Start + Qty">
@@ -357,7 +357,7 @@ export default function Inventory() {
                 <div>
                   <label
                     className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}
+                    style={{ color: "#9AA0A6" }}
                   >
                     Total Qty
                     <span title="Auto-calculated from barcodes">
@@ -376,7 +376,7 @@ export default function Inventory() {
                 <div>
                   <label
                     className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}
+                    style={{ color: "#9AA0A6" }}
                   >
                     Distributed Qty
                   </label>
@@ -395,7 +395,7 @@ export default function Inventory() {
                 <div>
                   <label
                     className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}
+                    style={{ color: "#9AA0A6" }}
                   >
                     Unit Price (Rs.)
                   </label>
@@ -411,7 +411,7 @@ export default function Inventory() {
                 <div>
                   <label
                     className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-                    style={{ color: "#9CA3AF" }}
+                    style={{ color: "#9AA0A6" }}
                   >
                     Low Stock Alert (qty)
                   </label>
@@ -425,7 +425,7 @@ export default function Inventory() {
                   />
                 </div>
                 <div className="col-span-2 lg:col-span-4">
-                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>
                     Notes
                   </label>
                   <FocusInput type="text" value={form.notes}
@@ -440,51 +440,51 @@ export default function Inventory() {
                 </p>
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                   <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Batch No.</label>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Batch No.</label>
                     <FocusInput type="text" value={form.batch_number ?? ""}
                       onChange={e => setForm({ ...form, batch_number: e.target.value })} placeholder="e.g. B2026-001"/>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Category</label>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Category</label>
                     <select value={form.nlb_dlb_category ?? ""}
                       onChange={e => setForm({ ...form, nlb_dlb_category: e.target.value })}
                       className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
-                      style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#1D1D1D" }}>
+                      style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#202124" }}>
                       <option value="">— Category —</option>
                       {NLB_DLB_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Ticket Start No.</label>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Ticket Start No.</label>
                     <FocusInput type="text" value={form.ticket_start_no ?? ""}
                       onChange={e => setForm({ ...form, ticket_start_no: e.target.value })} placeholder="e.g. A001"/>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Ticket End No.</label>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Ticket End No.</label>
                     <FocusInput type="text" value={form.ticket_end_no ?? ""}
                       onChange={e => setForm({ ...form, ticket_end_no: e.target.value })} placeholder="e.g. A500"/>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Books (Bundles)</label>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Books (Bundles)</label>
                     <FocusInput type="number" value={form.books_qty || ""}
                       placeholder="0"
                       onChange={e => setForm({ ...form, books_qty: parseInt(e.target.value) || 0 })}
                       onFocus={(e) => e.target.select()}/>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Tickets / Book</label>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Tickets / Book</label>
                     <FocusInput type="number" value={form.tickets_per_book || ""}
                       placeholder="0"
                       onChange={e => setForm({ ...form, tickets_per_book: parseInt(e.target.value) || 100 })}
                       onFocus={(e) => e.target.select()}/>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Warehouse</label>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Warehouse</label>
                     <FocusInput type="text" value={form.warehouse_location ?? ""}
                       onChange={e => setForm({ ...form, warehouse_location: e.target.value })} placeholder="e.g. Main Store"/>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Rack / Tag</label>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Rack / Tag</label>
                     <FocusInput type="text" value={form.rack_tag ?? ""}
                       onChange={e => setForm({ ...form, rack_tag: e.target.value })} placeholder="e.g. R-A3"/>
                   </div>
@@ -502,7 +502,7 @@ export default function Inventory() {
                 <button
                   onClick={() => setForm(null)}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all"
-                  style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
+                  style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#202124" }}
                 >
                   <CloseCircle size={14} variant="Linear" color="currentColor" /> Cancel
                 </button>
@@ -555,7 +555,7 @@ export default function Inventory() {
                   style={
                     tabFilter === key
                       ? { background: "#4285F4", color: "#FFFFFF" }
-                      : { background: "#2D2D2D", color: "#9CA3AF" }
+                      : { background: "#2D2D2D", color: "#9AA0A6" }
                   }
                 >
                   {label}
@@ -565,7 +565,7 @@ export default function Inventory() {
           </div>
 
           {loading ? (
-            <div className="p-8 text-center text-sm" style={{ color: "#9CA3AF" }}>
+            <div className="p-8 text-center text-sm" style={{ color: "#9AA0A6" }}>
               Loading inventory…
             </div>
           ) : filtered.length === 0 ? (
@@ -576,10 +576,10 @@ export default function Inventory() {
               >
                 <Box1 size={18} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
               </div>
-              <p className="text-sm font-medium" style={{ color: "#6B7280" }}>
+              <p className="text-sm font-medium" style={{ color: "#5F6368" }}>
                 {batches.length === 0 ? "No batches yet" : "No results"}
               </p>
-              <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>
+              <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>
                 {batches.length === 0 ? "Add your first ticket batch to get started" : "Try adjusting the filter"}
               </p>
             </div>
@@ -600,7 +600,7 @@ export default function Inventory() {
                     ].map(h => (
                       <th key={h.label} style={{
                         padding:"10px 14px", textAlign: h.align as "left"|"right"|"center",
-                        fontSize:10, fontWeight:700, color:"#9CA3AF",
+                        fontSize:10, fontWeight:700, color:"#9AA0A6",
                         textTransform:"uppercase", letterSpacing:"0.05em",
                         width: h.w, whiteSpace:"nowrap",
                       }}>{h.label}</th>
@@ -642,18 +642,18 @@ export default function Inventory() {
                         </td>
 
                         {/* Batch date */}
-                        <td style={{ padding:"10px 14px", textAlign:"center", fontSize:12, color:"#6B7280" }}>
+                        <td style={{ padding:"10px 14px", textAlign:"center", fontSize:12, color:"#5F6368" }}>
                           {fmtDate(b.batch_date)}
                         </td>
 
                         {/* Barcode range — compact with two lines */}
                         <td style={{ padding:"10px 14px" }}>
-                          <div style={{ fontSize:11, fontFamily:"monospace", color:"#374151", lineHeight:1.7 }}>
+                          <div style={{ fontSize:11, fontFamily:"monospace", color:"#5F6368", lineHeight:1.7 }}>
                             <span style={{ color:"#2563EB", fontWeight:700 }}>{b.barcode_start}</span>
-                            <span style={{ color:"#9CA3AF", margin:"0 4px" }}>→</span>
+                            <span style={{ color:"#9AA0A6", margin:"0 4px" }}>→</span>
                             <span style={{ color:"#7C3AED", fontWeight:700 }}>{b.barcode_end}</span>
                           </div>
-                          <div style={{ fontSize:9, color:"#9CA3AF", marginTop:1 }}>
+                          <div style={{ fontSize:9, color:"#9AA0A6", marginTop:1 }}>
                             {b.total_qty > 0 ? `${Math.ceil(b.total_qty / (b.tickets_per_book||100))} books × ${b.tickets_per_book||100}` : ""}
                           </div>
                         </td>
@@ -670,20 +670,20 @@ export default function Inventory() {
 
                         {/* Remaining — big green/red */}
                         <td style={{ padding:"10px 14px", textAlign:"right" }}>
-                          <div style={{ fontSize:16, fontWeight:900, color: isLow?"#EA4335":"#16a34a" }}>
+                          <div style={{ fontSize:16, fontWeight:900, color: isLow?"#EA4335":"#34A853" }}>
                             {b.remaining_qty.toLocaleString()}
                           </div>
                           {b.total_qty > 0 && (
                             <div style={{ height:4, background:"#F3F4F6", borderRadius:999, marginTop:3, overflow:"hidden" }}>
                               <div style={{ height:"100%", borderRadius:999,
                                 width:`${Math.min(100,(b.remaining_qty/b.total_qty)*100)}%`,
-                                background: isLow?"#EA4335":"#16a34a", transition:"width 0.3s" }}/>
+                                background: isLow?"#EA4335":"#34A853", transition:"width 0.3s" }}/>
                             </div>
                           )}
                         </td>
 
                         {/* Unit price */}
-                        <td style={{ padding:"10px 14px", textAlign:"right", fontSize:12, color:"#6B7280" }}>
+                        <td style={{ padding:"10px 14px", textAlign:"right", fontSize:12, color:"#5F6368" }}>
                           Rs. {fmt(b.unit_price)}
                         </td>
 
@@ -692,9 +692,9 @@ export default function Inventory() {
                           <span style={{
                             display:"inline-block", padding:"4px 12px", borderRadius:20,
                             fontSize:11, fontWeight:700,
-                            background: isLow?"#FEE2E2":"#DCFCE7",
-                            color: isLow?"#EA4335":"#16a34a",
-                            border: `1px solid ${isLow?"#FECACA":"#BBF7D0"}`,
+                            background: isLow?"#FEE2E2":"#E6F4EA",
+                            color: isLow?"#EA4335":"#34A853",
+                            border: `1px solid ${isLow?"#FECACA":"#CEEAD6"}`,
                           }}>
                             {isLow ? "⚠ Low Stock" : "✓ In Stock"}
                           </span>
@@ -791,7 +791,7 @@ function InventoryGridView({
               <span style={{ fontSize:13, fontWeight:800, color: board==="NLB"?"#1d4ed8":"#c2410c" }}>
                 {board} — {board==="NLB"?"National Lottery Board":"Development Lottery Board"}
               </span>
-              <span style={{ marginLeft:"auto", fontSize:11, color:"#6B7280" }}>
+              <span style={{ marginLeft:"auto", fontSize:11, color:"#5F6368" }}>
                 {boardGames.filter(g=>g.remaining>0).length}/{boardGames.length} in stock
               </span>
             </div>
@@ -807,7 +807,7 @@ function InventoryGridView({
                     style={{
                       display:"flex", flexDirection:"column", alignItems:"center",
                       padding:"16px 12px", borderRadius:12,
-                      border: `2px solid ${hasStock ? (isLow?"#FDE68A":"#BBF7D0") : noStock?"#E5E7EB":"#FECACA"}`,
+                      border: `2px solid ${hasStock ? (isLow?"#FDE68A":"#CEEAD6") : noStock?"#E5E7EB":"#FECACA"}`,
                       background: hasStock ? (isLow?"#FFFBEB":"#F0FFF4") : noStock?"#F9FAFB":"#FCE8E6",
                       cursor: g.batches>0?"pointer":"default",
                       transition:"all 0.15s",
@@ -821,8 +821,8 @@ function InventoryGridView({
                     <span style={{
                       position:"absolute", top:8, right:8,
                       padding:"2px 6px", borderRadius:20, fontSize:9, fontWeight:700,
-                      background: hasStock?(isLow?"#FDE68A":"#DCFCE7"):noStock?"#F3F4F6":"#FEE2E2",
-                      color: hasStock?(isLow?"#92400E":"#16A34A"):noStock?"#9CA3AF":"#DC2626",
+                      background: hasStock?(isLow?"#FDE68A":"#E6F4EA"):noStock?"#F3F4F6":"#FEE2E2",
+                      color: hasStock?(isLow?"#92400E":"#34A853"):noStock?"#9AA0A6":"#DC2626",
                     }}>
                       {noStock?"No Stock":isLow?"Low":soldOut?"Sold Out":"✓ In Stock"}
                     </span>
@@ -841,28 +841,28 @@ function InventoryGridView({
                     {/* Stock numbers */}
                     {g.batches > 0 ? (
                       <>
-                        <div style={{ fontSize:20, fontWeight:900, color: hasStock?(isLow?"#D97706":"#16A34A"):"#EA4335" }}>
+                        <div style={{ fontSize:20, fontWeight:900, color: hasStock?(isLow?"#D97706":"#34A853"):"#EA4335" }}>
                           {fmt(g.remaining)}
                         </div>
-                        <div style={{ fontSize:9, color:"#9CA3AF", marginTop:1 }}>available</div>
+                        <div style={{ fontSize:9, color:"#9AA0A6", marginTop:1 }}>available</div>
                         <div style={{ width:"100%", marginTop:6 }}>
                           <div style={{ background:"#F3F4F6", borderRadius:999, height:4, overflow:"hidden" }}>
                             <div style={{ height:"100%", borderRadius:999,
                               width:`${g.total>0?Math.min(100,(g.remaining/g.total)*100):0}%`,
-                              background: isLow?"#F59E0B":"#16A34A", transition:"width 0.3s" }}/>
+                              background: isLow?"#F59E0B":"#34A853", transition:"width 0.3s" }}/>
                           </div>
-                          <div style={{ display:"flex", justifyContent:"space-between", fontSize:9, color:"#9CA3AF", marginTop:2 }}>
+                          <div style={{ display:"flex", justifyContent:"space-between", fontSize:9, color:"#9AA0A6", marginTop:2 }}>
                             <span>Sold: {fmt(g.distributed)}</span>
                             <span>Total: {fmt(g.total)}</span>
                           </div>
                         </div>
-                        <div style={{ fontSize:9, color:"#6B7280", marginTop:4 }}>
+                        <div style={{ fontSize:9, color:"#5F6368", marginTop:4 }}>
                           {g.batches} batch{g.batches!==1?"es":""}
                           {g.batches>0 && <span style={{ color:"#2563EB", marginLeft:4 }}>click for details</span>}
                         </div>
                       </>
                     ) : (
-                      <div style={{ fontSize:11, color:"#9CA3AF", textAlign:"center", marginTop:4 }}>
+                      <div style={{ fontSize:11, color:"#9AA0A6", textAlign:"center", marginTop:4 }}>
                         No stock purchased yet
                       </div>
                     )}
@@ -945,7 +945,7 @@ function BatchDetailPopup({
         {/* Batches */}
         <div style={{ flex:1, overflowY:"auto", padding:16 }}>
           {batchData.length === 0 ? (
-            <div style={{ textAlign:"center", padding:"40px", color:"#9CA3AF", fontSize:13 }}>No purchase batches found for {gameName}</div>
+            <div style={{ textAlign:"center", padding:"40px", color:"#9AA0A6", fontSize:13 }}>No purchase batches found for {gameName}</div>
           ) : batchData.map(b => (
             <div key={b.id} style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:12, marginBottom:10, overflow:"hidden" }}>
               {/* Batch row */}
@@ -955,21 +955,21 @@ function BatchDetailPopup({
                   <div style={{ fontSize:12, fontWeight:700, color:"#111827", marginBottom:2 }}>
                     📦 Batch #{b.id} · {b.batch_date}
                   </div>
-                  <div style={{ fontSize:11, fontFamily:"monospace", color:"#6B7280" }}>
+                  <div style={{ fontSize:11, fontFamily:"monospace", color:"#5F6368" }}>
                     <span style={{ color:"#2563EB" }}>{b.barcode_start}</span>
-                    <span style={{ margin:"0 6px", color:"#9CA3AF" }}>→</span>
+                    <span style={{ margin:"0 6px", color:"#9AA0A6" }}>→</span>
                     <span style={{ color:"#7C3AED" }}>{b.barcode_end}</span>
-                    <span style={{ marginLeft:8, color:"#9CA3AF" }}>
-                      Last ticket: <strong style={{ color:"#374151" }}>{lastTicketBarcode(b.barcode_end)}</strong>
+                    <span style={{ marginLeft:8, color:"#9AA0A6" }}>
+                      Last ticket: <strong style={{ color:"#5F6368" }}>{lastTicketBarcode(b.barcode_end)}</strong>
                     </span>
                   </div>
                 </div>
                 {/* Progress */}
                 <div style={{ flex:1 }}>
                   <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, marginBottom:4 }}>
-                    <span style={{ color:"#6B7280" }}>Sold: <strong style={{ color:"#4285F4" }}>{fmt(b.sold_from_invoices)}</strong></span>
-                    <span style={{ color:"#6B7280" }}>Remaining: <strong style={{ color:"#16A34A" }}>{fmt(b.remaining_qty)}</strong></span>
-                    <span style={{ color:"#6B7280" }}>Total: <strong>{fmt(b.total_qty)}</strong></span>
+                    <span style={{ color:"#5F6368" }}>Sold: <strong style={{ color:"#4285F4" }}>{fmt(b.sold_from_invoices)}</strong></span>
+                    <span style={{ color:"#5F6368" }}>Remaining: <strong style={{ color:"#34A853" }}>{fmt(b.remaining_qty)}</strong></span>
+                    <span style={{ color:"#5F6368" }}>Total: <strong>{fmt(b.total_qty)}</strong></span>
                   </div>
                   <div style={{ background:"#F3F4F6", borderRadius:999, height:6, overflow:"hidden" }}>
                     <div style={{ height:"100%", borderRadius:999,
@@ -986,15 +986,15 @@ function BatchDetailPopup({
               {expandedBatch === b.id && (
                 <div style={{ padding:"0 16px 14px" }}>
                   {!(b.id in salesRows) ? (
-                    <div style={{ fontSize:11, color:"#9CA3AF", padding:"8px 0" }}>Loading…</div>
+                    <div style={{ fontSize:11, color:"#9AA0A6", padding:"8px 0" }}>Loading…</div>
                   ) : (salesRows[b.id] ?? []).length === 0 ? (
-                    <div style={{ fontSize:11, color:"#9CA3AF", padding:"8px 0" }}>No invoices issued from this batch yet</div>
+                    <div style={{ fontSize:11, color:"#9AA0A6", padding:"8px 0" }}>No invoices issued from this batch yet</div>
                   ) : (
                     <table style={{ width:"100%", fontSize:11, borderCollapse:"collapse" }}>
                       <thead>
                         <tr style={{ background:"#F9FAFB" }}>
                           {["Invoice #","Agent","Date","Barcode Start","Barcode End","Qty","Status"].map(h => (
-                            <th key={h} style={{ padding:"5px 10px", textAlign:"left", fontWeight:700, color:"#6B7280", fontSize:10, textTransform:"uppercase", borderBottom:"1px solid #E5E7EB" }}>{h}</th>
+                            <th key={h} style={{ padding:"5px 10px", textAlign:"left", fontWeight:700, color:"#5F6368", fontSize:10, textTransform:"uppercase", borderBottom:"1px solid #E5E7EB" }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
@@ -1003,14 +1003,14 @@ function BatchDetailPopup({
                           <tr key={i} style={{ borderBottom:"1px solid #F9FAFB" }}>
                             <td style={{ padding:"6px 10px", fontFamily:"monospace", fontWeight:700, color:"#4285F4" }}>#{r.invoice_number}</td>
                             <td style={{ padding:"6px 10px", fontWeight:600, color:"#111827" }}>{r.agent_name}</td>
-                            <td style={{ padding:"6px 10px", color:"#6B7280" }}>{r.invoice_date}</td>
+                            <td style={{ padding:"6px 10px", color:"#5F6368" }}>{r.invoice_date}</td>
                             <td style={{ padding:"6px 10px", fontFamily:"monospace", color:"#2563EB" }}>{r.barcode_start}</td>
                             <td style={{ padding:"6px 10px", fontFamily:"monospace", color:"#7C3AED" }}>{r.barcode_end}</td>
-                            <td style={{ padding:"6px 10px", fontWeight:700, color:"#16A34A" }}>{r.qty.toLocaleString()}</td>
+                            <td style={{ padding:"6px 10px", fontWeight:700, color:"#34A853" }}>{r.qty.toLocaleString()}</td>
                             <td style={{ padding:"6px 10px" }}>
                               <span style={{ padding:"1px 7px", borderRadius:20, fontSize:9, fontWeight:700,
-                                background:r.invoice_status==="paid"?"#DCFCE7":r.invoice_status==="confirmed"?"#DBEAFE":"#F3F4F6",
-                                color:r.invoice_status==="paid"?"#16A34A":r.invoice_status==="confirmed"?"#2563EB":"#6B7280" }}>
+                                background:r.invoice_status==="paid"?"#E6F4EA":r.invoice_status==="confirmed"?"#DBEAFE":"#F3F4F6",
+                                color:r.invoice_status==="paid"?"#34A853":r.invoice_status==="confirmed"?"#2563EB":"#5F6368" }}>
                                 {r.invoice_status}
                               </span>
                             </td>
@@ -1019,7 +1019,7 @@ function BatchDetailPopup({
                       </tbody>
                       <tfoot>
                         <tr style={{ background:"#F9FAFB", borderTop:"1px solid #E5E7EB" }}>
-                          <td colSpan={5} style={{ padding:"6px 10px", fontSize:10, color:"#6B7280", fontWeight:700 }}>
+                          <td colSpan={5} style={{ padding:"6px 10px", fontSize:10, color:"#5F6368", fontWeight:700 }}>
                             TOTAL SOLD FROM THIS BATCH
                           </td>
                           <td style={{ padding:"6px 10px", fontWeight:900, color:"#EA4335" }}>
@@ -1056,15 +1056,15 @@ function BatchDetailPopup({
                           {(returnRows[b.id]??[]).map((r:any,i:number) => (
                             <tr key={i} style={{ borderBottom:"1px solid #FFFBEB" }}>
                               <td style={{ padding:"5px 8px", fontWeight:600, color:"#92400E" }}>{r.agent_name}</td>
-                              <td style={{ padding:"5px 8px", color:"#6B7280" }}>{r.return_date}</td>
+                              <td style={{ padding:"5px 8px", color:"#5F6368" }}>{r.return_date}</td>
                               <td style={{ padding:"5px 8px", fontFamily:"monospace", color:"#2563EB", fontSize:10 }}>{r.barcode_start}</td>
                               <td style={{ padding:"5px 8px", fontFamily:"monospace", color:"#7C3AED", fontSize:10 }}>{r.barcode_end}</td>
-                              <td style={{ padding:"5px 8px", fontWeight:700, color:"#16A34A" }}>{r.qty.toLocaleString()}</td>
-                              <td style={{ padding:"5px 8px", color:"#6B7280", textTransform:"capitalize" }}>{r.return_reason}</td>
+                              <td style={{ padding:"5px 8px", fontWeight:700, color:"#34A853" }}>{r.qty.toLocaleString()}</td>
+                              <td style={{ padding:"5px 8px", color:"#5F6368", textTransform:"capitalize" }}>{r.return_reason}</td>
                               <td style={{ padding:"5px 8px" }}>
                                 <span style={{ padding:"1px 7px", borderRadius:20, fontSize:9, fontWeight:700,
-                                  background:r.status==="settled"?"#DCFCE7":"#FEF9C3",
-                                  color:r.status==="settled"?"#16A34A":"#92400E" }}>
+                                  background:r.status==="settled"?"#E6F4EA":"#FEF9C3",
+                                  color:r.status==="settled"?"#34A853":"#92400E" }}>
                                   {r.status}
                                 </span>
                               </td>
@@ -1107,14 +1107,14 @@ function StatCard({
     >
       <p
         className="text-[10px] font-bold uppercase tracking-wider mb-2"
-        style={{ color: "#9CA3AF" }}
+        style={{ color: "#9AA0A6" }}
       >
         {label}
       </p>
-      <p className="text-2xl font-black leading-none" style={{ color: "#1D1D1D" }}>
+      <p className="text-2xl font-black leading-none" style={{ color: "#202124" }}>
         {value}
       </p>
-      <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>
+      <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>
         {sub}
       </p>
     </div>
@@ -1131,7 +1131,7 @@ function FocusInput(
       {...rest}
       className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-none${mono ? " font-mono" : ""}`}
       style={{
-        border: `1px solid ${focused ? "#4285F4" : "#E8E8E8"}`,
+        border: `1px solid ${focused ? "#4285F4" : "#E0E3E7"}`,
         background: "#FAFAFA",
         ...propStyle,
       }}

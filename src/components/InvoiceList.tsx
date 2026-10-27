@@ -60,13 +60,13 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
   );
 
   return (
-    <div style={{ background: "#F5F5F5", minHeight: "100%" }}>
+    <div style={{ background: "#F8F9FA", minHeight: "100%" }}>
       {/* Breadcrumb */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
-        <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
+        <nav className="flex items-center gap-1 text-xs" style={{ color: "#9AA0A6" }}>
           <Home2 size={12} variant="Linear" color="currentColor" />
           <ArrowRight2 size={11} variant="Linear" color="currentColor" />
-          <span className="font-semibold" style={{ color: "#1D1D1D" }}>{t("nav_paid_invoices")}</span>
+          <span className="font-semibold" style={{ color: "#202124" }}>{t("nav_paid_invoices")}</span>
         </nav>
       </div>
 
@@ -74,14 +74,14 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
         {/* Page header row */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#1D1D1D" }}>{t("nav_paid_invoices")}</h1>
-            <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>All delivery invoices</p>
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#202124" }}>{t("nav_paid_invoices")}</h1>
+            <p className="text-xs mt-0.5" style={{ color: "#9AA0A6" }}>All delivery invoices</p>
           </div>
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={load} disabled={loading}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
+              style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#202124" }}
             >
               <Refresh2 size={14} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""} />{t("action_refresh")}
             </button>
@@ -103,25 +103,25 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             className="rounded-lg px-3 py-2 text-sm focus:outline-none w-56"
-            style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#1D1D1D" }}
+            style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#202124" }}
             onFocus={(e) => (e.currentTarget.style.borderColor = "#4285F4")}
-            onBlur={(e) => (e.currentTarget.style.borderColor = "#E8E8E8")}
+            onBlur={(e) => (e.currentTarget.style.borderColor = "#E0E3E7")}
           />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as "" | "outstanding" | "settled")}
             className="rounded-lg px-3 py-2 text-sm focus:outline-none"
-            style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#1D1D1D" }}
+            style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#202124" }}
             onFocus={(e) => (e.currentTarget.style.borderColor = "#4285F4")}
-            onBlur={(e) => (e.currentTarget.style.borderColor = "#E8E8E8")}
+            onBlur={(e) => (e.currentTarget.style.borderColor = "#E0E3E7")}
           >
             <option value="">All Statuses</option>
             <option value="outstanding">Outstanding</option>
             <option value="settled">Settled</option>
           </select>
           {!loading && (
-            <span className="text-xs" style={{ color: "#9CA3AF" }}>
-              <span className="font-semibold" style={{ color: "#1D1D1D" }}>{filtered.length}</span> invoices
+            <span className="text-xs" style={{ color: "#9AA0A6" }}>
+              <span className="font-semibold" style={{ color: "#202124" }}>{filtered.length}</span> invoices
               {totalOutstanding > 0 && (
                 <> &nbsp;·&nbsp; Outstanding:{" "}
                   <span className="font-semibold" style={{ color: "#EA4335" }}>{fmt(totalOutstanding)}</span>
@@ -138,15 +138,15 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ background: "#F3F4F6" }}>
                 <Refresh2 size={14} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
               </div>
-              <p className="text-sm font-medium" style={{ color: "#6B7280" }}>Loading invoices…</p>
+              <p className="text-sm font-medium" style={{ color: "#5F6368" }}>Loading invoices…</p>
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ background: "#F3F4F6" }}>
                 <DocumentText size={14} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
               </div>
-              <p className="text-sm font-medium" style={{ color: "#6B7280" }}>No invoices found</p>
-              <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>
+              <p className="text-sm font-medium" style={{ color: "#5F6368" }}>No invoices found</p>
+              <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>
                 {filter || statusFilter
                   ? "Try adjusting your search or filter"
                   : "Create your first invoice to get started"}
@@ -183,7 +183,7 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
                         className={`px-4 py-3 ${cls}`}
                         style={{
                           fontSize: 10,
-                          color: "#9CA3AF",
+                          color: "#9AA0A6",
                           fontWeight: 600,
                           textTransform: "uppercase",
                           letterSpacing: "0.04em",
@@ -204,32 +204,32 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
                       <td className="px-4 py-3 text-sm font-semibold" style={{ color: "#4285F4" }}>
                         {inv.invoice_number}
                       </td>
-                      <td className="px-4 py-3 text-sm" style={{ color: "#1D1D1D" }}>
+                      <td className="px-4 py-3 text-sm" style={{ color: "#202124" }}>
                         {formatDate(inv.invoice_date)}
                       </td>
-                      <td className="px-4 py-3 text-sm font-medium" style={{ color: "#1D1D1D" }}>
+                      <td className="px-4 py-3 text-sm font-medium" style={{ color: "#202124" }}>
                         {inv.agent_name ?? "—"}
                       </td>
-                      <td className="px-4 py-3 text-sm text-right" style={{ color: "#1D1D1D" }}>
+                      <td className="px-4 py-3 text-sm text-right" style={{ color: "#202124" }}>
                         {fmt(inv.invoice_total)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-right" style={{ color: "#6B7280" }}>
+                      <td className="px-4 py-3 text-sm text-right" style={{ color: "#5F6368" }}>
                         {fmt(inv.prev_outstanding)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-right font-medium" style={{ color: "#1D1D1D" }}>
+                      <td className="px-4 py-3 text-sm text-right font-medium" style={{ color: "#202124" }}>
                         {fmt(inv.total_payable)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-right" style={{ color: "#16a34a" }}>
+                      <td className="px-4 py-3 text-sm text-right" style={{ color: "#34A853" }}>
                         {fmt(inv.cash_received)}
                       </td>
                       <td className="px-4 py-3 text-sm text-right font-bold"
-                        style={{ color: inv.outstanding_balance > 0 ? "#EA4335" : "#16a34a" }}>
+                        style={{ color: inv.outstanding_balance > 0 ? "#EA4335" : "#34A853" }}>
                         {fmt(Math.max(0, inv.outstanding_balance))}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span
                           className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-white"
-                          style={{ background: inv.outstanding_balance > 0 ? "#EA4335" : "#16a34a" }}
+                          style={{ background: inv.outstanding_balance > 0 ? "#EA4335" : "#34A853" }}
                         >
                           {inv.outstanding_balance > 0 ? t("status_overdue") : t("status_settled")}
                         </span>
@@ -249,7 +249,7 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
                             onClick={() => handleDeleteAttempt(inv.invoice_number)}
                             title="Paid invoices are locked and cannot be deleted"
                             className="p-1.5 rounded-lg transition-all"
-                            style={{ background: "#F3F4F6", color: "#9CA3AF", cursor: "not-allowed" }}
+                            style={{ background: "#F3F4F6", color: "#9AA0A6", cursor: "not-allowed" }}
                           >
                             <Lock1 size={12} variant="Linear" color="currentColor" />
                           </button>

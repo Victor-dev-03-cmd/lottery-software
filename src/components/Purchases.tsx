@@ -34,7 +34,7 @@ const PAYMENT_TYPE_LABELS: Record<PurchasePaymentType, string> = {
 };
 
 const PAYMENT_TYPE_COLORS: Record<PurchasePaymentType, { bg: string; color: string }> = {
-  cash:          { bg: "#DCFCE7", color: "#16a34a" },
+  cash:          { bg: "#E6F4EA", color: "#34A853" },
   cheque:        { bg: "#DBEAFE", color: "#2563eb" },
   return_credit: { bg: "#F3E8FF", color: "#7c3aed" },
 };
@@ -50,7 +50,7 @@ function BatchSalesTracker({ items }: { items: import("../types").PurchaseInvoic
     <div style={{ padding:"0 20px 14px" }}>
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
         <div style={{ width:3, height:16, borderRadius:2, background:"#2563EB" }}/>
-        <span style={{ fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:"0.06em" }}>
+        <span style={{ fontSize:11, fontWeight:700, color:"#5F6368", textTransform:"uppercase", letterSpacing:"0.06em" }}>
           📊 Sales Tracking — Invoices Issued From This Purchase
         </span>
       </div>
@@ -64,13 +64,13 @@ function BatchSalesTracker({ items }: { items: import("../types").PurchaseInvoic
                 onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none"}}/>
               <div>
                 <div style={{ fontSize:12, fontWeight:700, color:"#111827" }}>{item.game_name}</div>
-                <div style={{ fontSize:10, color:"#6B7280", fontFamily:"monospace" }}>
+                <div style={{ fontSize:10, color:"#5F6368", fontFamily:"monospace" }}>
                   {item.barcode_start} → {item.barcode_end} · {item.qty.toLocaleString()} tickets
                   {item.draw_number && <span style={{ marginLeft:8, color:"#D97706" }}>Draw #{item.draw_number}</span>}
                 </div>
               </div>
             </div>
-            <span style={{ fontSize:18, color:"#9CA3AF" }}>{open[idx]?"▲":"▼"}</span>
+            <span style={{ fontSize:18, color:"#9AA0A6" }}>{open[idx]?"▲":"▼"}</span>
           </button>
           {open[idx] && (
             <BatchDetailView gameName={item.game_name} barcodeStart={item.barcode_start} totalQty={item.qty}/>
@@ -103,20 +103,20 @@ function BatchDetailView({ gameName, barcodeStart, totalQty }: {
   const soldQty = salesRows.reduce((s,r) => s+r.qty, 0);
   const remaining = totalQty - soldQty;
 
-  if (!loaded) return <div style={{ padding:"12px 14px", fontSize:11, color:"#9CA3AF" }}>Loading…</div>;
+  if (!loaded) return <div style={{ padding:"12px 14px", fontSize:11, color:"#9AA0A6" }}>Loading…</div>;
 
   return (
     <div style={{ padding:"10px 14px" }}>
       {/* Mini progress bar */}
       <div style={{ display:"flex", gap:12, marginBottom:10 }}>
         {[
-          { label:"Total", val:totalQty, color:"#374151" },
+          { label:"Total", val:totalQty, color:"#5F6368" },
           { label:"Sold to Agents", val:soldQty, color:"#EA4335" },
-          { label:"Remaining", val:remaining, color:"#16A34A" },
+          { label:"Remaining", val:remaining, color:"#34A853" },
           { label:"Next Start", val:batch?.next_start_barcode ?? barcodeStart, color:"#2563EB", isStr:true },
         ].map(c => (
           <div key={c.label} style={{ flex:1, padding:"8px 10px", background:"#F9FAFB", borderRadius:8, border:"1px solid #E5E7EB" }}>
-            <div style={{ fontSize:9, color:"#9CA3AF", fontWeight:700, textTransform:"uppercase", marginBottom:3 }}>{c.label}</div>
+            <div style={{ fontSize:9, color:"#9AA0A6", fontWeight:700, textTransform:"uppercase", marginBottom:3 }}>{c.label}</div>
             <div style={{ fontSize:(c as any).isStr?11:15, fontWeight:900, color:c.color, fontFamily:(c as any).isStr?"monospace":"inherit" }}>
               {(c as any).isStr ? c.val : (c.val as number).toLocaleString()}
             </div>
@@ -127,7 +127,7 @@ function BatchDetailView({ gameName, barcodeStart, totalQty }: {
       <div style={{ background:"#F3F4F6", borderRadius:999, height:6, overflow:"hidden", marginBottom:8 }}>
         <div style={{ height:"100%", width:`${totalQty>0?(soldQty/totalQty*100):0}%`, background:"linear-gradient(90deg,#EA4335,#1A73E8)", borderRadius:999, transition:"width 0.3s" }}/>
       </div>
-      <div style={{ fontSize:10, color:"#6B7280", marginBottom:salesRows.length?10:0 }}>
+      <div style={{ fontSize:10, color:"#5F6368", marginBottom:salesRows.length?10:0 }}>
         {soldQty.toLocaleString()} / {totalQty.toLocaleString()} tickets issued ({totalQty>0?Math.round(soldQty/totalQty*100):0}%)
       </div>
       {/* Sales rows */}
@@ -137,7 +137,7 @@ function BatchDetailView({ gameName, barcodeStart, totalQty }: {
           <thead>
             <tr style={{ background:"#F9FAFB" }}>
               {["Invoice #","Agent","Date","Barcode Start","Barcode End","Qty","Status"].map(h => (
-                <th key={h} style={{ padding:"5px 8px", textAlign:"left", fontWeight:700, color:"#6B7280", fontSize:9, textTransform:"uppercase", borderBottom:"1px solid #E5E7EB" }}>{h}</th>
+                <th key={h} style={{ padding:"5px 8px", textAlign:"left", fontWeight:700, color:"#5F6368", fontSize:9, textTransform:"uppercase", borderBottom:"1px solid #E5E7EB" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -146,14 +146,14 @@ function BatchDetailView({ gameName, barcodeStart, totalQty }: {
               <tr key={i} style={{ borderBottom:"1px solid #F9FAFB" }}>
                 <td style={{ padding:"5px 8px", fontFamily:"monospace", fontWeight:700, color:"#EA4335" }}>#{r.invoice_number}</td>
                 <td style={{ padding:"5px 8px", color:"#111827", fontWeight:600 }}>{r.agent_name}</td>
-                <td style={{ padding:"5px 8px", color:"#6B7280" }}>{r.invoice_date}</td>
+                <td style={{ padding:"5px 8px", color:"#5F6368" }}>{r.invoice_date}</td>
                 <td style={{ padding:"5px 8px", fontFamily:"monospace", color:"#2563EB" }}>{r.barcode_start}</td>
                 <td style={{ padding:"5px 8px", fontFamily:"monospace", color:"#7C3AED" }}>{r.barcode_end}</td>
-                <td style={{ padding:"5px 8px", textAlign:"right", fontWeight:700, color:"#16A34A" }}>{r.qty.toLocaleString()}</td>
+                <td style={{ padding:"5px 8px", textAlign:"right", fontWeight:700, color:"#34A853" }}>{r.qty.toLocaleString()}</td>
                 <td style={{ padding:"5px 8px" }}>
                   <span style={{ padding:"1px 7px", borderRadius:20, fontSize:9, fontWeight:700,
-                    background: r.invoice_status==="paid"?"#DCFCE7":r.invoice_status==="confirmed"?"#DBEAFE":"#F3F4F6",
-                    color: r.invoice_status==="paid"?"#16A34A":r.invoice_status==="confirmed"?"#2563EB":"#6B7280" }}>
+                    background: r.invoice_status==="paid"?"#E6F4EA":r.invoice_status==="confirmed"?"#DBEAFE":"#F3F4F6",
+                    color: r.invoice_status==="paid"?"#34A853":r.invoice_status==="confirmed"?"#2563EB":"#5F6368" }}>
                     {r.invoice_status}
                   </span>
                 </td>
@@ -163,7 +163,7 @@ function BatchDetailView({ gameName, barcodeStart, totalQty }: {
         </table>
       </div>
       )}
-      {salesRows.length === 0 && <div style={{ fontSize:11, color:"#9CA3AF", textAlign:"center", padding:"8px 0" }}>No invoices issued from this batch yet</div>}
+      {salesRows.length === 0 && <div style={{ fontSize:11, color:"#9AA0A6", textAlign:"center", padding:"8px 0" }}>No invoices issued from this batch yet</div>}
     </div>
   );
 }
@@ -503,23 +503,23 @@ export default function Purchases() {
 
   const inputCls = "w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors";
   const inputStyle = (f: string) => ({
-    border: `1px solid ${focusedField === f ? "#4285F4" : "#E8E8E8"}`,
+    border: `1px solid ${focusedField === f ? "#4285F4" : "#E0E3E7"}`,
     background: "#FAFAFA",
   });
 
   return (
-    <div style={{ background: "#F5F5F5", minHeight: "100%" }}>
+    <div style={{ background: "#F8F9FA", minHeight: "100%" }}>
 
       {/* Breadcrumb */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
-        <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
+        <nav className="flex items-center gap-1 text-xs" style={{ color: "#9AA0A6" }}>
           <Home2 size={12} variant="Linear" color="currentColor"/><ArrowRight2 size={11} variant="Linear" color="currentColor"/>
-          <span className="font-semibold" style={{ color: "#1D1D1D" }}>{t("nav_purchases")}</span>
+          <span className="font-semibold" style={{ color: "#202124" }}>{t("nav_purchases")}</span>
         </nav>
         <div className="flex gap-2">
           <button onClick={load} disabled={loading}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", color:"#1D1D1D" }}>
+            style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", color:"#202124" }}>
             <Refresh2 size={14} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""}/> Refresh
           </button>
           <button onClick={openNew}
@@ -554,8 +554,8 @@ export default function Purchases() {
 
         {/* Page header */}
         <div>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color:"#1D1D1D" }}>Stock Purchases</h1>
-          <p className="text-xs mt-0.5" style={{ color:"#9CA3AF" }}>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color:"#202124" }}>Stock Purchases</h1>
+          <p className="text-xs mt-0.5" style={{ color:"#9AA0A6" }}>
             Track ticket stock bought from Nimalsiri Enterprises — partial payments &amp; return settlements
           </p>
         </div>
@@ -563,23 +563,23 @@ export default function Purchases() {
         {/* KPI cards */}
         <div className="grid grid-cols-3 gap-4">
           <div className="rounded-xl p-4 shadow-sm" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", borderTop:"3px solid #4285F4" }}>
-            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color:"#9CA3AF" }}>Owed to Nimalsiri</p>
-            <p className="text-2xl font-black" style={{ color: totalOwed > 0 ? "#EA4335" : "#16a34a" }}>
+            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color:"#9AA0A6" }}>Owed to Nimalsiri</p>
+            <p className="text-2xl font-black" style={{ color: totalOwed > 0 ? "#EA4335" : "#34A853" }}>
               Rs. {fmt(totalOwed)}
             </p>
-            <p className="text-xs mt-1" style={{ color:"#9CA3AF" }}>live outstanding balance</p>
+            <p className="text-xs mt-1" style={{ color:"#9AA0A6" }}>live outstanding balance</p>
           </div>
           <div className="rounded-xl p-4 shadow-sm" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", borderTop:"3px solid #2563eb" }}>
-            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color:"#9CA3AF" }}>Total Purchases</p>
-            <p className="text-2xl font-black" style={{ color:"#1D1D1D" }}>{purchases.length}</p>
-            <p className="text-xs mt-1" style={{ color:"#9CA3AF" }}>purchase invoices</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color:"#9AA0A6" }}>Total Purchases</p>
+            <p className="text-2xl font-black" style={{ color:"#202124" }}>{purchases.length}</p>
+            <p className="text-xs mt-1" style={{ color:"#9AA0A6" }}>purchase invoices</p>
           </div>
           <div className="rounded-xl p-4 shadow-sm" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", borderTop:"3px solid #16a34a" }}>
-            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color:"#9CA3AF" }}>Settled</p>
-            <p className="text-2xl font-black" style={{ color:"#16a34a" }}>
+            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color:"#9AA0A6" }}>Settled</p>
+            <p className="text-2xl font-black" style={{ color:"#34A853" }}>
               {purchases.filter(p => p.status === "settled").length}
             </p>
-            <p className="text-xs mt-1" style={{ color:"#9CA3AF" }}>fully paid invoices</p>
+            <p className="text-xs mt-1" style={{ color:"#9AA0A6" }}>fully paid invoices</p>
           </div>
         </div>
 
@@ -592,7 +592,7 @@ export default function Purchases() {
                 {editPurchase.id ? `Edit Purchase — ${editPurchase.purchase_number}` : `New Purchase — ${editPurchase.purchase_number}`}
               </h2>
               <button onClick={() => { setShowForm(false); setEdit(null); }}
-                className="p-1 rounded" style={{ color:"#9CA3AF" }}>
+                className="p-1 rounded" style={{ color:"#9AA0A6" }}>
                 <CloseCircle size={14} variant="Linear" color="currentColor"/>
               </button>
             </div>
@@ -601,19 +601,19 @@ export default function Purchases() {
               {/* Header fields */}
               <div className="grid grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Purchase No.</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9AA0A6" }}>Purchase No.</label>
                   <input value={editPurchase.purchase_number} readOnly
-                    className={inputCls} style={{ ...inputStyle("pno"), background:"#F5F5F5", color:"#6B7280" }}/>
+                    className={inputCls} style={{ ...inputStyle("pno"), background:"#F8F9FA", color:"#5F6368" }}/>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Supplier</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9AA0A6" }}>Supplier</label>
                   <input value={editPurchase.supplier_name}
                     onChange={e => setEdit({ ...editPurchase, supplier_name: e.target.value })}
                     className={inputCls} style={inputStyle("sup")}
                     onFocus={() => setFocused("sup")} onBlur={() => setFocused(null)}/>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Purchase Date</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9AA0A6" }}>Purchase Date</label>
                   <input type="date" value={editPurchase.purchase_date}
                     onChange={e => {
                       const newDate = e.target.value;
@@ -629,7 +629,7 @@ export default function Purchases() {
                     onFocus={() => setFocused("pd")} onBlur={() => setFocused(null)}/>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Stock / Draw Date</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9AA0A6" }}>Stock / Draw Date</label>
                   <input type="date" value={editPurchase.stock_date}
                     onChange={e => setEdit({ ...editPurchase, stock_date: e.target.value })}
                     className={inputCls} style={inputStyle("sd")}
@@ -641,14 +641,14 @@ export default function Purchases() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-4">
-                    <label className="text-[11px] font-semibold uppercase tracking-wide" style={{ color:"#9CA3AF" }}>Stock Items</label>
+                    <label className="text-[11px] font-semibold uppercase tracking-wide" style={{ color:"#9AA0A6" }}>Stock Items</label>
                     {/* Scanner offset toggle */}
                     <label className="flex items-center gap-2 cursor-pointer" title="Enable if your barcode scanner reads one ticket before the actual starting barcode">
                       <div onClick={() => setBarcodeOffset(v => !v)}
                         style={{ width:28, height:16, borderRadius:8, background: barcodeOffset?"#4285F4":"#D1D5DB", position:"relative", cursor:"pointer", transition:"background 0.2s" }}>
                         <div style={{ width:12, height:12, borderRadius:"50%", background:"#fff", position:"absolute", top:2, left: barcodeOffset?14:2, transition:"left 0.2s" }}/>
                       </div>
-                      <span style={{ fontSize:10, color:"#6B7280" }}>Scanner +1 fix</span>
+                      <span style={{ fontSize:10, color:"#5F6368" }}>Scanner +1 fix</span>
                     </label>
                   </div>
                   <button onClick={() => setFormItems([...formItems, EMPTY_ITEM()])}
@@ -666,10 +666,10 @@ export default function Purchases() {
                 <div className="rounded-xl overflow-hidden" style={{ border:"1px solid #E8E8E8" }}>
                   <table className="w-full">
                     <thead>
-                      <tr style={{ background:"#1D1D1D" }}>
+                      <tr style={{ background:"#202124" }}>
                         {["🎫 Ticket (click to pick)","Draw No.","▶ First Ticket Barcode","▷ Next Batch Starts","Qty","Unit Price","Total (Rs.)",""].map((h,i) => (
                           <th key={i} className="px-3 py-2 text-left"
-                            style={{ fontSize:10, color:"#9CA3AF", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em" }}>{h}</th>
+                            style={{ fontSize:10, color:"#9AA0A6", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em" }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -719,7 +719,7 @@ export default function Purchases() {
                                       onKeyDown={e => { if (e.key==="Enter") { e.preventDefault(); setFormItems(p=>[...p,EMPTY_ITEM()]); }}}
                                       placeholder={info?.drawNo || "e.g. 4521"}
                                       className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none text-center font-mono"
-                                      style={{ border:`1px solid ${it.draw_number?"#2563EB":"#E8E8E8"}`,
+                                      style={{ border:`1px solid ${it.draw_number?"#2563EB":"#E0E3E7"}`,
                                         background: it.draw_number?"#EFF6FF":"#FAFAFA",
                                         color:"#1D4ED8", fontWeight:700 }}/>
                                     {/* Per-row draw date from QR scan */}
@@ -730,7 +730,7 @@ export default function Purchases() {
                                         {it.draw_date}
                                       </div>
                                     ) : info?.drawNo && !it.draw_number ? (
-                                      <div style={{ fontSize:9, color:"#6B7280", textAlign:"center", lineHeight:1.2 }}>
+                                      <div style={{ fontSize:9, color:"#5F6368", textAlign:"center", lineHeight:1.2 }}>
                                         Auto: <strong style={{ color:"#2563EB" }}>#{info.drawNo}</strong>
                                       </div>
                                     ) : null}
@@ -763,7 +763,7 @@ export default function Purchases() {
                                 style={{ border:"2px solid #7C3AED", background:"#F5F3FF", color:"#6d28d9", letterSpacing:"0.04em", minHeight:32 }}
                                 onFocus={e => e.target.select()}/>
                               {it.barcode_end && it.barcode_start && (
-                                <div style={{ fontSize:9, color:"#6B7280", marginTop:2 }}>
+                                <div style={{ fontSize:9, color:"#5F6368", marginTop:2 }}>
                                   Last: <span style={{ fontFamily:"monospace", fontWeight:700, color:"#7C3AED" }}>{lastTicketBarcode(it.barcode_end)}</span>
                                 </div>
                               )}
@@ -776,7 +776,7 @@ export default function Purchases() {
                                 onChange={e => updateItem(idx, "qty", parseInt(e.target.value) || 0)}
                                 onKeyDown={e => { if (e.key==="Enter") { e.preventDefault(); (e.currentTarget.parentElement?.parentElement?.nextElementSibling?.querySelector("input") as HTMLElement)?.focus(); }}}
                                 className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none text-right font-bold"
-                                style={{ border:`1px solid ${qtyOk?"#BBF7D0":"#E8E8E8"}`, background: qtyOk?"#F0FFF4":"#FAFAFA", color: qtyOk?"#16A34A":"#111827" }}
+                                style={{ border:`1px solid ${qtyOk?"#CEEAD6":"#E0E3E7"}`, background: qtyOk?"#F0FFF4":"#FAFAFA", color: qtyOk?"#34A853":"#111827" }}
                                 onFocus={e => e.target.select()}/>
                             </td>
 
@@ -790,14 +790,14 @@ export default function Purchases() {
                                 style={{ border:"1px solid #E8E8E8", background:"#FAFAFA" }}
                                 onFocus={e => e.target.select()}/>
                               {gameCostMap[it.game_name] && (
-                                <div style={{ fontSize:9, color:"#6B7280", marginTop:1, textAlign:"right" }}>
+                                <div style={{ fontSize:9, color:"#5F6368", marginTop:1, textAlign:"right" }}>
                                   Nimalsiri: Rs.{gameCostMap[it.game_name]}
                                 </div>
                               )}
                             </td>
 
                             {/* Value */}
-                            <td className="px-3 py-2 text-xs text-right font-bold" style={{ color:"#1D1D1D", minWidth:100 }}>
+                            <td className="px-3 py-2 text-xs text-right font-bold" style={{ color:"#202124", minWidth:100 }}>
                               Rs. {fmt(it.value)}
                             </td>
 
@@ -816,7 +816,7 @@ export default function Purchases() {
                     </tbody>
                     <tfoot>
                       <tr style={{ background:"#F9FAFB", borderTop:"2px solid #4285F4" }}>
-                        <td colSpan={6} className="px-3 py-2 text-right text-xs font-bold" style={{ color:"#6B7280" }}>
+                        <td colSpan={6} className="px-3 py-2 text-right text-xs font-bold" style={{ color:"#5F6368" }}>
                           {formItems.reduce((s,it)=>s+it.qty,0).toLocaleString()} tickets · {formItems.filter(it=>it.game_name).length} lines
                         </td>
                         <td className="px-3 py-2 text-right text-sm font-black" style={{ color:"#4285F4" }}>
@@ -843,23 +843,23 @@ export default function Purchases() {
                           display:"flex", alignItems:"center", gap:10, marginBottom:4,
                           padding:"5px 8px", borderRadius:6,
                           background: match ? "rgba(22,163,74,0.06)" : "#FCE8E6",
-                          border: `1px solid ${match ? "#BBF7D0" : "#FECACA"}`,
+                          border: `1px solid ${match ? "#CEEAD6" : "#FECACA"}`,
                         }}>
                           <span style={{ fontSize:12 }}>{match ? "✅" : "❌"}</span>
                           <span style={{ fontSize:11, fontWeight:700, color:"#111827", minWidth:120 }}>{it.game_name || "—"}</span>
-                          <span style={{ fontSize:11, fontFamily:"monospace", color:"#374151" }}>{it.barcode_start}</span>
-                          <span style={{ fontSize:11, color:"#6B7280" }}>→</span>
-                          <span style={{ fontSize:11, fontFamily:"monospace", color:"#374151" }}>{it.barcode_end}</span>
-                          <span style={{ fontSize:11, color:"#6B7280" }}>·</span>
-                          <span style={{ fontSize:11, color:"#6B7280" }}>Last ticket: <strong style={{ fontFamily:"monospace", color:"#111827" }}>{lastTicket}</strong></span>
-                          <span style={{ fontSize:11, color:"#6B7280" }}>·</span>
-                          <span style={{ fontSize:11, fontWeight:700, color: match?"#16A34A":"#DC2626" }}>
+                          <span style={{ fontSize:11, fontFamily:"monospace", color:"#5F6368" }}>{it.barcode_start}</span>
+                          <span style={{ fontSize:11, color:"#5F6368" }}>→</span>
+                          <span style={{ fontSize:11, fontFamily:"monospace", color:"#5F6368" }}>{it.barcode_end}</span>
+                          <span style={{ fontSize:11, color:"#5F6368" }}>·</span>
+                          <span style={{ fontSize:11, color:"#5F6368" }}>Last ticket: <strong style={{ fontFamily:"monospace", color:"#111827" }}>{lastTicket}</strong></span>
+                          <span style={{ fontSize:11, color:"#5F6368" }}>·</span>
+                          <span style={{ fontSize:11, fontWeight:700, color: match?"#34A853":"#DC2626" }}>
                             {it.barcode_end} − {it.barcode_start} = {calcQty} {match ? "✓" : `≠ ${it.qty} ✗`}
                           </span>
                         </div>
                       );
                     })}
-                    <p style={{ fontSize:10, color:"#6B7280", marginTop:4 }}>
+                    <p style={{ fontSize:10, color:"#5F6368", marginTop:4 }}>
                       Convention: End barcode is the <strong>first barcode of the next batch</strong> (not included). QTY = End − Start.
                     </p>
                   </div>
@@ -870,7 +870,7 @@ export default function Purchases() {
                     style={{ padding:"5px 14px", border:"1px dashed #EA4335", borderRadius:8, background:"#FCE8E6", color:"#EA4335", fontSize:12, fontWeight:600, cursor:"pointer" }}>
                     + Add Another Ticket
                   </button>
-                  <span style={{ fontSize:11, color:"#9CA3AF", alignSelf:"center" }}>
+                  <span style={{ fontSize:11, color:"#9AA0A6", alignSelf:"center" }}>
                     Press Enter in the last field to add a row automatically
                   </span>
                 </div>
@@ -888,32 +888,32 @@ export default function Purchases() {
               {/* Payment summary */}
               <div className="grid grid-cols-3 gap-4 p-4 rounded-xl" style={{ background:"#F9F9F9", border:"1px solid #E8E8E8" }}>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Invoice Total</p>
-                  <p className="text-xl font-black" style={{ color:"#1D1D1D" }}>Rs. {fmt(formTotal)}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color:"#9AA0A6" }}>Invoice Total</p>
+                  <p className="text-xl font-black" style={{ color:"#202124" }}>Rs. {fmt(formTotal)}</p>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Cash Paid at Delivery</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color:"#9AA0A6" }}>Cash Paid at Delivery</label>
                   <input type="number" step="0.01"
                     value={editPurchase.initial_payment || ""}
                     onChange={e => setEdit({ ...editPurchase, initial_payment: parseFloat(e.target.value) || 0 })}
                     onKeyDown={e => { if (e.key === "Enter") handleSave(); }}
                     className="w-full rounded-lg px-3 py-2 text-sm font-bold focus:outline-none"
-                    style={{ border:`1px solid ${focusedField==="ip" ? "#4285F4" : "#E8E8E8"}`, background:"#FFFFFF", color:"#16a34a" }}
+                    style={{ border:`1px solid ${focusedField==="ip" ? "#4285F4" : "#E0E3E7"}`, background:"#FFFFFF", color:"#34A853" }}
                     onFocus={(e) => { e.target.select(); setFocused("ip"); }} onBlur={() => setFocused(null)}
                     placeholder="e.g. 400000"/>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Balance Remaining</p>
-                  <p className="text-xl font-black" style={{ color: formBalance > 0 ? "#EA4335" : "#16a34a" }}>
+                  <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color:"#9AA0A6" }}>Balance Remaining</p>
+                  <p className="text-xl font-black" style={{ color: formBalance > 0 ? "#EA4335" : "#34A853" }}>
                     Rs. {fmt(Math.max(0, formBalance))}
                   </p>
-                  <p className="text-[10px] mt-0.5" style={{ color:"#9CA3AF" }}>to be settled by cash / returns</p>
+                  <p className="text-[10px] mt-0.5" style={{ color:"#9AA0A6" }}>to be settled by cash / returns</p>
                 </div>
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9CA3AF" }}>Notes</label>
+                <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color:"#9AA0A6" }}>Notes</label>
                 <input value={editPurchase.notes}
                   onChange={e => setEdit({ ...editPurchase, notes: e.target.value })}
                   placeholder="Optional notes…"
@@ -930,7 +930,7 @@ export default function Purchases() {
                 </button>
                 <button onClick={() => { setShowForm(false); setEdit(null); }}
                   className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50"
-                  style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", color:"#1D1D1D" }}>
+                  style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", color:"#202124" }}>
                   Cancel
                 </button>
               </div>
@@ -953,11 +953,11 @@ export default function Purchases() {
           </div>
 
           {loading ? (
-            <div className="p-10 text-center text-sm" style={{ color:"#9CA3AF" }}>Loading…</div>
+            <div className="p-10 text-center text-sm" style={{ color:"#9AA0A6" }}>Loading…</div>
           ) : purchases.length === 0 ? (
             <div className="p-12 text-center">
-              <Box1 size={14} variant="Linear" color="currentColor" className="mx-auto mb-3" style={{ color:"#E8E8E8" }}/>
-              <p className="text-sm font-medium mb-1" style={{ color:"#9CA3AF" }}>No purchases recorded yet</p>
+              <Box1 size={14} variant="Linear" color="currentColor" className="mx-auto mb-3" style={{ color:"#E0E3E7" }}/>
+              <p className="text-sm font-medium mb-1" style={{ color:"#9AA0A6" }}>No purchases recorded yet</p>
               <p className="text-xs" style={{ color:"#BFBFBF" }}>Click "New Purchase" to record stock bought from Nimalsiri Enterprises</p>
             </div>
           ) : (
@@ -980,19 +980,19 @@ export default function Purchases() {
                     <div className="px-5 py-4 flex items-center gap-4">
                       {/* Status dot */}
                       <div className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                        style={{ background: isSettled ? "#16a34a" : "#EA4335",
+                        style={{ background: isSettled ? "#34A853" : "#EA4335",
                           boxShadow: isSettled ? "0 0 6px #16a34a60" : "0 0 6px #EA433560" }}/>
 
                       {/* Purchase number + date */}
                       <div className="w-32">
-                        <p className="text-sm font-bold font-mono" style={{ color:"#1D1D1D" }}>{pur.purchase_number}</p>
-                        <p className="text-[10px]" style={{ color:"#9CA3AF" }}>{fmtDate(pur.purchase_date)}</p>
+                        <p className="text-sm font-bold font-mono" style={{ color:"#202124" }}>{pur.purchase_number}</p>
+                        <p className="text-[10px]" style={{ color:"#9AA0A6" }}>{fmtDate(pur.purchase_date)}</p>
                       </div>
 
                       {/* Supplier + ticket summary */}
                       <div className="flex-1">
-                        <p className="text-xs font-semibold" style={{ color:"#1D1D1D" }}>{pur.supplier_name}</p>
-                        <p className="text-[10px]" style={{ color:"#9CA3AF" }}>
+                        <p className="text-xs font-semibold" style={{ color:"#202124" }}>{pur.supplier_name}</p>
+                        <p className="text-[10px]" style={{ color:"#9AA0A6" }}>
                           Stock date: {fmtDate(pur.stock_date)}
                           {pur.items && pur.items.length > 0 && (
                             <span style={{ marginLeft:8, color:"#EA4335", fontWeight:600 }}>
@@ -1006,30 +1006,30 @@ export default function Purchases() {
 
                       {/* Financials */}
                       <div className="text-right w-28">
-                        <p className="text-[10px] font-semibold uppercase" style={{ color:"#9CA3AF" }}>Invoice</p>
-                        <p className="text-sm font-bold" style={{ color:"#1D1D1D" }}>Rs. {fmt(pur.invoice_total)}</p>
+                        <p className="text-[10px] font-semibold uppercase" style={{ color:"#9AA0A6" }}>Invoice</p>
+                        <p className="text-sm font-bold" style={{ color:"#202124" }}>Rs. {fmt(pur.invoice_total)}</p>
                       </div>
                       <div className="text-right w-28">
-                        <p className="text-[10px] font-semibold uppercase" style={{ color:"#9CA3AF" }}>Paid at Delivery</p>
-                        <p className="text-sm font-semibold" style={{ color:"#16a34a" }}>Rs. {fmt(pur.initial_payment)}</p>
+                        <p className="text-[10px] font-semibold uppercase" style={{ color:"#9AA0A6" }}>Paid at Delivery</p>
+                        <p className="text-sm font-semibold" style={{ color:"#34A853" }}>Rs. {fmt(pur.initial_payment)}</p>
                       </div>
                       {paidAfter > 0 && (
                         <div className="text-right w-28">
-                          <p className="text-[10px] font-semibold uppercase" style={{ color:"#9CA3AF" }}>Later Paid</p>
+                          <p className="text-[10px] font-semibold uppercase" style={{ color:"#9AA0A6" }}>Later Paid</p>
                           <p className="text-sm font-semibold" style={{ color:"#2563eb" }}>Rs. {fmt(paidAfter)}</p>
                         </div>
                       )}
                       <div className="text-right w-32">
-                        <p className="text-[10px] font-semibold uppercase" style={{ color:"#9CA3AF" }}>Balance Owed</p>
-                        <p className="text-base font-black" style={{ color: live > 0 ? "#EA4335" : "#16a34a" }}>
+                        <p className="text-[10px] font-semibold uppercase" style={{ color:"#9AA0A6" }}>Balance Owed</p>
+                        <p className="text-base font-black" style={{ color: live > 0 ? "#EA4335" : "#34A853" }}>
                           Rs. {fmt(live)}
                         </p>
                       </div>
 
                       {/* Status badge */}
                       <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold w-20 text-center"
-                        style={{ background: isSettled ? "#DCFCE7" : "#FEE2E2",
-                          color: isSettled ? "#16a34a" : "#EA4335" }}>
+                        style={{ background: isSettled ? "#E6F4EA" : "#FEE2E2",
+                          color: isSettled ? "#34A853" : "#EA4335" }}>
                         {isSettled ? "✓ Settled" : "Pending"}
                       </span>
 
@@ -1038,7 +1038,7 @@ export default function Purchases() {
                         <button onClick={() => toggleExpand(pur.id!)}
                           className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all"
                           style={{ background: isExpanded ? "#F3F4F6" : "#FFFFFF",
-                            border:"1px solid #E8E8E8", color:"#1D1D1D" }}>
+                            border:"1px solid #E8E8E8", color:"#202124" }}>
                           {isExpanded ? <ArrowUp size={14} variant="Linear" color="currentColor"/> : <ArrowDown2 size={14} variant="Linear" color="currentColor"/>}
                           {isExpanded ? "Hide" : "Details"}
                         </button>
@@ -1069,30 +1069,30 @@ export default function Purchases() {
                             <div>
                               <div style={{ display:"flex", gap:20, flexWrap:"wrap" }}>
                                 <div>
-                                  <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:"0.08em" }}>Purchase Date</div>
+                                  <div style={{ fontSize:9, fontWeight:700, color:"#9AA0A6", textTransform:"uppercase", letterSpacing:"0.08em" }}>Purchase Date</div>
                                   <div style={{ fontSize:13, fontWeight:700, color:"#111827" }}>{fmtDate(pur.purchase_date)}</div>
                                 </div>
                                 <div>
-                                  <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:"0.08em" }}>Stock / Draw Date</div>
+                                  <div style={{ fontSize:9, fontWeight:700, color:"#9AA0A6", textTransform:"uppercase", letterSpacing:"0.08em" }}>Stock / Draw Date</div>
                                   <div style={{ fontSize:13, fontWeight:700, color:"#111827" }}>{fmtDate(pur.stock_date)}</div>
                                 </div>
                                 <div>
-                                  <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:"0.08em" }}>Supplier</div>
+                                  <div style={{ fontSize:9, fontWeight:700, color:"#9AA0A6", textTransform:"uppercase", letterSpacing:"0.08em" }}>Supplier</div>
                                   <div style={{ fontSize:13, fontWeight:700, color:"#111827" }}>{pur.supplier_name}</div>
                                 </div>
                                 {pur.notes && (
                                   <div>
-                                    <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:"0.08em" }}>Notes</div>
-                                    <div style={{ fontSize:12, color:"#6B7280" }}>{pur.notes}</div>
+                                    <div style={{ fontSize:9, fontWeight:700, color:"#9AA0A6", textTransform:"uppercase", letterSpacing:"0.08em" }}>Notes</div>
+                                    <div style={{ fontSize:12, color:"#5F6368" }}>{pur.notes}</div>
                                   </div>
                                 )}
                               </div>
                             </div>
                           </div>
                           <span style={{ padding:"5px 14px", borderRadius:20, fontSize:12, fontWeight:800,
-                            background: isSettled ? "#DCFCE7" : "#FEE2E2",
-                            color: isSettled ? "#16A34A" : "#EA4335",
-                            border: `1px solid ${isSettled?"#BBF7D0":"#FECACA"}` }}>
+                            background: isSettled ? "#E6F4EA" : "#FEE2E2",
+                            color: isSettled ? "#34A853" : "#EA4335",
+                            border: `1px solid ${isSettled?"#CEEAD6":"#FECACA"}` }}>
                             {isSettled ? "✅ Fully Settled" : "⏳ Payment Pending"}
                           </span>
                         </div>
@@ -1101,14 +1101,14 @@ export default function Purchases() {
                         <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:12, padding:"14px 20px" }}>
                           {[
                             { label:"Invoice Total",      val:pur.invoice_total,                          color:"#111827", bg:"#fff",     border:"#E5E7EB" },
-                            { label:"Cash at Delivery",   val:pur.initial_payment,                         color:"#16A34A", bg:"#F0FFF4",  border:"#BBF7D0" },
+                            { label:"Cash at Delivery",   val:pur.initial_payment,                         color:"#34A853", bg:"#F0FFF4",  border:"#CEEAD6" },
                             { label:"Later Payments",     val:paidAfter,                                   color:"#2563EB", bg:"#EFF6FF",  border:"#BFDBFE" },
                             ...(returnCredit > 0 ? [{ label:"Return Credits", val:returnCredit, color:"#7C3AED", bg:"#F5F3FF", border:"#DDD6FE" }] : []),
                             { label:"Total Settled",      val:pur.initial_payment+paidAfter+returnCredit,  color:"#059669", bg:"#F0FDF4",  border:"#A7F3D0" },
-                            { label:"Balance Owed",       val:live,                                         color: live>0?"#EA4335":"#16A34A", bg: live>0?"#FCE8E6":"#F0FFF4", border: live>0?"#FECACA":"#BBF7D0" },
+                            { label:"Balance Owed",       val:live,                                         color: live>0?"#EA4335":"#34A853", bg: live>0?"#FCE8E6":"#F0FFF4", border: live>0?"#FECACA":"#CEEAD6" },
                           ].map(c => (
                             <div key={c.label} style={{ padding:"10px 14px", borderRadius:10, background:c.bg, border:`1px solid ${c.border}` }}>
-                              <div style={{ fontSize:9, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4 }}>{c.label}</div>
+                              <div style={{ fontSize:9, fontWeight:700, color:"#9AA0A6", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4 }}>{c.label}</div>
                               <div style={{ fontSize:15, fontWeight:900, color:c.color }}>Rs. {fmt(c.val)}</div>
                             </div>
                           ))}
@@ -1119,7 +1119,7 @@ export default function Purchases() {
                           <div style={{ padding:"0 20px 14px" }}>
                             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
                               <div style={{ width:3, height:16, borderRadius:2, background:"#4285F4" }}/>
-                              <span style={{ fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:"0.06em" }}>
+                              <span style={{ fontSize:11, fontWeight:700, color:"#5F6368", textTransform:"uppercase", letterSpacing:"0.06em" }}>
                                 🎫 Ticket Batches — {pur.items.reduce((s,it)=>s+it.qty,0).toLocaleString()} tickets · Rs. {fmt(pur.items.reduce((s,it)=>s+it.value,0))}
                               </span>
                             </div>
@@ -1153,7 +1153,7 @@ export default function Purchases() {
                                         <div style={{ fontSize:13, fontWeight:900, fontFamily:"monospace", color:"#2563EB", letterSpacing:"0.02em" }}>{item.barcode_start}</div>
                                       </div>
                                       <div style={{ flex:1, height:2, background:"linear-gradient(90deg,#2563EB,#7C3AED)", borderRadius:1, position:"relative" }}>
-                                        <div style={{ position:"absolute", top:-10, left:"50%", transform:"translateX(-50%)", background:"#16A34A", color:"#fff", borderRadius:20, padding:"2px 10px", fontSize:11, fontWeight:900, whiteSpace:"nowrap" }}>
+                                        <div style={{ position:"absolute", top:-10, left:"50%", transform:"translateX(-50%)", background:"#34A853", color:"#fff", borderRadius:20, padding:"2px 10px", fontSize:11, fontWeight:900, whiteSpace:"nowrap" }}>
                                           {item.qty.toLocaleString()} tickets
                                         </div>
                                       </div>
@@ -1165,17 +1165,17 @@ export default function Purchases() {
 
                                     {/* Calculation proof */}
                                     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                                      <div style={{ fontSize:10, color:"#6B7280", fontFamily:"monospace" }}>
-                                        <span style={{ color:"#9CA3AF" }}>Verify: </span>
+                                      <div style={{ fontSize:10, color:"#5F6368", fontFamily:"monospace" }}>
+                                        <span style={{ color:"#9AA0A6" }}>Verify: </span>
                                         <span style={{ color:"#7C3AED" }}>{item.barcode_end}</span>
-                                        <span style={{ color:"#9CA3AF" }}> − </span>
+                                        <span style={{ color:"#9AA0A6" }}> − </span>
                                         <span style={{ color:"#2563EB" }}>{item.barcode_start}</span>
-                                        <span style={{ color:"#9CA3AF" }}> = </span>
-                                        <span style={{ fontWeight:800, color:"#16A34A" }}>{item.qty.toLocaleString()} ✓</span>
-                                        <span style={{ marginLeft:8, color:"#9CA3AF" }}>(end barcode = first ticket of NEXT batch = {item.barcode_end})</span>
+                                        <span style={{ color:"#9AA0A6" }}> = </span>
+                                        <span style={{ fontWeight:800, color:"#34A853" }}>{item.qty.toLocaleString()} ✓</span>
+                                        <span style={{ marginLeft:8, color:"#9AA0A6" }}>(end barcode = first ticket of NEXT batch = {item.barcode_end})</span>
                                       </div>
                                       <div style={{ textAlign:"right" }}>
-                                        <div style={{ fontSize:9, color:"#9CA3AF", marginBottom:2 }}>@ Rs. {fmt(item.unit_price)} each</div>
+                                        <div style={{ fontSize:9, color:"#9AA0A6", marginBottom:2 }}>@ Rs. {fmt(item.unit_price)} each</div>
                                         <div style={{ fontSize:15, fontWeight:900, color:"#4285F4" }}>Rs. {fmt(item.value)}</div>
                                       </div>
                                     </div>
@@ -1195,8 +1195,8 @@ export default function Purchases() {
                         <div style={{ padding:"0 20px 14px" }}>
                           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
                             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              <div style={{ width:3, height:16, borderRadius:2, background:"#16A34A" }}/>
-                              <span style={{ fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:"0.06em" }}>
+                              <div style={{ width:3, height:16, borderRadius:2, background:"#34A853" }}/>
+                              <span style={{ fontSize:11, fontWeight:700, color:"#5F6368", textTransform:"uppercase", letterSpacing:"0.06em" }}>
                                 💰 Settlement History
                               </span>
                             </div>
@@ -1214,23 +1214,23 @@ export default function Purchases() {
                               <thead>
                                 <tr style={{ background:"#F9FAFB" }}>
                                   {["#","Date","Type","Amount (Rs.)","Reference / Notes","Action"].map((h,i) => (
-                                    <th key={i} style={{ padding:"8px 14px", textAlign:i>=3?"right":"left", fontSize:10, fontWeight:700, color:"#6B7280", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #E5E7EB" }}>{h}</th>
+                                    <th key={i} style={{ padding:"8px 14px", textAlign:i>=3?"right":"left", fontSize:10, fontWeight:700, color:"#5F6368", textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:"1px solid #E5E7EB" }}>{h}</th>
                                   ))}
                                 </tr>
                               </thead>
                               <tbody>
                                 {/* Delivery payment row */}
                                 <tr style={{ background:"#F0FFF4" }}>
-                                  <td style={{ padding:"10px 14px", color:"#9CA3AF", fontWeight:700 }}>0</td>
+                                  <td style={{ padding:"10px 14px", color:"#9AA0A6", fontWeight:700 }}>0</td>
                                   <td style={{ padding:"10px 14px" }}>
                                     <div style={{ fontWeight:700, color:"#111827" }}>{fmtDate(pur.purchase_date)}</div>
-                                    <div style={{ fontSize:10, color:"#6B7280" }}>At delivery</div>
+                                    <div style={{ fontSize:10, color:"#5F6368" }}>At delivery</div>
                                   </td>
                                   <td style={{ padding:"10px 14px" }}>
-                                    <span style={{ padding:"2px 10px", borderRadius:20, fontSize:11, fontWeight:700, background:"#DCFCE7", color:"#16A34A" }}>Cash at Delivery</span>
+                                    <span style={{ padding:"2px 10px", borderRadius:20, fontSize:11, fontWeight:700, background:"#E6F4EA", color:"#34A853" }}>Cash at Delivery</span>
                                   </td>
-                                  <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:900, fontSize:14, color:"#16A34A" }}>Rs. {fmt(pur.initial_payment)}</td>
-                                  <td style={{ padding:"10px 14px", color:"#9CA3AF", fontSize:11 }}>Paid when stock received</td>
+                                  <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:900, fontSize:14, color:"#34A853" }}>Rs. {fmt(pur.initial_payment)}</td>
+                                  <td style={{ padding:"10px 14px", color:"#9AA0A6", fontSize:11 }}>Paid when stock received</td>
                                   <td style={{ padding:"10px 14px" }}/>
                                 </tr>
 
@@ -1239,7 +1239,7 @@ export default function Purchases() {
                                   const tc = PAYMENT_TYPE_COLORS[p.payment_type];
                                   return (
                                     <tr key={p.id} style={{ borderTop:"1px solid #F3F4F6" }}>
-                                      <td style={{ padding:"10px 14px", color:"#9CA3AF", fontWeight:700 }}>{pi+1}</td>
+                                      <td style={{ padding:"10px 14px", color:"#9AA0A6", fontWeight:700 }}>{pi+1}</td>
                                       <td style={{ padding:"10px 14px" }}>
                                         <div style={{ fontWeight:700, color:"#111827" }}>{fmtDate(p.payment_date)}</div>
                                       </td>
@@ -1249,7 +1249,7 @@ export default function Purchases() {
                                         </span>
                                       </td>
                                       <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:900, fontSize:14, color:"#2563EB" }}>Rs. {fmt(p.amount)}</td>
-                                      <td style={{ padding:"10px 14px", color:"#6B7280", fontSize:11 }}>{p.notes || "—"}</td>
+                                      <td style={{ padding:"10px 14px", color:"#5F6368", fontSize:11 }}>{p.notes || "—"}</td>
                                       <td style={{ padding:"10px 14px" }}>
                                         <button onClick={() => handleDeletePayment(p.id!, pur.id!)} style={{ border:"none", background:"#FCE8E6", borderRadius:6, padding:"3px 8px", color:"#EA4335", cursor:"pointer" }}>
                                           <Trash size={13} variant="Linear" color="currentColor"/>
@@ -1266,19 +1266,19 @@ export default function Purchases() {
                                     <td style={{ padding:"10px 14px", color:"#7C3AED", fontWeight:700 }}>R</td>
                                     <td style={{ padding:"10px 14px" }}>
                                       <div style={{ fontWeight:700, color:"#111827" }}>Supplier Returns</div>
-                                      <div style={{ fontSize:10, color:"#6B7280" }}>Tickets returned & credited</div>
+                                      <div style={{ fontSize:10, color:"#5F6368" }}>Tickets returned & credited</div>
                                     </td>
                                     <td style={{ padding:"10px 14px" }}>
                                       <span style={{ padding:"2px 10px", borderRadius:20, fontSize:11, fontWeight:700, background:"#EDE9FE", color:"#7C3AED" }}>Return Credit</span>
                                     </td>
                                     <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:900, fontSize:14, color:"#7C3AED" }}>Rs. {fmt(returnCredit)}</td>
-                                    <td colSpan={2} style={{ padding:"10px 14px", fontSize:11, color:"#6B7280" }}>
+                                    <td colSpan={2} style={{ padding:"10px 14px", fontSize:11, color:"#5F6368" }}>
                                       See Return to Supplier page for details
                                     </td>
                                   </tr>
                                 )}
                                 <tr style={{ background:"#374151", borderTop:"2px solid #4285F4" }}>
-                                  <td colSpan={3} style={{ padding:"10px 14px", color:"#9CA3AF", fontSize:11, fontWeight:700 }}>
+                                  <td colSpan={3} style={{ padding:"10px 14px", color:"#9AA0A6", fontSize:11, fontWeight:700 }}>
                                     TOTAL SETTLED ({1 + pmts.length + (returnCredit>0?1:0)} entries)
                                   </td>
                                   <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:900, fontSize:15, color:"#fff" }}>
@@ -1298,18 +1298,18 @@ export default function Purchases() {
                           <div style={{ margin:"0 20px 14px", padding:16, background:"#fff", border:"1px solid #E5E7EB", borderRadius:10 }}>
                             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
                               <span style={{ fontWeight:700, fontSize:13, color:"#111827" }}>💳 Record Payment to Nimalsiri</span>
-                              <button onClick={() => setPaymentForm(null)} style={{ border:"none", background:"none", cursor:"pointer", color:"#9CA3AF" }}><CloseCircle size={14} variant="Linear" color="currentColor"/></button>
+                              <button onClick={() => setPaymentForm(null)} style={{ border:"none", background:"none", cursor:"pointer", color:"#9AA0A6" }}><CloseCircle size={14} variant="Linear" color="currentColor"/></button>
                             </div>
                             <div className="grid grid-cols-4 gap-3">
                               <div>
-                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Date</label>
+                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9AA0A6" }}>Date</label>
                                 <input type="date" value={paymentForm.payment_date}
                                   onChange={e => setPaymentForm({ ...paymentForm, payment_date: e.target.value })}
                                   className={inputCls} style={inputStyle("pp-date")}
                                   onFocus={() => setFocused("pp-date")} onBlur={() => setFocused(null)}/>
                               </div>
                               <div>
-                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Payment Type</label>
+                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9AA0A6" }}>Payment Type</label>
                                 <select value={paymentForm.payment_type}
                                   onChange={e => setPaymentForm({ ...paymentForm, payment_type: e.target.value as PurchasePaymentType })}
                                   className={inputCls} style={inputStyle("pp-type")}
@@ -1320,16 +1320,16 @@ export default function Purchases() {
                                 </select>
                               </div>
                               <div>
-                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Amount (Rs.) — Balance: {fmt(live)}</label>
+                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9AA0A6" }}>Amount (Rs.) — Balance: {fmt(live)}</label>
                                 <input type="number" step="0.01" value={paymentForm.amount || ""}
                                   onChange={e => setPaymentForm({ ...paymentForm, amount: parseFloat(e.target.value) || 0 })}
                                   onKeyDown={e => { if (e.key==="Enter") handleAddPayment(); }}
                                   placeholder={`Enter amount (max ${fmt(live)})`}
-                                  className={inputCls} style={{ ...inputStyle("pp-amt"), color:"#16a34a", fontWeight:700 }}
+                                  className={inputCls} style={{ ...inputStyle("pp-amt"), color:"#34A853", fontWeight:700 }}
                                   onFocus={(e) => { e.target.select(); setFocused("pp-amt"); }} onBlur={() => setFocused(null)}/>
                               </div>
                               <div>
-                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Reference / Notes</label>
+                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9AA0A6" }}>Reference / Notes</label>
                                 <input value={paymentForm.notes}
                                   onChange={e => setPaymentForm({ ...paymentForm, notes: e.target.value })}
                                   placeholder="e.g. Cheque #12345"
@@ -1343,7 +1343,7 @@ export default function Purchases() {
                                 <Save2 size={14} variant="Linear" color="currentColor"/> Save Payment (Enter)
                               </button>
                               <button onClick={() => setPaymentForm(null)}
-                                style={{ padding:"8px 16px", border:"1px solid #E5E7EB", borderRadius:8, background:"#F9FAFB", color:"#6B7280", fontSize:13, fontWeight:600, cursor:"pointer" }}>
+                                style={{ padding:"8px 16px", border:"1px solid #E5E7EB", borderRadius:8, background:"#F9FAFB", color:"#5F6368", fontSize:13, fontWeight:600, cursor:"pointer" }}>
                                 Cancel
                               </button>
                             </div>

@@ -19,10 +19,10 @@ import { invoke } from "@tauri-apps/api/core";
 import type { AgentSummary, Invoice, DailyRevenue, AgentPerformance, View, SupplierAgingBracket } from "../types";
 
 const C = {
-  red:   "#EA4335", redDk: "#C62828",
-  muted: "#1D1D1D", silver: "#BFBFBF",
-  surf:  "#ECECEC", white: "#FFFFFF",
-  bdr:   "#E8E8E8", txt2: "#6B7280", txt3: "#9CA3AF",
+  red:   "#EA4335", redDk: "#D33426",
+  muted: "#202124", silver: "#BDC1C6",
+  surf:  "#F1F3F4", white: "#FFFFFF",
+  bdr:   "#E0E3E7", txt2: "#5F6368", txt3: "#9AA0A6",
 };
 
 type Period = "7D" | "30D" | "All";
@@ -187,13 +187,13 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
     .slice(0, 5)
     .map(r => ({ name: r.name.split(" ")[0], value: Math.max(0, Math.round(r.outstanding_balance)) }));
 
-  const PIE_COLORS = [C.red, C.redDk, C.muted, C.silver, "#374151"];
+  const PIE_COLORS = ["#EA4335", "#FBBC05", "#4285F4", "#34A853", "#9C27B0"];
 
   // KPI label changes based on period
   const kpiPeriodLabel = period === "All" ? "All-Time" : `${period} Revenue`;
 
   return (
-    <div style={{ background: "#F5F5F5", minHeight: "100%" }}>
+    <div style={{ background: "#F8F9FA", minHeight: "100%" }}>
 
       {/* ── Top chrome: breadcrumb + period controls ── */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
@@ -240,7 +240,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
           style={{
             background: exportMsg.startsWith("✓") ? "#F0FFF4" : "#FFF1F0",
             border: `1px solid ${exportMsg.startsWith("✓") ? "#BBF7D0" : "#FECACA"}`,
-            color: exportMsg.startsWith("✓") ? "#16a34a" : C.red,
+            color: exportMsg.startsWith("✓") ? "#34A853" : C.red,
           }}>
           {exportMsg}
         </div>
@@ -334,7 +334,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
             value={loading ? "…" : fmts(periodStats?.total_collected ?? 0)}
             sub={`${collRate}% of invoiced`}
             trend={collRate >= 80 ? "↑ On track" : "↓ Follow up"}
-            trendColor={collRate >= 80 ? "#16a34a" : C.red}
+            trendColor={collRate >= 80 ? "#34A853" : C.red}
             loading={loading}
           />
 
@@ -346,7 +346,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
             value={loading ? "…" : fmts(Math.max(0, periodStats?.total_outstanding ?? 0))}
             sub={`${rows.filter(r=>r.outstanding_balance>0).length} agents`}
             trend={Math.max(0, periodStats?.total_outstanding ?? 0) > 0 ? "Requires collection / ගෙවීමට ඇත" : "All settled ✓ · නිම"}
-            trendColor={Math.max(0, periodStats?.total_outstanding ?? 0) > 0 ? C.red : "#16a34a"}
+            trendColor={Math.max(0, periodStats?.total_outstanding ?? 0) > 0 ? C.red : "#34A853"}
             onClick={() => onNavigate("ledger")}
             loading={loading}
           />
@@ -360,7 +360,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
               : hasOverdue15 ? C.red
               : hasOverdue8  ? "#d97706"
               : "#f59e0b";
-            const dueColor = supplierOwed <= 0 ? "#16a34a" : "#FFFFFF";
+            const dueColor = supplierOwed <= 0 ? "#34A853" : "#FFFFFF";
             const dueBorder = supplierOwed <= 0 ? "#BBF7D0" : "transparent";
             return (
               <div onClick={() => onNavigate("purchases")}
@@ -371,7 +371,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
                   <ShoppingCart size={18} style={{ color: dueColor }}/>
                 </div>
                 <p className="text-[10px] font-bold uppercase tracking-widest mb-3"
-                  style={{ color: supplierOwed > 0 ? "rgba(255,255,255,0.75)" : "#16a34a" }}>
+                  style={{ color: supplierOwed > 0 ? "rgba(255,255,255,0.75)" : "#34A853" }}>
                   Nimalsiri Dues
                 </p>
                 {loading
@@ -380,7 +380,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
                       {supplierOwed <= 0 ? "All Clear ✓" : fmts(supplierOwed)}
                     </p>
                 }
-                <p className="text-xs mt-2" style={{ color: supplierOwed > 0 ? "rgba(255,255,255,0.7)" : "#16a34a" }}>
+                <p className="text-xs mt-2" style={{ color: supplierOwed > 0 ? "rgba(255,255,255,0.7)" : "#34A853" }}>
                   {supplierOwed <= 0 ? "No balance owed" : "owed to Nimalsiri"}
                 </p>
                 {hasOverdue15 && !loading && (
@@ -415,10 +415,10 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
                     <Clock size={15} className="text-white"/>
                   </div>
                   <div>
-                    <p className="text-sm font-bold" style={{ color: "#1D1D1D" }}>
+                    <p className="text-sm font-bold" style={{ color: "#202124" }}>
                       Supplier Credit Aging — Nimalsiri Enterprises
                     </p>
-                    <p className="text-[11px]" style={{ color: "#9CA3AF" }}>
+                    <p className="text-[11px]" style={{ color: "#9AA0A6" }}>
                       Rs. {fmt(supplierOwed)} total outstanding · age distribution below
                     </p>
                   </div>
@@ -431,7 +431,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
               </div>
               <div className="px-5 py-3 flex items-center gap-3 flex-wrap">
                 {supplierAging.map(b => {
-                  const bColor = b.days_max <= 7 ? "#16a34a" : b.days_max <= 14 ? "#d97706" : b.days_max <= 30 ? "#ea580c" : C.red;
+                  const bColor = b.days_max <= 7 ? "#34A853" : b.days_max <= 14 ? "#d97706" : b.days_max <= 30 ? "#ea580c" : C.red;
                   const pct = supplierOwed > 0 ? Math.round((b.total_outstanding / supplierOwed) * 100) : 0;
                   return (
                     <div key={b.bracket} className="flex items-center gap-2 px-3 py-2 rounded-xl"
@@ -441,10 +441,10 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
                         <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: bColor }}>
                           {b.bracket}
                         </p>
-                        <p className="text-sm font-black" style={{ color: "#1D1D1D" }}>
+                        <p className="text-sm font-black" style={{ color: "#202124" }}>
                           Rs. {fmt(b.total_outstanding)}
                         </p>
-                        <p className="text-[9px]" style={{ color: "#9CA3AF" }}>
+                        <p className="text-[9px]" style={{ color: "#9AA0A6" }}>
                           {b.count} invoice{b.count !== 1 ? "s" : ""} · {pct}%
                         </p>
                       </div>
@@ -455,7 +455,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
                 <div className="w-full mt-1">
                   <div className="flex h-2 rounded-full overflow-hidden gap-px">
                     {supplierAging.map(b => {
-                      const bColor = b.days_max <= 7 ? "#16a34a" : b.days_max <= 14 ? "#d97706" : b.days_max <= 30 ? "#ea580c" : C.red;
+                      const bColor = b.days_max <= 7 ? "#34A853" : b.days_max <= 14 ? "#d97706" : b.days_max <= 30 ? "#ea580c" : C.red;
                       const pct = supplierOwed > 0 ? (b.total_outstanding / supplierOwed) * 100 : 0;
                       return pct > 0 ? (
                         <div key={b.bracket} style={{ width: `${pct}%`, background: bColor }}/>
@@ -528,7 +528,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
             </div>
             <div className="px-4 pb-4">
               {outPie.length === 0
-                ? <EmptyChart h={185} msg="No outstanding balances ✓" color="#16a34a" />
+                ? <EmptyChart h={185} msg="No outstanding balances ✓" color="#34A853" />
                 : (
                   <>
                     <ResponsiveContainer width="100%" height={140}>
@@ -627,7 +627,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
                 <div className="border-t pt-3 space-y-2" style={{ borderColor: C.surf }}>
                   <div className="text-[10px] font-bold uppercase" style={{ color: C.silver }}>Agent Collection Rate</div>
                   {perf.slice(0,3).map(a => {
-                    const col = a.collection_rate>=80?"#16a34a":a.collection_rate>=50?"#d97706":C.red;
+                    const col = a.collection_rate>=80?"#34A853":a.collection_rate>=50?"#d97706":C.red;
                     return (
                       <div key={a.name}>
                         <div className="flex justify-between text-[11px] mb-0.5">
@@ -708,11 +708,11 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
                         <td className="px-5 py-3 font-semibold text-sm" style={{ color:C.muted }}>
                           Rs. {fmt(inv.invoice_total)}
                         </td>
-                        <td className="px-5 py-3 text-sm" style={{ color:"#16a34a" }}>Rs. {fmt(paid)}</td>
+                        <td className="px-5 py-3 text-sm" style={{ color:"#34A853" }}>Rs. {fmt(paid)}</td>
                         <td className="px-5 py-3">
                           {inv.outstanding_balance > 0
                             ? <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-white" style={{ background:C.red }}>● Due</span>
-                            : <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-white" style={{ background:"#16a34a" }}>✓ Settled</span>
+                            : <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-white" style={{ background:"#34A853" }}>✓ Settled</span>
                           }
                         </td>
                       </tr>
@@ -795,7 +795,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
                       <td key={ci} className="px-4 py-2.5 text-xs" style={{ color:C.txt2 }}>{v}</td>
                     ))}
                     <td className="px-4 py-2.5 text-xs font-bold"
-                      style={{ color: r.outstanding_balance > 0 ? C.red : r.outstanding_balance < 0 ? "#2563eb" : "#16a34a" }}>
+                      style={{ color: r.outstanding_balance > 0 ? C.red : r.outstanding_balance < 0 ? "#2563eb" : "#34A853" }}>
                       {r.outstanding_balance < 0
                         ? <span title="Advance credit / overpayment">Cr. {fmt(Math.abs(r.outstanding_balance))}</span>
                         : fmt(Math.max(0, r.outstanding_balance))
@@ -830,7 +830,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-function KpiWhite({ icon, label, labelSi, value, sub, trend, trendColor="#16a34a", onClick, loading }: {
+function KpiWhite({ icon, label, labelSi, value, sub, trend, trendColor="#34A853", onClick, loading }: {
   icon: React.ReactNode; label: string; labelSi?: string; value: string;
   sub?: string; trend?: string; trendColor?: string;
   onClick?: () => void; loading?: boolean;
@@ -842,17 +842,17 @@ function KpiWhite({ icon, label, labelSi, value, sub, trend, trendColor="#16a34a
         borderTop:"3px solid #4285F4", cursor: onClick?"pointer":undefined }}>
       <div className="flex items-center justify-between mb-3">
         <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-          style={{ background:"#F4F4F4", color:"#374151" }}>
+          style={{ background:"#F4F4F4", color:"#5F6368" }}>
           {icon}
         </div>
       </div>
-      <p className="text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{ color:"#9CA3AF" }}>{label}</p>
+      <p className="text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{ color:"#9AA0A6" }}>{label}</p>
       {labelSi && <p className="si text-[8px] mb-1.5" style={{ color:"#C4CAD0" }}>{labelSi}</p>}
       {loading
         ? <div className="h-8 w-24 rounded-lg animate-pulse" style={{ background:"#F3F4F6" }} />
-        : <p className="text-2xl font-black leading-tight" style={{ color:"#1D1D1D" }}>{value}</p>
+        : <p className="text-2xl font-black leading-tight" style={{ color:"#202124" }}>{value}</p>
       }
-      {sub && <p className="text-[11px] mt-1" style={{ color:"#9CA3AF" }}>{sub}</p>}
+      {sub && <p className="text-[11px] mt-1" style={{ color:"#9AA0A6" }}>{sub}</p>}
       {trend && !loading && <p className="text-[11px] font-semibold mt-1.5" style={{ color:trendColor }}>{trend}</p>}
     </div>
   );

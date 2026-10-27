@@ -76,18 +76,18 @@ export default function DailyCollectionView() {
   });
 
   const inputStyle = (field: string) => ({
-    border: `1px solid ${focusedField === field ? "#4285F4" : "#E8E8E8"}`,
+    border: `1px solid ${focusedField === field ? "#4285F4" : "#E0E3E7"}`,
     background: "#FAFAFA",
   });
 
   return (
-    <div style={{ background: "#F5F5F5", minHeight: "100%" }}>
+    <div style={{ background: "#F8F9FA", minHeight: "100%" }}>
       {/* Breadcrumb + toolbar */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2 no-print">
-        <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
+        <nav className="flex items-center gap-1 text-xs" style={{ color: "#9AA0A6" }}>
           <Home2 size={12} variant="Linear" color="currentColor" />
           <ArrowRight2 size={11} variant="Linear" color="currentColor" />
-          <span className="font-semibold" style={{ color: "#1D1D1D" }}>{t("nav_daily_collections")}</span>
+          <span className="font-semibold" style={{ color: "#202124" }}>{t("nav_daily_collections")}</span>
         </nav>
         <div className="flex gap-2">
           <input
@@ -100,7 +100,7 @@ export default function DailyCollectionView() {
           <button
             onClick={() => window.print()}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all no-print"
-            style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
+            style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#202124" }}
           >
             <Printer size={14} variant="Linear" color="currentColor" /> Print Sheet
           </button>
@@ -118,8 +118,8 @@ export default function DailyCollectionView() {
         {/* Page header */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#1D1D1D" }}>{t("nav_daily_collections")}</h1>
-            <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Cash collected by route and field collectors</p>
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#202124" }}>{t("nav_daily_collections")}</h1>
+            <p className="text-xs mt-0.5" style={{ color: "#9AA0A6" }}>Cash collected by route and field collectors</p>
             <p className="text-xs mt-1 font-medium" style={{ color: "#D97706" }}>
               ⚠ Collection entries here are an operational log only. To update an agent's outstanding balance, record a payment in the Payment Ledger.
             </p>
@@ -145,12 +145,12 @@ export default function DailyCollectionView() {
                   className="flex-shrink-0 px-3 py-2 rounded-lg text-xs text-left transition-all"
                   style={{
                     background: isSelected ? "#4285F4" : "#FFFFFF",
-                    border: `1px solid ${isSelected ? "#4285F4" : "#E8E8E8"}`,
-                    color: isSelected ? "#FFFFFF" : "#1D1D1D",
+                    border: `1px solid ${isSelected ? "#4285F4" : "#E0E3E7"}`,
+                    color: isSelected ? "#FFFFFF" : "#202124",
                   }}
                 >
                   <div className="font-semibold">{fmtDate(d.date)}</div>
-                  <div className="text-[10px] mt-0.5" style={{ color: isSelected ? "rgba(255,255,255,0.75)" : "#9CA3AF" }}>
+                  <div className="text-[10px] mt-0.5" style={{ color: isSelected ? "rgba(255,255,255,0.75)" : "#9AA0A6" }}>
                     Rs. {fmt(d.total)}
                   </div>
                 </button>
@@ -162,29 +162,29 @@ export default function DailyCollectionView() {
         {/* Summary metric cards */}
         <div className="grid grid-cols-5 gap-4 no-print">
           <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #16a34a" }}>
-            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>Total Cash</p>
-            <p className="text-2xl font-black" style={{ color: "#16a34a" }}>Rs. {fmt(totalCash)}</p>
-            <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>cash collections</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>Total Cash</p>
+            <p className="text-2xl font-black" style={{ color: "#34A853" }}>Rs. {fmt(totalCash)}</p>
+            <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>cash collections</p>
           </div>
           <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #2563eb" }}>
-            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>Total Cheque</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>Total Cheque</p>
             <p className="text-2xl font-black" style={{ color: "#2563eb" }}>Rs. {fmt(totalCheque)}</p>
-            <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>cheque receipts</p>
+            <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>cheque receipts</p>
           </div>
           <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #7c3aed" }}>
-            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>NLB Winnings</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>NLB Winnings</p>
             <p className="text-2xl font-black" style={{ color: "#7c3aed" }}>Rs. {fmt(totalNlb)}</p>
-            <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>NLB winning tickets</p>
+            <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>NLB winning tickets</p>
           </div>
           <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #EA580C" }}>
-            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>DLB Winnings</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>DLB Winnings</p>
             <p className="text-2xl font-black" style={{ color: "#EA580C" }}>Rs. {fmt(totalDlb)}</p>
-            <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>DLB winning tickets</p>
+            <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>DLB winning tickets</p>
           </div>
           <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #4285F4" }}>
-            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>Grand Total</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>Grand Total</p>
             <p className="text-2xl font-black" style={{ color: "#4285F4" }}>Rs. {fmt(grandTotal)}</p>
-            <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>{collections.length} entr{collections.length !== 1 ? "ies" : "y"}</p>
+            <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>{collections.length} entr{collections.length !== 1 ? "ies" : "y"}</p>
           </div>
         </div>
 
@@ -193,8 +193,8 @@ export default function DailyCollectionView() {
           <div className="rounded-2xl overflow-hidden shadow-sm no-print" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
             <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold" style={{ color: "#1D1D1D" }}>New Collection Entry — {dateLabel}</h2>
-                <button onClick={() => setForm(null)} className="p-1 rounded" style={{ color: "#9CA3AF" }}>
+                <h2 className="text-sm font-bold" style={{ color: "#202124" }}>New Collection Entry — {dateLabel}</h2>
+                <button onClick={() => setForm(null)} className="p-1 rounded" style={{ color: "#9AA0A6" }}>
                   <CloseCircle size={14} variant="Linear" color="currentColor" />
                 </button>
               </div>
@@ -202,7 +202,7 @@ export default function DailyCollectionView() {
             <div className="p-5">
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Agent *</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Agent *</label>
                   <select
                     value={form.agent_id || ""}
                     onChange={(e) => setForm({ ...form, agent_id: Number(e.target.value) })}
@@ -216,7 +216,7 @@ export default function DailyCollectionView() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Collector Name</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Collector Name</label>
                   <input
                     type="text"
                     value={form.collector_name}
@@ -229,7 +229,7 @@ export default function DailyCollectionView() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Route / Area</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Route / Area</label>
                   <input
                     type="text"
                     value={form.route}
@@ -242,7 +242,7 @@ export default function DailyCollectionView() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Cash (Rs.)</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Cash (Rs.)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -256,7 +256,7 @@ export default function DailyCollectionView() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Cheque (Rs.)</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Cheque (Rs.)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -270,7 +270,7 @@ export default function DailyCollectionView() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>NLB Winning Tickets (Rs.)</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>NLB Winning Tickets (Rs.)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -284,7 +284,7 @@ export default function DailyCollectionView() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>DLB Winning Tickets (Rs.)</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>DLB Winning Tickets (Rs.)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -335,7 +335,7 @@ export default function DailyCollectionView() {
                   </>
                 )}
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Notes</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Notes</label>
                   <input type="text" value={form.notes}
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
                     placeholder="Optional…"
@@ -355,7 +355,7 @@ export default function DailyCollectionView() {
                 <button
                   onClick={() => setForm(null)}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all"
-                  style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
+                  style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#202124" }}
                 >
                   Cancel
                 </button>
@@ -369,28 +369,28 @@ export default function DailyCollectionView() {
           <div className="px-5 py-3 no-print" style={{ background: "#374151", borderBottom: "2px solid #4285F4" }}>
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-white">{dateLabel}</span>
-              <span className="text-xs" style={{ color: "#9CA3AF" }}>{collections.length} entr{collections.length !== 1 ? "ies" : "y"}</span>
+              <span className="text-xs" style={{ color: "#9AA0A6" }}>{collections.length} entr{collections.length !== 1 ? "ies" : "y"}</span>
             </div>
           </div>
 
           {loading ? (
-            <div className="p-8 text-center text-sm" style={{ color: "#9CA3AF" }}>Loading…</div>
+            <div className="p-8 text-center text-sm" style={{ color: "#9AA0A6" }}>Loading…</div>
           ) : collections.length === 0 ? (
-            <div className="p-8 text-center text-sm" style={{ color: "#9CA3AF" }}>No entries for this date. Click "+ Add Entry" to start.</div>
+            <div className="p-8 text-center text-sm" style={{ color: "#9AA0A6" }}>No entries for this date. Click "+ Add Entry" to start.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr style={{ background: "#F9FAFB", borderBottom: "1px solid #E8E8E8" }}>
-                    <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>#</th>
-                    <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Agent</th>
-                    <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Collector</th>
-                    <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Route</th>
-                    <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Cash</th>
-                    <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Cheque</th>
-                    <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>NLB Win.</th>
-                    <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>DLB Win.</th>
-                    <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Total</th>
+                    <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>#</th>
+                    <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Agent</th>
+                    <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Collector</th>
+                    <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Route</th>
+                    <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Cash</th>
+                    <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Cheque</th>
+                    <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>NLB Win.</th>
+                    <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>DLB Win.</th>
+                    <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Total</th>
                     <th className="px-4 py-3 w-12 no-print"></th>
                   </tr>
                 </thead>
@@ -400,15 +400,15 @@ export default function DailyCollectionView() {
                     return (
                       <tr key={c.id} className="hover:bg-red-50/20 transition-colors"
                         style={{ background: i % 2 === 0 ? "#FFFFFF" : "#F9FAFB", borderBottom: "1px solid #F3F4F6" }}>
-                        <td className="px-4 py-3 text-sm" style={{ color: "#9CA3AF" }}>{i + 1}</td>
-                        <td className="px-4 py-3 text-sm font-semibold" style={{ color: "#1D1D1D" }}>{c.agent_name}</td>
-                        <td className="px-4 py-3 text-sm" style={{ color: "#6B7280" }}>{c.collector_name || "—"}</td>
-                        <td className="px-4 py-3 text-sm" style={{ color: "#6B7280" }}>{c.route || "—"}</td>
-                        <td className="px-4 py-3 text-sm text-right font-semibold" style={{ color: "#16a34a" }}>{fmt(c.cash_amount)}</td>
+                        <td className="px-4 py-3 text-sm" style={{ color: "#9AA0A6" }}>{i + 1}</td>
+                        <td className="px-4 py-3 text-sm font-semibold" style={{ color: "#202124" }}>{c.agent_name}</td>
+                        <td className="px-4 py-3 text-sm" style={{ color: "#5F6368" }}>{c.collector_name || "—"}</td>
+                        <td className="px-4 py-3 text-sm" style={{ color: "#5F6368" }}>{c.route || "—"}</td>
+                        <td className="px-4 py-3 text-sm text-right font-semibold" style={{ color: "#34A853" }}>{fmt(c.cash_amount)}</td>
                         <td className="px-4 py-3 text-sm text-right font-semibold" style={{ color: "#2563eb" }}>{fmt(c.cheque_amount)}</td>
                         <td className="px-4 py-3 text-sm text-right" style={{ color: "#7c3aed" }}>{fmt(c.nlb_winning)}</td>
                         <td className="px-4 py-3 text-sm text-right" style={{ color: "#ea580c" }}>{fmt(c.dlb_winning)}</td>
-                        <td className="px-4 py-3 text-sm text-right font-bold" style={{ color: "#1D1D1D" }}>{fmt(rowTotal)}</td>
+                        <td className="px-4 py-3 text-sm text-right font-bold" style={{ color: "#202124" }}>{fmt(rowTotal)}</td>
                         <td className="px-3 py-3 no-print">
                           <button
                             onClick={() => handleDelete(c.id!)}
@@ -424,7 +424,7 @@ export default function DailyCollectionView() {
                 </tbody>
                 <tfoot>
                   <tr style={{ background: "#374151", borderTop: "2px solid #4285F4" }}>
-                    <td colSpan={4} className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: "#9CA3AF" }}>TOTALS</td>
+                    <td colSpan={4} className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: "#9AA0A6" }}>TOTALS</td>
                     <td className="px-4 py-3 text-right text-sm font-bold" style={{ color: "#FFFFFF" }}>{fmt(totalCash)}</td>
                     <td className="px-4 py-3 text-right text-sm font-bold" style={{ color: "#FFFFFF" }}>{fmt(totalCheque)}</td>
                     <td className="px-4 py-3 text-right text-sm font-bold" style={{ color: "#FFFFFF" }}>{fmt(totalNlb)}</td>

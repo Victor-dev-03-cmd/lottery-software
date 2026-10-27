@@ -75,10 +75,10 @@ export default function Reports() {
     <div style={{ background: "#F5F5F5", minHeight: "100%" }}>
       {/* Breadcrumb + toolbar row */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
-        <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
+        <nav className="flex items-center gap-1 text-xs" style={{ color: "#9AA0A6" }}>
           <Home2 size={12} variant="Linear" color="#9AA0A6"/>
           <ArrowRight2 size={11} variant="Linear" color="#9AA0A6"/>
-          <span className="font-semibold" style={{ color: "#1D1D1D" }}>Reports</span>
+          <span className="font-semibold" style={{ color: "#202124" }}>Reports</span>
         </nav>
         <div className="flex gap-2">
           {/* period pills */}
@@ -88,8 +88,8 @@ export default function Reports() {
                 className="px-3 py-1 rounded-md text-xs font-semibold transition-all"
                 style={{
                   background: period === d ? "#4285F4" : "#FFFFFF",
-                  color: period === d ? "#FFFFFF" : "#6B7280",
-                  border: `1px solid ${period === d ? "#4285F4" : "#E8E8E8"}`,
+                  color: period === d ? "#FFFFFF" : "#5F6368",
+                  border: `1px solid ${period === d ? "#4285F4" : "#E0E3E7"}`,
                 }}>
                 {d}d
               </button>
@@ -97,7 +97,7 @@ export default function Reports() {
           </div>
           <button onClick={load} disabled={loading}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}>
+            style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#202124" }}>
             <Refresh2 size={13} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""}/> Refresh
           </button>
         </div>
@@ -107,13 +107,13 @@ export default function Reports() {
         {/* Page header */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#1D1D1D" }}>Reports & Analytics</h1>
-            <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Revenue, agent performance, aging analysis</p>
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#202124" }}>Reports & Analytics</h1>
+            <p className="text-xs mt-0.5" style={{ color: "#9AA0A6" }}>Revenue, agent performance, aging analysis</p>
           </div>
         </div>
 
         {loading ? (
-          <div className="text-center py-16" style={{ color: "#9CA3AF" }}>Loading analytics…</div>
+          <div className="text-center py-16" style={{ color: "#9AA0A6" }}>Loading analytics…</div>
         ) : (
           <>
             {/* KPI strip */}
@@ -133,7 +133,7 @@ export default function Reports() {
                   className="px-5 py-2.5 text-sm font-medium border-b-2 transition-colors"
                   style={{
                     borderColor: activeTab === t.key ? "#4285F4" : "transparent",
-                    color: activeTab === t.key ? "#4285F4" : "#9CA3AF",
+                    color: activeTab === t.key ? "#4285F4" : "#9AA0A6",
                   }}>
                   {t.label}
                 </button>
@@ -148,8 +148,8 @@ export default function Reports() {
                   <div className="lg:col-span-2 rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
                     <div className="flex items-start justify-between px-5 pt-4 pb-2">
                       <div>
-                        <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Daily Revenue</p>
-                        <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>last {period} days</p>
+                        <p className="font-semibold text-sm" style={{ color: "#202124" }}>Daily Revenue</p>
+                        <p className="text-xs mt-0.5" style={{ color: "#9AA0A6" }}>last {period} days</p>
                       </div>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#EAF1FB", color: "#4285F4" }}>{period}D</span>
                     </div>
@@ -172,8 +172,8 @@ export default function Reports() {
                   <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
                     <div className="flex items-start justify-between px-5 pt-4 pb-2">
                       <div>
-                        <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Collection Status</p>
-                        <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>collected vs outstanding</p>
+                        <p className="font-semibold text-sm" style={{ color: "#202124" }}>Collection Status</p>
+                        <p className="text-xs mt-0.5" style={{ color: "#9AA0A6" }}>collected vs outstanding</p>
                       </div>
                     </div>
                     <div className="px-4 pb-4">
@@ -199,8 +199,8 @@ export default function Reports() {
                 <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
                   <div className="flex items-start justify-between px-5 pt-4 pb-2">
                     <div>
-                      <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Monthly Revenue vs Collection</p>
-                      <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>6-month trend</p>
+                      <p className="font-semibold text-sm" style={{ color: "#202124" }}>Monthly Revenue vs Collection</p>
+                      <p className="text-xs mt-0.5" style={{ color: "#9AA0A6" }}>6-month trend</p>
                     </div>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#EAF1FB", color: "#4285F4" }}>6M</span>
                   </div>
@@ -227,14 +227,14 @@ export default function Reports() {
             {activeTab === "games" && (
               <div className="space-y-5">
                 {games.length === 0 ? (
-                  <div className="rounded-2xl p-8 text-center shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#9CA3AF" }}>No invoice data yet.</div>
+                  <div className="rounded-2xl p-8 text-center shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#9AA0A6" }}>No invoice data yet.</div>
                 ) : (
                   <>
                     <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
                       <div className="flex items-start justify-between px-5 pt-4 pb-2">
                         <div>
-                          <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Top Games by Distribution Value</p>
-                          <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Rs. value breakdown</p>
+                          <p className="font-semibold text-sm" style={{ color: "#202124" }}>Top Games by Distribution Value</p>
+                          <p className="text-xs mt-0.5" style={{ color: "#9AA0A6" }}>Rs. value breakdown</p>
                         </div>
                       </div>
                       <div className="px-4 pb-4">
@@ -257,13 +257,13 @@ export default function Reports() {
                       <table className="w-full">
                         <thead>
                           <tr>
-                            <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>#</th>
-                            <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Game / Ticket</th>
-                            <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Qty</th>
-                            <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Avg Price</th>
-                            <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Total Value</th>
-                            <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Invoices</th>
-                            <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", width: "10rem" }}>Share</th>
+                            <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>#</th>
+                            <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Game / Ticket</th>
+                            <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Qty</th>
+                            <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Avg Price</th>
+                            <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Total Value</th>
+                            <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Invoices</th>
+                            <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", width: "10rem" }}>Share</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -272,18 +272,18 @@ export default function Reports() {
                             const share = totalValue > 0 ? (g.total_value / totalValue) * 100 : 0;
                             return (
                               <tr key={g.ticket_name} className="hover:bg-gray-50/60 transition-colors" style={{ borderBottom: "1px solid #F9F9F9" }}>
-                                <td className="px-4 py-3 text-sm" style={{ color: "#9CA3AF", fontWeight: 700, fontSize: 11 }}>{i + 1}</td>
-                                <td className="px-4 py-3 text-sm font-medium" style={{ color: "#1D1D1D" }}>{g.ticket_name}</td>
-                                <td className="px-4 py-3 text-sm text-right" style={{ color: "#1D1D1D" }}>{g.total_qty.toLocaleString()}</td>
-                                <td className="px-4 py-3 text-sm text-right" style={{ color: "#6B7280" }}>{fmtFull(g.avg_unit_price)}</td>
+                                <td className="px-4 py-3 text-sm" style={{ color: "#9AA0A6", fontWeight: 700, fontSize: 11 }}>{i + 1}</td>
+                                <td className="px-4 py-3 text-sm font-medium" style={{ color: "#202124" }}>{g.ticket_name}</td>
+                                <td className="px-4 py-3 text-sm text-right" style={{ color: "#202124" }}>{g.total_qty.toLocaleString()}</td>
+                                <td className="px-4 py-3 text-sm text-right" style={{ color: "#5F6368" }}>{fmtFull(g.avg_unit_price)}</td>
                                 <td className="px-4 py-3 text-sm text-right font-semibold" style={{ color: "#4285F4" }}>{fmtFull(g.total_value)}</td>
-                                <td className="px-4 py-3 text-sm text-right" style={{ color: "#6B7280" }}>{g.invoice_count}</td>
+                                <td className="px-4 py-3 text-sm text-right" style={{ color: "#5F6368" }}>{g.invoice_count}</td>
                                 <td className="px-4 py-3 text-sm">
                                   <div className="flex items-center gap-2">
                                     <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "#F3F4F6" }}>
                                       <div className="h-full rounded-full" style={{ width: `${share}%`, background: "#4285F4" }} />
                                     </div>
-                                    <span className="text-xs w-10 text-right" style={{ color: "#9CA3AF" }}>{share.toFixed(1)}%</span>
+                                    <span className="text-xs w-10 text-right" style={{ color: "#9AA0A6" }}>{share.toFixed(1)}%</span>
                                   </div>
                                 </td>
                               </tr>
@@ -301,14 +301,14 @@ export default function Reports() {
             {activeTab === "agents" && (
               <div className="space-y-5">
                 {agents.length === 0 ? (
-                  <div className="rounded-2xl p-8 text-center shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#9CA3AF" }}>No agent data.</div>
+                  <div className="rounded-2xl p-8 text-center shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#9AA0A6" }}>No agent data.</div>
                 ) : (
                   <>
                     <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
                       <div className="flex items-start justify-between px-5 pt-4 pb-2">
                         <div>
-                          <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Top Agents by Distribution Value</p>
-                          <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>top 10 by invoice value</p>
+                          <p className="font-semibold text-sm" style={{ color: "#202124" }}>Top Agents by Distribution Value</p>
+                          <p className="text-xs mt-0.5" style={{ color: "#9AA0A6" }}>top 10 by invoice value</p>
                         </div>
                       </div>
                       <div className="px-4 pb-4">
@@ -331,22 +331,22 @@ export default function Reports() {
                       <table className="w-full">
                         <thead>
                           <tr>
-                            <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", width: "2rem" }}>#</th>
-                            <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Agent</th>
-                            <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Total Value</th>
-                            <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Invoices</th>
-                            <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Outstanding</th>
-                            <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Collection %</th>
-                            <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", width: "11rem" }}>Progress</th>
+                            <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", width: "2rem" }}>#</th>
+                            <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Agent</th>
+                            <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Total Value</th>
+                            <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Invoices</th>
+                            <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Outstanding</th>
+                            <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Collection %</th>
+                            <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", width: "11rem" }}>Progress</th>
                           </tr>
                         </thead>
                         <tbody>
                           {agents.map((a, i) => (
                             <tr key={a.name} className="hover:bg-gray-50/60 transition-colors" style={{ borderBottom: "1px solid #F9F9F9" }}>
-                              <td className="px-4 py-3 text-sm" style={{ color: "#9CA3AF", fontWeight: 700, fontSize: 11 }}>{i + 1}</td>
-                              <td className="px-4 py-3 text-sm font-medium" style={{ color: "#1D1D1D" }}>{a.name}</td>
-                              <td className="px-4 py-3 text-sm text-right" style={{ color: "#1D1D1D" }}>Rs. {fmt(a.total_value)}</td>
-                              <td className="px-4 py-3 text-sm text-right" style={{ color: "#6B7280" }}>{a.invoice_count}</td>
+                              <td className="px-4 py-3 text-sm" style={{ color: "#9AA0A6", fontWeight: 700, fontSize: 11 }}>{i + 1}</td>
+                              <td className="px-4 py-3 text-sm font-medium" style={{ color: "#202124" }}>{a.name}</td>
+                              <td className="px-4 py-3 text-sm text-right" style={{ color: "#202124" }}>Rs. {fmt(a.total_value)}</td>
+                              <td className="px-4 py-3 text-sm text-right" style={{ color: "#5F6368" }}>{a.invoice_count}</td>
                               <td className={`px-4 py-3 text-sm text-right font-medium`} style={{ color: a.outstanding > 0 ? "#EA4335" : "#10b981" }}>
                                 Rs. {fmt(a.outstanding)}
                               </td>
@@ -404,12 +404,12 @@ export default function Reports() {
                     <table className="w-full">
                       <thead>
                         <tr style={{ background: "#374151", borderBottom: "2px solid #4285F4" }}>
-                          <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Agent</th>
-                          <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Invoice #</th>
-                          <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Invoice Date</th>
-                          <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Outstanding (Rs.)</th>
-                          <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Days Old</th>
-                          <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Age Band</th>
+                          <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Agent</th>
+                          <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Invoice #</th>
+                          <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Invoice Date</th>
+                          <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Outstanding (Rs.)</th>
+                          <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Days Old</th>
+                          <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Age Band</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -421,11 +421,11 @@ export default function Reports() {
                             : { label: ">60 days", bg: "#fee2e2", color: "#b91c1c" };
                           return (
                             <tr key={i} className="hover:bg-gray-50/60 transition-colors" style={{ borderBottom: "1px solid #F9F9F9" }}>
-                              <td className="px-4 py-3 text-sm font-medium" style={{ color: "#1D1D1D" }}>{a.name}</td>
+                              <td className="px-4 py-3 text-sm font-medium" style={{ color: "#202124" }}>{a.name}</td>
                               <td className="px-4 py-3 text-sm font-mono" style={{ color: "#EA4335" }}>{a.invoice_number}</td>
-                              <td className="px-4 py-3 text-sm" style={{ color: "#6B7280" }}>{fmtDate(a.invoice_date)}</td>
+                              <td className="px-4 py-3 text-sm" style={{ color: "#5F6368" }}>{fmtDate(a.invoice_date)}</td>
                               <td className="px-4 py-3 text-sm text-right font-bold" style={{ color: "#EA4335" }}>{fmtFull(a.outstanding_balance)}</td>
-                              <td className="px-4 py-3 text-sm text-right font-semibold" style={{ color: a.days_old > 30 ? "#EA4335" : "#6B7280" }}>{a.days_old}</td>
+                              <td className="px-4 py-3 text-sm text-right font-semibold" style={{ color: a.days_old > 30 ? "#EA4335" : "#5F6368" }}>{a.days_old}</td>
                               <td className="px-4 py-3 text-sm">
                                 <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: band.bg, color: band.color }}>{band.label}</span>
                               </td>
@@ -435,7 +435,7 @@ export default function Reports() {
                       </tbody>
                       <tfoot style={{ background: "#374151", borderTop: "2px solid #4285F4" }}>
                         <tr>
-                          <td colSpan={3} className="px-4 py-3 text-right text-xs uppercase font-semibold" style={{ color: "#9CA3AF" }}>Total Outstanding</td>
+                          <td colSpan={3} className="px-4 py-3 text-right text-xs uppercase font-semibold" style={{ color: "#9AA0A6" }}>Total Outstanding</td>
                           <td className="px-4 py-3 text-right font-bold text-sm" style={{ color: "#EA4335" }}>
                             Rs. {fmtFull(aging.reduce((s, a) => s + a.outstanding_balance, 0))}
                           </td>
@@ -460,14 +460,14 @@ function KpiCard({ label, value, icon }: { label: string; value: string; icon: R
       <div className="w-7 h-7 rounded-lg flex items-center justify-center mb-2" style={{ background: "#FFF1F0" }}>
         {icon}
       </div>
-      <p className="text-xl font-black leading-tight truncate" style={{ color: "#1D1D1D" }}>{value}</p>
-      <p className="text-[10px] mt-0.5 font-semibold uppercase" style={{ color: "#9CA3AF" }}>{label}</p>
+      <p className="text-xl font-black leading-tight truncate" style={{ color: "#202124" }}>{value}</p>
+      <p className="text-[10px] mt-0.5 font-semibold uppercase" style={{ color: "#9AA0A6" }}>{label}</p>
     </div>
   );
 }
 
 function EmptyChart() {
-  return <div className="h-48 flex items-center justify-center text-sm" style={{ color: "#9CA3AF" }}>No data yet</div>;
+  return <div className="h-48 flex items-center justify-center text-sm" style={{ color: "#9AA0A6" }}>No data yet</div>;
 }
 
 function fmtDate(d: string) {

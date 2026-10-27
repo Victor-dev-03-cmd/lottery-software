@@ -13,7 +13,7 @@ const PAYMENT_TYPES: { value: PaymentType; label: string }[] = [
 ];
 
 const TYPE_COLORS: Record<PaymentType, { bg: string; color: string }> = {
-  cash: { bg: "#DCFCE7", color: "#16a34a" },
+  cash: { bg: "#E6F4EA", color: "#34A853" },
   cheque: { bg: "#DBEAFE", color: "#2563eb" },
   nlb_winning: { bg: "#F3E8FF", color: "#7c3aed" },
   dlb_winning: { bg: "#FFEDD5", color: "#ea580c" },
@@ -145,7 +145,7 @@ export default function Ledger() {
   const agingBand = daysSinceLastInvoice === null || currentOutstanding <= 0
     ? null
     : daysSinceLastInvoice <= 7
-    ? { label: "Current (0–7d)", bg: "#DCFCE7", color: "#16a34a", borderColor: "#16a34a" }
+    ? { label: "Current (0–7d)", bg: "#E6F4EA", color: "#34A853", borderColor: "#34A853" }
     : daysSinceLastInvoice <= 30
     ? { label: "Overdue 8–30d", bg: "#FEF9C3", color: "#d97706", borderColor: "#d97706" }
     : daysSinceLastInvoice <= 60
@@ -155,25 +155,25 @@ export default function Ledger() {
   const agent = agents.find((a) => a.id === Number(selectedAgent));
 
   const inputStyle = (field: string) => ({
-    border: `1px solid ${focusedField === field ? "#4285F4" : "#E8E8E8"}`,
+    border: `1px solid ${focusedField === field ? "#4285F4" : "#E0E3E7"}`,
     background: "#FAFAFA",
   });
 
   return (
-    <div style={{ background: "#F5F5F5", minHeight: "100%" }}>
+    <div style={{ background: "#F8F9FA", minHeight: "100%" }}>
       {/* Breadcrumb + toolbar */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
-        <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
+        <nav className="flex items-center gap-1 text-xs" style={{ color: "#9AA0A6" }}>
           <Home2 size={12} variant="Linear" color="currentColor" />
           <ArrowRight2 size={11} variant="Linear" color="currentColor" />
-          <span className="font-semibold" style={{ color: "#1D1D1D" }}>{t("nav_ledger")}</span>
+          <span className="font-semibold" style={{ color: "#202124" }}>{t("nav_ledger")}</span>
         </nav>
         <div className="flex gap-2">
           {selectedAgent !== "" && (
             <button
               onClick={() => loadData(Number(selectedAgent))} disabled={loading}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
+              style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#202124" }}
             >
               <Refresh2 size={14} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""} /> Refresh
             </button>
@@ -193,8 +193,8 @@ export default function Ledger() {
         {/* Page header */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#1D1D1D" }}>{t("nav_ledger")}</h1>
-            <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Cash, cheque & winning ticket tracking per agent</p>
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#202124" }}>{t("nav_ledger")}</h1>
+            <p className="text-xs mt-0.5" style={{ color: "#9AA0A6" }}>Cash, cheque & winning ticket tracking per agent</p>
           </div>
         </div>
 
@@ -202,7 +202,7 @@ export default function Ledger() {
         <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
           <div className="p-5 flex items-end gap-4">
             <div className="flex-1">
-              <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>
+              <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>
                 Select Agent
               </label>
               <select
@@ -232,8 +232,8 @@ export default function Ledger() {
         {!selectedAgent ? (
           <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
             <div style={{ padding:"36px 40px", textAlign:"center" }}>
-              <Card size={14} variant="Linear" color="currentColor" className="mx-auto mb-4" style={{ color: "#E8E8E8" }} />
-              <p style={{ color:"#6B7280", fontSize:14, fontWeight:600, marginBottom:16 }}>
+              <Card size={14} variant="Linear" color="currentColor" className="mx-auto mb-4" style={{ color: "#E0E3E7" }} />
+              <p style={{ color:"#5F6368", fontSize:14, fontWeight:600, marginBottom:16 }}>
                 Select an agent above to view their ledger.
               </p>
               {/* Sinhala explanation of outstanding balance */}
@@ -267,15 +267,15 @@ export default function Ledger() {
             <div className="grid grid-cols-3 gap-4">
               {/* Total Invoiced */}
               <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #2563eb" }}>
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>Total Invoiced</p>
-                <p className="text-2xl font-black" style={{ color: "#1D1D1D" }}>Rs. {fmt(totalInvoiced)}</p>
-                <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>{ledger.length} invoice{ledger.length !== 1 ? "s" : ""}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>Total Invoiced</p>
+                <p className="text-2xl font-black" style={{ color: "#202124" }}>Rs. {fmt(totalInvoiced)}</p>
+                <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>{ledger.length} invoice{ledger.length !== 1 ? "s" : ""}</p>
               </div>
               {/* Payments Recorded */}
               <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #16a34a" }}>
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>Payments Recorded</p>
-                <p className="text-2xl font-black" style={{ color: "#16a34a" }}>Rs. {fmt(totalPaid)}</p>
-                <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>{payments.length} record{payments.length !== 1 ? "s" : ""}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>Payments Recorded</p>
+                <p className="text-2xl font-black" style={{ color: "#34A853" }}>Rs. {fmt(totalPaid)}</p>
+                <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>{payments.length} record{payments.length !== 1 ? "s" : ""}</p>
               </div>
               {/* Current Outstanding */}
               <div
@@ -283,23 +283,23 @@ export default function Ledger() {
                 style={{
                   background: "#FFFFFF",
                   border: "1px solid #E8E8E8",
-                  borderTop: `3px solid ${currentOutstanding <= 0 ? "#16a34a" : agingBand?.borderColor ?? "#4285F4"}`,
+                  borderTop: `3px solid ${currentOutstanding <= 0 ? "#34A853" : agingBand?.borderColor ?? "#4285F4"}`,
                 }}
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>Current Outstanding</p>
-                    <p className="text-2xl font-black" style={{ color: currentOutstanding > 0 ? "#EA4335" : "#16a34a" }}>
+                    <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>Current Outstanding</p>
+                    <p className="text-2xl font-black" style={{ color: currentOutstanding > 0 ? "#EA4335" : "#34A853" }}>
                       Rs. {fmt(currentOutstanding)}
                     </p>
                     {agent && (
-                      <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>
+                      <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>
                         {agent.nlb_reg && `NLB: ${agent.nlb_reg}`}
                         {agent.dlb_reg && ` / DLB: ${agent.dlb_reg}`}
                       </p>
                     )}
                     {daysSinceLastInvoice !== null && currentOutstanding > 0 && (
-                      <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
+                      <p className="text-xs mt-0.5" style={{ color: "#9AA0A6" }}>
                         Last invoice: {daysSinceLastInvoice}d ago
                       </p>
                     )}
@@ -321,16 +321,16 @@ export default function Ledger() {
               <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
                 <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
                   <div className="flex items-center justify-between">
-                    <h2 className="text-sm font-bold" style={{ color: "#1D1D1D" }}>Record Payment</h2>
+                    <h2 className="text-sm font-bold" style={{ color: "#202124" }}>Record Payment</h2>
                     <div className="flex items-center gap-2">
                       <button onClick={() => { setMultiMode(m => !m); setSplits([EMPTY_SPLIT()]); }}
                         className="text-xs px-3 py-1 rounded-lg font-semibold transition-all"
                         style={{ background: multiMode ? "#4285F4" : "#F3F4F6",
-                          color: multiMode ? "#fff" : "#6B7280" }}>
+                          color: multiMode ? "#fff" : "#5F6368" }}>
                         {multiMode ? "Multi-Split ON" : "Split Payment"}
                       </button>
                       <button onClick={() => { setForm(null); setMultiMode(false); setSplits([EMPTY_SPLIT()]); }}
-                        className="p-1 rounded" style={{ color: "#9CA3AF" }}>
+                        className="p-1 rounded" style={{ color: "#9AA0A6" }}>
                         <CloseCircle size={14} variant="Linear" color="currentColor" />
                       </button>
                     </div>
@@ -340,14 +340,14 @@ export default function Ledger() {
                   {/* Shared fields: date, invoice link, notes */}
                   <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 mb-4">
                     <div>
-                      <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Date</label>
+                      <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Date</label>
                       <input type="date" value={form.payment_date}
                         onChange={e => setForm({ ...form, payment_date: e.target.value })}
                         className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
                         style={inputStyle("date")} onFocus={() => setFocusedField("date")} onBlur={() => setFocusedField(null)}/>
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Linked Invoice</label>
+                      <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Linked Invoice</label>
                       <select value={form.invoice_id ?? ""}
                         onChange={e => setForm({ ...form, invoice_id: e.target.value ? Number(e.target.value) : undefined })}
                         className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
@@ -361,7 +361,7 @@ export default function Ledger() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Notes</label>
+                      <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Notes</label>
                       <input type="text" value={form.notes}
                         onChange={e => setForm({ ...form, notes: e.target.value })}
                         placeholder="Optional…" className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
@@ -373,7 +373,7 @@ export default function Ledger() {
                   {!multiMode && (
                     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 p-4 rounded-xl" style={{ background:"#F9F9F9", border:"1px solid #E8E8E8" }}>
                       <div>
-                        <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Type</label>
+                        <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Type</label>
                         <select value={form.payment_type}
                           onChange={e => setForm({ ...form, payment_type: e.target.value as PaymentType })}
                           className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
@@ -382,25 +382,25 @@ export default function Ledger() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Amount (Rs.)</label>
+                        <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Amount (Rs.)</label>
                         <input type="number" step="0.01" value={form.amount || ""}
                           placeholder="0"
                           onChange={e => setForm({ ...form, amount: parseFloat(e.target.value) || 0 })}
                           className="w-full rounded-lg px-3 py-2 text-sm font-bold focus:outline-none"
-                          style={{ ...inputStyle("amount"), color:"#16a34a" }}
+                          style={{ ...inputStyle("amount"), color:"#34A853" }}
                           onFocus={(e) => { e.target.select(); setFocusedField("amount"); }} onBlur={() => setFocusedField(null)}/>
                       </div>
                       {form.payment_type === "cheque" && (
                         <>
                           <div>
-                            <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Cheque No.</label>
+                            <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Cheque No.</label>
                             <input type="text" value={form.cheque_number ?? ""}
                               onChange={e => setForm({ ...form, cheque_number: e.target.value })}
                               placeholder="e.g. CHQ-12345" className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
                               style={inputStyle("chqno")} onFocus={() => setFocusedField("chqno")} onBlur={() => setFocusedField(null)}/>
                           </div>
                           <div>
-                            <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Bank</label>
+                            <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Bank</label>
                             <select value={form.bank_name ?? ""}
                               onChange={e => setForm({ ...form, bank_name: e.target.value })}
                               className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
@@ -410,7 +410,7 @@ export default function Ledger() {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Clearance Date</label>
+                            <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Clearance Date</label>
                             <input type="date" value={form.clearance_date ?? ""}
                               onChange={e => setForm({ ...form, clearance_date: e.target.value })}
                               className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
@@ -427,7 +427,7 @@ export default function Ledger() {
                       <div className="px-4 py-2 flex items-center justify-between" style={{ background:"#374151" }}>
                         <span className="text-xs font-bold text-white">Payment Splits</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-[11px]" style={{ color:"#9CA3AF" }}>
+                          <span className="text-[11px]" style={{ color:"#9AA0A6" }}>
                             Total: Rs. {fmt(splits.reduce((s,x)=>s+x.amount,0))}
                           </span>
                           <button onClick={() => setSplits(s => [...s, EMPTY_SPLIT()])}
@@ -439,7 +439,7 @@ export default function Ledger() {
                         <div key={si} className="p-3 grid grid-cols-2 gap-3 lg:grid-cols-5"
                           style={{ borderTop: si > 0 ? "1px solid #F3F4F6" : undefined, background: si%2===0?"#FAFAFA":"#FFFFFF" }}>
                           <div>
-                            <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Type</label>
+                            <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9AA0A6" }}>Type</label>
                             <select value={split.payment_type}
                               onChange={e => setSplits(s => s.map((x,i)=>i===si?{...x,payment_type:e.target.value as PaymentType}:x))}
                               className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none"
@@ -448,23 +448,23 @@ export default function Ledger() {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Amount (Rs.)</label>
+                            <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9AA0A6" }}>Amount (Rs.)</label>
                             <input type="number" step="0.01" value={split.amount || ""}
                               onChange={e => setSplits(s => s.map((x,i)=>i===si?{...x,amount:parseFloat(e.target.value)||0}:x))}
                               className="w-full rounded-lg px-2 py-1.5 text-xs font-bold focus:outline-none"
-                              style={{ border:"1px solid #E8E8E8", background:"#fff", color:"#16a34a" }}/>
+                              style={{ border:"1px solid #E8E8E8", background:"#fff", color:"#34A853" }}/>
                           </div>
                           {split.payment_type === "cheque" && (
                             <>
                               <div>
-                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Cheque No.</label>
+                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9AA0A6" }}>Cheque No.</label>
                                 <input type="text" value={split.cheque_number}
                                   onChange={e => setSplits(s => s.map((x,i)=>i===si?{...x,cheque_number:e.target.value}:x))}
                                   placeholder="CHQ-12345" className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none"
                                   style={{ border:"1px solid #E8E8E8", background:"#fff" }}/>
                               </div>
                               <div>
-                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9CA3AF" }}>Bank</label>
+                                <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9AA0A6" }}>Bank</label>
                                 <select value={split.bank_name}
                                   onChange={e => setSplits(s => s.map((x,i)=>i===si?{...x,bank_name:e.target.value}:x))}
                                   className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none"
@@ -497,7 +497,7 @@ export default function Ledger() {
                     <button
                       onClick={() => setForm(null)}
                       className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all"
-                      style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
+                      style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#202124" }}
                     >
                       Cancel
                     </button>
@@ -518,7 +518,7 @@ export default function Ledger() {
                     className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all"
                     style={{
                       background: active ? "#FFFFFF" : "transparent",
-                      color: active ? "#1D1D1D" : "#9CA3AF",
+                      color: active ? "#202124" : "#9AA0A6",
                       boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
                     }}
                   >
@@ -535,20 +535,20 @@ export default function Ledger() {
                   <span className="text-sm font-semibold text-white">Payment History</span>
                 </div>
                 {loading ? (
-                  <div className="p-8 text-center text-sm" style={{ color: "#9CA3AF" }}>Loading…</div>
+                  <div className="p-8 text-center text-sm" style={{ color: "#9AA0A6" }}>Loading…</div>
                 ) : payments.length === 0 ? (
-                  <div className="p-8 text-center text-sm" style={{ color: "#9CA3AF" }}>No payment records yet.</div>
+                  <div className="p-8 text-center text-sm" style={{ color: "#9AA0A6" }}>No payment records yet.</div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr style={{ borderBottom: "1px solid #F9F9F9" }}>
-                          <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Date</th>
-                          <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Type</th>
-                          <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Amount (Rs.)</th>
-                          <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Linked Invoice</th>
-                          <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Reference</th>
-                          <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Notes</th>
+                          <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Date</th>
+                          <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Type</th>
+                          <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Amount (Rs.)</th>
+                          <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Linked Invoice</th>
+                          <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Reference</th>
+                          <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Notes</th>
                           <th className="px-4 py-3 w-12"></th>
                         </tr>
                       </thead>
@@ -557,16 +557,16 @@ export default function Ledger() {
                           const tc = TYPE_COLORS[p.payment_type];
                           return (
                             <tr key={p.id} className="hover:bg-gray-50/60 transition-colors" style={{ borderBottom: "1px solid #F9F9F9" }}>
-                              <td className="px-4 py-3 text-sm" style={{ color: "#6B7280" }}>{fmtDate(p.payment_date)}</td>
+                              <td className="px-4 py-3 text-sm" style={{ color: "#5F6368" }}>{fmtDate(p.payment_date)}</td>
                               <td className="px-4 py-3">
                                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold" style={{ background: tc.bg, color: tc.color }}>
                                   {PAYMENT_TYPES.find((t) => t.value === p.payment_type)?.label ?? p.payment_type}
                                 </span>
                               </td>
-                              <td className="px-4 py-3 text-sm text-right font-bold" style={{ color: "#16a34a" }}>{fmt(p.amount)}</td>
+                              <td className="px-4 py-3 text-sm text-right font-bold" style={{ color: "#34A853" }}>{fmt(p.amount)}</td>
                               <td className="px-4 py-3 text-sm font-mono" style={{ color: "#2563eb" }}>{p.invoice_number ? `#${p.invoice_number}` : "—"}</td>
-                              <td className="px-4 py-3 text-sm" style={{ color: "#6B7280" }}>{p.reference || "—"}</td>
-                              <td className="px-4 py-3 text-sm" style={{ color: "#9CA3AF" }}>{p.notes || "—"}</td>
+                              <td className="px-4 py-3 text-sm" style={{ color: "#5F6368" }}>{p.reference || "—"}</td>
+                              <td className="px-4 py-3 text-sm" style={{ color: "#9AA0A6" }}>{p.notes || "—"}</td>
                               <td className="px-3 py-3">
                                 <button
                                   onClick={() => handleDelete(p.id!)}
@@ -582,7 +582,7 @@ export default function Ledger() {
                       </tbody>
                       <tfoot>
                         <tr style={{ background: "#374151", borderTop: "2px solid #4285F4" }}>
-                          <td colSpan={2} className="px-4 py-3 text-right text-xs font-semibold uppercase" style={{ color: "#9CA3AF" }}>Total</td>
+                          <td colSpan={2} className="px-4 py-3 text-right text-xs font-semibold uppercase" style={{ color: "#9AA0A6" }}>Total</td>
                           <td className="px-4 py-3 text-right text-sm font-bold" style={{ color: "#FFFFFF" }}>Rs. {fmt(totalPaid)}</td>
                           <td colSpan={4}></td>
                         </tr>
@@ -603,9 +603,9 @@ export default function Ledger() {
                   </span>
                 </div>
                 {loading ? (
-                  <div className="p-8 text-center text-sm" style={{ color: "#9CA3AF" }}>Loading…</div>
+                  <div className="p-8 text-center text-sm" style={{ color: "#9AA0A6" }}>Loading…</div>
                 ) : ledger.length === 0 ? (
-                  <div className="p-8 text-center text-sm" style={{ color: "#9CA3AF" }}>No invoices found.</div>
+                  <div className="p-8 text-center text-sm" style={{ color: "#9AA0A6" }}>No invoices found.</div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
@@ -613,7 +613,7 @@ export default function Ledger() {
                         <tr style={{ background:"#F9F9F9", borderBottom: "1px solid #F0F0F0" }}>
                           {["Invoice #","Date","Total","At Delivery","Post Payments","Return Credits","Live Balance","Status"].map(h => (
                             <th key={h} className={`px-4 py-3 ${h==="Invoice #"||h==="Date"||h==="Status"?"text-left":"text-right"}`}
-                              style={{ fontSize:10, color:"#9CA3AF", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", whiteSpace:"nowrap" }}>{h}</th>
+                              style={{ fontSize:10, color:"#9AA0A6", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", whiteSpace:"nowrap" }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
@@ -623,9 +623,9 @@ export default function Ledger() {
                           const days = Math.round((Date.now() - new Date(row.invoice_date).getTime()) / 86400000);
                           const status =
                             live <= 0.005
-                              ? { label: "Settled", bg: "#DCFCE7", color: "#16a34a" }
+                              ? { label: "Settled", bg: "#E6F4EA", color: "#34A853" }
                               : days <= 7
-                              ? { label: "Current", bg: "#DCFCE7", color: "#16a34a" }
+                              ? { label: "Current", bg: "#E6F4EA", color: "#34A853" }
                               : days <= 30
                               ? { label: "Overdue", bg: "#FEF9C3", color: "#d97706" }
                               : days <= 60
@@ -635,16 +635,16 @@ export default function Ledger() {
                           return (
                             <tr key={row.invoice_id} className="hover:bg-gray-50/60 transition-colors" style={{ borderBottom: "1px solid #F9F9F9" }}>
                               <td className="px-4 py-3 text-sm font-mono font-medium" style={{ color: "#2563eb" }}>#{row.invoice_number}</td>
-                              <td className="px-4 py-3 text-sm" style={{ color: "#6B7280" }}>{fmtDate(row.invoice_date)}</td>
-                              <td className="px-4 py-3 text-sm text-right" style={{ color: "#1D1D1D" }}>{fmt(row.total_payable)}</td>
-                              <td className="px-4 py-3 text-sm text-right" style={{ color: "#16a34a" }}>{fmt(atDelivery)}</td>
+                              <td className="px-4 py-3 text-sm" style={{ color: "#5F6368" }}>{fmtDate(row.invoice_date)}</td>
+                              <td className="px-4 py-3 text-sm text-right" style={{ color: "#202124" }}>{fmt(row.total_payable)}</td>
+                              <td className="px-4 py-3 text-sm text-right" style={{ color: "#34A853" }}>{fmt(atDelivery)}</td>
                               <td className="px-4 py-3 text-sm text-right" style={{ color: row.post_payments > 0 ? "#2563eb" : "#D1D5DB" }}>
                                 {row.post_payments > 0 ? <><ArrowCircleDown2 size={14} variant="Linear" color="currentColor" className="inline mr-1"/>{fmt(row.post_payments)}</> : "—"}
                               </td>
                               <td className="px-4 py-3 text-sm text-right" style={{ color: row.settled_returns > 0 ? "#7c3aed" : "#D1D5DB" }}>
                                 {row.settled_returns > 0 ? fmt(row.settled_returns) : "—"}
                               </td>
-                              <td className="px-4 py-3 text-sm text-right font-bold" style={{ color: live > 0 ? "#EA4335" : "#16a34a" }}>
+                              <td className="px-4 py-3 text-sm text-right font-bold" style={{ color: live > 0 ? "#EA4335" : "#34A853" }}>
                                 {fmt(live)}
                               </td>
                               <td className="px-4 py-3">
@@ -658,7 +658,7 @@ export default function Ledger() {
                       </tbody>
                       <tfoot>
                         <tr style={{ background: "#374151", borderTop: "2px solid #4285F4" }}>
-                          <td colSpan={6} className="px-4 py-3 text-right text-xs font-semibold uppercase" style={{ color: "#9CA3AF" }}>Total Live Outstanding</td>
+                          <td colSpan={6} className="px-4 py-3 text-right text-xs font-semibold uppercase" style={{ color: "#9AA0A6" }}>Total Live Outstanding</td>
                           <td className="px-4 py-3 text-right text-sm font-bold" style={{ color: currentOutstanding > 0 ? "#EA4335" : "#4ade80" }}>
                             Rs. {fmt(currentOutstanding)}
                           </td>
