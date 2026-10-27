@@ -2,20 +2,27 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { invoke } from "@tauri-apps/api/core";
 import {
-  Search, PlusCircle, Bell, Database, X,
-  FileText, Users, Calculator, Delete,
-  AlertTriangle, Package, RotateCcw, ExternalLink, CheckCircle,
-  ShieldCheck, User, LogOut, ChevronDown, Brain, Settings,
-} from "lucide-react";
+  SearchNormal1, AddCircle, Notification, Data, CloseCircle,
+  DocumentText, People, Calculator, Back,
+  Warning2, Box1, RotateLeft, ExportCircle, TickCircle,
+  ShieldTick, UserSquare, Login, ArrowDown2, Cpu, Setting2,
+  HambergerMenu,
+} from "iconsax-react";
 import type { View } from "../../types";
 import { getInvoices, getAgents, getNotifications } from "../../services/database";
 import { useAuth } from "../../contexts/AuthContext";
+
+// Brand blue — matches var(--color-brand) from tokens.css
+const BRAND   = "#4285F4";
+const BRAND_H = "#1A73E8";
 
 interface Props {
   onNavigate: (view: View, id?: number) => void;
   dbReady: boolean;
   refreshKey: number;
   onSearchFocusRef?: React.MutableRefObject<() => void>;
+  /** Called when the mobile hamburger button is pressed */
+  onMenuToggle?: () => void;
 }
 
 interface SearchResult {
@@ -300,7 +307,7 @@ function DraggableCalc({ onClose }: { onClose: () => void }) {
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: "14px", lineHeight: 1,
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = "rgba(207,41,29,0.4)"; e.currentTarget.style.color = "#fff"; }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.18)"; e.currentTarget.style.color = "#fff"; }}
           onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#9CA3AF"; }}
         >
           ×
@@ -318,7 +325,7 @@ function DraggableCalc({ onClose }: { onClose: () => void }) {
         <div className="flex justify-end mt-2 gap-1 h-4">
           {["÷","×","-","+"].map((op) => (
             <span key={op} className="text-xs font-bold transition-all"
-              style={{ color: calc.activeOp === op ? "#CF291D" : "transparent" }}>
+              style={{ color: calc.activeOp === op ? BRAND : "transparent" }}>
               {op}
             </span>
           ))}
@@ -330,8 +337,8 @@ function DraggableCalc({ onClose }: { onClose: () => void }) {
         {CALC_KEYS.flat().map((k) => {
           const isActiveOp = isOp(k) && calc.activeOp === k && calc.waitingForOperand;
           let bg = "#FFFFFF", color = "#1D1D1D", hoverBg = "#F5F5F5";
-          if (isEq(k))      { bg = "#CF291D"; color = "#FFFFFF"; hoverBg = "#B50717"; }
-          else if (isActiveOp) { bg = "#B50717"; color = "#FFFFFF"; hoverBg = "#CF291D"; }
+          if (isEq(k))      { bg = BRAND;   color = "#FFFFFF"; hoverBg = BRAND_H; }
+          else if (isActiveOp) { bg = BRAND_H; color = "#FFFFFF"; hoverBg = BRAND; }
           else if (isOp(k)) { bg = "#1D1D1D"; color = "#FFFFFF"; hoverBg = "#374151"; }
           else if (isCtrl(k)){ bg = "#374151"; color = "#FFFFFF"; hoverBg = "#4B5563"; }
           else if (isBack(k)){ bg = "#F3F4F6"; color = "#374151"; hoverBg = "#E5E7EB"; }
@@ -342,7 +349,7 @@ function DraggableCalc({ onClose }: { onClose: () => void }) {
               onMouseEnter={e => (e.currentTarget.style.background = hoverBg)}
               onMouseLeave={e => (e.currentTarget.style.background = bg)}
             >
-              {k === "⌫" ? <Delete size={15} /> : (
+              {k === "⌫" ? <Back size={15} variant="Linear" /> : (
                 <span className={isEq(k) || isOp(k) ? "text-lg" : ""}>{k}</span>
               )}
             </button>
@@ -355,7 +362,7 @@ function DraggableCalc({ onClose }: { onClose: () => void }) {
 
 // ── Main TopBar ────────────────────────────────────────────────────────────────
 
-export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusRef }: Props) {
+export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusRef, onMenuToggle }: Props) {
   const now = useClock();
   const { role, clearRole, withAdminToken } = useAuth();
   const [query, setQuery] = useState("");
@@ -583,13 +590,24 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
       className="h-14 flex items-center px-3 xl:px-4 shrink-0 no-print z-10"
       style={{
         background: "#FFFFFF",
-        borderBottom: "2px solid #CF291D",
-        boxShadow: "0 1px 8px rgba(0,0,0,0.06)",
+        borderBottom: `2px solid ${BRAND}`,
+        boxShadow: "0 1px 8px rgba(32,33,36,0.06)",
       }}
     >
 
-      {/* LEFT — Date & Time + Quick nav icons */}
+      {/* LEFT — Hamburger (mobile) + Date & Time + Quick nav icons */}
       <div className="flex-1 flex items-center gap-1.5 xl:gap-2.5 min-w-0">
+        {/* Hamburger — mobile/tablet only (hidden on lg+) */}
+        <button
+          onClick={onMenuToggle}
+          className="lg:hidden p-2 rounded-lg transition-colors mr-0.5 shrink-0"
+          style={{ color: TB.muted }}
+          aria-label="Open navigation menu"
+          onMouseEnter={e => { e.currentTarget.style.background = "#F1F3F4"; e.currentTarget.style.color = BRAND; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = TB.muted; }}
+        >
+          <HambergerMenu size={20} variant="Linear" />
+        </button>
         {/* Date/Time widget */}
         <div
           className="flex items-center gap-2.5 rounded-xl px-3 py-1.5"
@@ -603,7 +621,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
           <div className="flex flex-col items-center leading-none shrink-0">
             <span
               className="text-[9px] font-black uppercase rounded-sm px-1.5 w-full text-center leading-snug text-white"
-              style={{ background: "#CF291D" }}
+              style={{ background: BRAND }}
             >
               {MONTH[now.getMonth()].toUpperCase()}
             </span>
@@ -618,7 +636,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
             <span className="text-[10px] uppercase font-semibold tracking-wide" style={{ color: TB.muted }}>
               {DAY[now.getDay()]} · {now.getFullYear()}
             </span>
-            <span className="text-xs xl:text-sm font-black font-mono tracking-tight mt-0.5" style={{ color: "#CF291D" }}>
+            <span className="text-xs xl:text-sm font-black font-mono tracking-tight mt-0.5" style={{ color: BRAND }}>
               {/* On compact screens show HH:MM only; full HH:MM:SS on larger screens */}
               <span className="xl:hidden">{`${h12}:${mins} ${ampm}`}</span>
               <span className="hidden xl:inline">{timeStr}</span>
@@ -630,11 +648,12 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
         <button
           onClick={() => onNavigate("ai-analytics")}
           title="AI Intelligence"
+          aria-label="AI Intelligence"
           className="flex items-center gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all"
           style={{ background: "#F0F0FF", border: "1px solid rgba(79,70,229,0.22)", color: "#4f46e5" }}
           onMouseEnter={e => { e.currentTarget.style.background = "rgba(79,70,229,0.10)"; }}
           onMouseLeave={e => { e.currentTarget.style.background = "#F0F0FF"; }}>
-          <Brain size={14}/>
+          <Cpu size={14} variant="Linear" />
           <span className="hidden xl:inline">AI</span>
         </button>
 
@@ -644,23 +663,23 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
           title="Settings"
           className="flex items-center gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all"
           style={{ background: TB.chipBg, border: `1px solid ${TB.chipBdr}`, color: TB.muted }}
-          onMouseEnter={e => { e.currentTarget.style.background = "rgba(207,41,29,0.10)"; e.currentTarget.style.color = "#CF291D"; }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(66,133,244,0.10)"; e.currentTarget.style.color = BRAND; }}
           onMouseLeave={e => { e.currentTarget.style.background = TB.chipBg; e.currentTarget.style.color = TB.muted; }}>
-          <Settings size={14}/>
+          <Setting2 size={14} variant="Linear" />
           <span className="hidden xl:inline">Settings</span>
         </button>
       </div>
 
       {/* CENTER — Search (responsive width) */}
       <div ref={searchRef} className="relative w-[200px] lg:w-[300px] xl:w-[400px] shrink-0">
-        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: TB.muted }}/>
+        <SearchNormal1 size={15} variant="Linear" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: TB.muted }}/>
         <input
           type="text"
           placeholder="Search invoices, barcodes, agents…  (F4)"
           value={query}
           ref={inputRef}
           onChange={(e) => { setQuery(e.target.value); setShowResults(true); }}
-          onFocus={(e) => { setShowResults(true); e.currentTarget.style.borderColor = "#CF291D"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(207,41,29,0.10)"; }}
+          onFocus={(e) => { setShowResults(true); e.currentTarget.style.borderColor = BRAND; e.currentTarget.style.boxShadow = `0 0 0 3px rgba(66,133,244,0.12)`; }}
           onBlur={(e) => { e.currentTarget.style.borderColor = TB.border; e.currentTarget.style.boxShadow = "none"; }}
           className="w-full pl-9 pr-8 py-2 text-sm rounded-xl focus:outline-none transition-all"
           style={{
@@ -671,8 +690,9 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
         />
         {query && (
           <button onClick={() => { setQuery(""); setResults([]); }}
+            aria-label="Clear search"
             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-            <X size={13} />
+            <CloseCircle size={14} variant="Linear" />
           </button>
         )}
         {showResults && results.length > 0 && (
@@ -681,8 +701,10 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
               <button key={i}
                 onClick={() => { onNavigate(r.view, r.type === "invoice" ? r.id : undefined); setQuery(""); setShowResults(false); }}
                 className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 text-left">
-                <span className="text-blue-500 shrink-0">
-                  {r.type === "invoice" ? <FileText size={15} /> : <Users size={15} />}
+                <span className="shrink-0" style={{ color: BRAND }}>
+                  {r.type === "invoice"
+                    ? <DocumentText size={16} variant="Linear" />
+                    : <People size={16} variant="Linear" />}
                 </span>
                 <div>
                   <div className="text-sm font-medium text-gray-800">{r.label}</div>
@@ -697,14 +719,15 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
       {/* RIGHT — Actions */}
       <div className="flex-1 flex items-center justify-end gap-1 xl:gap-2">
 
-        {/* New Invoice — text collapses to icon on compact screens */}
+        {/* New Invoice */}
         <button onClick={() => onNavigate("new-invoice")}
           title="New Invoice"
+          aria-label="New Invoice"
           className="flex items-center gap-1.5 px-2.5 xl:px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors whitespace-nowrap"
-          style={{ background: "#CF291D" }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#B50717")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#CF291D")}>
-          <PlusCircle size={15} />
+          style={{ background: BRAND }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = BRAND_H)}
+          onMouseLeave={(e) => (e.currentTarget.style.background = BRAND)}>
+          <AddCircle size={16} variant="Linear" />
           <span className="hidden xl:inline">New Invoice</span>
         </button>
 
@@ -713,9 +736,9 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
           onClick={e => { e.stopPropagation(); setCalcOpen(v => !v); }}
           title="Calculator — drag to move anywhere"
           className="relative p-2 rounded-lg transition-all"
-          style={{ color: calcOpen ? "#CF291D" : TB.muted, background: calcOpen ? "rgba(207,41,29,0.10)" : "transparent" }}
+          style={{ color: calcOpen ? BRAND : TB.muted, background: calcOpen ? "rgba(66,133,244,0.10)" : "transparent" }}
         >
-          <Calculator size={18} />
+          <Calculator size={18} variant="Linear" />
         </button>
         {calcOpen && createPortal(
           <DraggableCalc onClose={() => setCalcOpen(false)} />,
@@ -732,8 +755,8 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
               });
             }}
             className="relative p-2 rounded-lg transition-all"
-            style={{ color: notifOpen ? "#CF291D" : TB.muted, background: notifOpen ? "rgba(207,41,29,0.10)" : "transparent" }}>
-            <Bell size={18} />
+            style={{ color: notifOpen ? BRAND : TB.muted, background: notifOpen ? "rgba(66,133,244,0.10)" : "transparent" }}>
+            <Notification size={18} variant="Linear" />
             {totalNotifs > 0 && !seen && (
               <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
                 {totalNotifs > 9 ? "9+" : totalNotifs}
@@ -748,25 +771,26 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
               <div className="flex items-center justify-between px-4 py-3"
                 style={{ borderBottom: "1px solid #F3F4F6" }}>
                 <div className="flex items-center gap-2">
-                  <Bell size={15} style={{ color: "#CF291D" }} />
-                  <span className="font-bold text-sm" style={{ color: "#1D1D1D" }}>Notifications</span>
+                  <Notification size={15} variant="Linear" style={{ color: BRAND }} />
+                  <span className="font-bold text-sm" style={{ color: "#202124" }}>Notifications</span>
                   {totalNotifs > 0 && (
                     <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-                      style={{ background: "#CF291D" }}>
+                      style={{ background: "#EA4335" }}>
                       {totalNotifs > 9 ? "9+" : totalNotifs}
                     </span>
                   )}
                 </div>
                 <button onClick={() => setNotifOpen(false)}
+                  aria-label="Close notifications"
                   className="text-gray-400 hover:text-gray-600">
-                  <X size={14} />
+                  <CloseCircle size={16} variant="Linear" />
                 </button>
               </div>
 
               {/* Alert items */}
               {totalNotifs === 0 ? (
                 <div className="px-4 py-8 text-center">
-                  <CheckCircle size={28} className="mx-auto mb-2" style={{ color: "#16a34a" }} />
+                  <TickCircle size={28} variant="Linear" className="mx-auto mb-2" style={{ color: "#34A853" }} />
                   <p className="text-sm font-medium" style={{ color: "#374151" }}>All clear!</p>
                   <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>No pending alerts at this time.</p>
                 </div>
@@ -782,7 +806,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                     >
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                         style={{ background: "#FFF1F0" }}>
-                        <AlertTriangle size={16} style={{ color: "#CF291D" }} />
+                        <Warning2 size={16} variant="Linear" style={{ color: "#EA4335" }} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold" style={{ color: "#1D1D1D" }}>
@@ -793,7 +817,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                         </p>
                       </div>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                        style={{ background: "#FEE2E2", color: "#CF291D" }}>
+                        style={{ background: "#FCE8E6", color: "#EA4335" }}>
                         Overdue
                       </span>
                     </button>
@@ -808,7 +832,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                     >
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                         style={{ background: "#FFFBEB" }}>
-                        <Package size={16} style={{ color: "#D97706" }} />
+                        <Box1 size={16} variant="Linear" style={{ color: "#FBBC05" }} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold" style={{ color: "#1D1D1D" }}>
@@ -834,7 +858,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                     >
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                         style={{ background: "#FFFBEB" }}>
-                        <RotateCcw size={16} style={{ color: "#D97706" }} />
+                        <RotateLeft size={16} variant="Linear" style={{ color: "#FBBC05" }} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold" style={{ color: "#1D1D1D" }}>
@@ -858,11 +882,11 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                 <button
                   onClick={() => { onNavigate("alerts"); setNotifOpen(false); }}
                   className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold transition-colors"
-                  style={{ background: "#CF291D", color: "#FFFFFF" }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "#B50717")}
-                  onMouseLeave={e => (e.currentTarget.style.background = "#CF291D")}
+                  style={{ background: BRAND, color: "#FFFFFF" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = BRAND_H)}
+                  onMouseLeave={e => (e.currentTarget.style.background = BRAND)}
                 >
-                  <ExternalLink size={14} /> View All Alerts & Reminders
+                  <ExportCircle size={15} variant="Linear" /> View All Alerts & Reminders
                 </button>
               </div>
             </div>
@@ -877,7 +901,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
             background: dbReady ? "#F0FDF4" : "#FEF2F2",
             border: `1px solid ${dbReady ? "rgba(22,163,74,0.28)" : "rgba(239,68,68,0.28)"}`,
           }}>
-          <Database size={13} style={{ color: dbReady ? "#16a34a" : "#ef4444" }} />
+          <Data size={14} variant="Linear" style={{ color: dbReady ? "#34A853" : "#EA4335" }} />
           <span className="hidden xl:inline" style={{ color: dbReady ? "#16a34a" : "#ef4444" }}>
             {dbReady ? "SQLite Online" : "Offline"}
           </span>
@@ -954,7 +978,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
               <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid #F3F4F6",
                 display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CF291D" strokeWidth="2.5">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2.5">
                     <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>
                   </svg>
                   <span style={{ fontWeight: 700, fontSize: "14px", color: "#111827" }}>Supabase Cloud Sync</span>
@@ -1015,7 +1039,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                   style={{
                     display: "flex", alignItems: "center", gap: "6px",
                     padding: "6px 14px", border: "none", borderRadius: "6px",
-                    background: syncStatus === "syncing" ? "#9CA3AF" : "#CF291D",
+                    background: syncStatus === "syncing" ? "#9CA3AF" : BRAND,
                     color: "#fff", fontSize: "12px", fontWeight: 700,
                     cursor: syncStatus === "syncing" ? "not-allowed" : "pointer",
                     transition: "background 0.15s",
@@ -1127,18 +1151,18 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
             title={role === "admin" ? "Admin — Full access" : role === "cashier" ? "Cashier — Limited access" : "Guest"}
             className="flex items-center gap-1.5 px-2 xl:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
             style={{
-              background: role === "admin" ? "rgba(207,41,29,0.10)" : "rgba(37,99,235,0.08)",
-              border: `1px solid ${role === "admin" ? "rgba(207,41,29,0.25)" : "rgba(37,99,235,0.20)"}`,
-              color: role === "admin" ? "#CF291D" : "#2563eb",
-              boxShadow: roleMenuOpen ? `0 0 0 3px ${role === "admin" ? "rgba(207,41,29,0.12)" : "rgba(37,99,235,0.10)"}` : "none",
+              background: "rgba(66,133,244,0.08)",
+              border: `1px solid rgba(66,133,244,0.22)`,
+              color: role === "admin" ? BRAND : "#2563eb",
+              boxShadow: roleMenuOpen ? `0 0 0 3px rgba(66,133,244,0.14)` : "none",
             }}>
             {role === "admin"
-              ? <ShieldCheck size={13}/>
-              : <User size={13}/>}
+              ? <ShieldTick size={13} variant="Linear" />
+              : <UserSquare size={13} variant="Linear" />}
             <span className="hidden xl:inline uppercase tracking-wider">
               {role === "admin" ? "Admin" : role === "cashier" ? "Cashier" : "Guest"}
             </span>
-            <ChevronDown size={11} className={`hidden xl:block transition-transform ${roleMenuOpen ? "rotate-180" : ""}`}/>
+            <ArrowDown2 size={11} variant="Linear" className={`hidden xl:block transition-transform ${roleMenuOpen ? "rotate-180" : ""}`}/>
           </button>
 
           {/* Role dropdown — glass panel */}
@@ -1153,20 +1177,20 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
               }}
             >
               {/* Current role info */}
-              <div className="px-4 py-3" style={{ borderBottom: "1px solid rgba(207,41,29,0.08)" }}>
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "rgba(61,26,24,0.4)" }}>
+              <div className="px-4 py-3" style={{ borderBottom: "1px solid rgba(66,133,244,0.10)" }}>
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>
                   Signed in as
                 </p>
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                    style={{ background: role === "admin" ? "rgba(207,41,29,0.12)" : "rgba(37,99,235,0.10)" }}>
+                    style={{ background: "rgba(66,133,244,0.10)" }}>
                     {role === "admin"
-                      ? <ShieldCheck size={15} style={{ color: "#CF291D" }}/>
-                      : <User size={15} style={{ color: "#2563eb" }}/>}
+                      ? <ShieldTick size={15} variant="Linear" style={{ color: BRAND }} />
+                      : <UserSquare size={15} variant="Linear" style={{ color: "#2563eb" }} />}
                   </div>
                   <div>
-                    <p className="text-sm font-black capitalize" style={{ color: "#3D1A18" }}>{role ?? "Guest"}</p>
-                    <p className="text-[10px] font-medium" style={{ color: "rgba(61,26,24,0.45)" }}>
+                    <p className="text-sm font-black capitalize" style={{ color: "#202124" }}>{role ?? "Guest"}</p>
+                    <p className="text-[10px] font-medium" style={{ color: "#9AA0A6" }}>
                       {role === "admin" ? "Full access" : "Limited access"}
                     </p>
                   </div>
@@ -1177,12 +1201,14 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
               <button
                 onClick={() => { clearRole(); setRoleMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-left transition-all"
-                style={{ color: "#3D1A18", borderBottom: "1px solid rgba(207,41,29,0.06)" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "rgba(207,41,29,0.06)")}
+                style={{ color: "#202124", borderBottom: "1px solid rgba(66,133,244,0.08)" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(66,133,244,0.06)")}
                 onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: "rgba(61,26,24,0.08)" }}>
-                  {role === "admin" ? <User size={13} style={{ color: "#3D1A18" }}/> : <ShieldCheck size={13} style={{ color: "#3D1A18" }}/>}
+                  style={{ background: "#F1F3F4" }}>
+                  {role === "admin"
+                    ? <UserSquare size={13} variant="Linear" style={{ color: "#5F6368" }} />
+                    : <ShieldTick size={13} variant="Linear" style={{ color: "#5F6368" }} />}
                 </div>
                 <span>Switch to {role === "admin" ? "Cashier" : "Admin"}</span>
               </button>
@@ -1191,12 +1217,12 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
               <button
                 onClick={() => { clearRole(); setRoleMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-left transition-all"
-                style={{ color: "#CF291D" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "rgba(207,41,29,0.08)")}
+                style={{ color: "#EA4335" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(234,67,53,0.06)")}
                 onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: "rgba(207,41,29,0.10)" }}>
-                  <LogOut size={13} style={{ color: "#CF291D" }}/>
+                  style={{ background: "rgba(234,67,53,0.10)" }}>
+                  <Login size={13} variant="Linear" style={{ color: "#EA4335" }}/>
                 </div>
                 <span>Log Out</span>
               </button>

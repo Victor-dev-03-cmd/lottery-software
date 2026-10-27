@@ -62,6 +62,7 @@ export default function App() {
 
   const [view, setView] = useState<View>("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [printInvoiceId, setPrintInvoiceId] = useState<number | null>(null);
   const [editInvoiceId, setEditInvoiceId] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -223,6 +224,9 @@ export default function App() {
     <AppInner
       view={view} sidebarView={sidebarView} navigate={navigate}
       sidebarCollapsed={sidebarCollapsed} setSidebarCollapsed={setSidebarCollapsed}
+      mobileSidebarOpen={mobileSidebarOpen}
+      onMobileSidebarClose={() => setMobileSidebarOpen(false)}
+      onMobileSidebarToggle={() => setMobileSidebarOpen(v => !v)}
       dbReady={dbReady} refreshKey={refreshKey} searchRef={searchRef}
       editInvoiceId={editInvoiceId} handleInvoiceSaved={handleInvoiceSaved}
       requireAdminPin={requireAdminPin} pinRequest={pinRequest}
@@ -238,6 +242,7 @@ export default function App() {
 
 function AppInner({
   view, sidebarView, navigate, sidebarCollapsed, setSidebarCollapsed,
+  mobileSidebarOpen, onMobileSidebarClose, onMobileSidebarToggle,
   dbReady, refreshKey, searchRef, editInvoiceId, handleInvoiceSaved,
   requireAdminPin, pinRequest, pinSuccess, pinCancel,
   showHelp, setShowHelp,
@@ -245,6 +250,9 @@ function AppInner({
   view: View; sidebarView: View;
   navigate: (v: View, id?: number) => void;
   sidebarCollapsed: boolean; setSidebarCollapsed: (f: (c: boolean) => boolean) => void;
+  mobileSidebarOpen: boolean;
+  onMobileSidebarClose: () => void;
+  onMobileSidebarToggle: () => void;
   dbReady: boolean; refreshKey: number;
   searchRef: React.MutableRefObject<() => void>;
   editInvoiceId: number | null;
@@ -264,14 +272,27 @@ function AppInner({
   return (
     <PinGuardContext.Provider value={{ requireAdminPin }}>
     <div className="flex h-screen overflow-hidden"
-      style={{ background: "#F3F4F6" }}>
+      style={{ background: "var(--color-surface-dim, #F8F9FA)" }}>
       {/* Role selection — shown until role is set */}
       {!role && <RoleSelectModal onSelected={() => {}} />}
 
-      <Sidebar active={sidebarView} onNavigate={navigate} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((c) => !c)} />
+      <Sidebar
+        active={sidebarView}
+        onNavigate={navigate}
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed((c) => !c)}
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={onMobileSidebarClose}
+      />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <TopBar onNavigate={navigate} dbReady={dbReady} refreshKey={refreshKey} onSearchFocusRef={searchRef} />
+        <TopBar
+          onNavigate={navigate}
+          dbReady={dbReady}
+          refreshKey={refreshKey}
+          onSearchFocusRef={searchRef}
+          onMenuToggle={onMobileSidebarToggle}
+        />
         <main className="flex-1 overflow-auto">
           {effectiveView === "dashboard"        && <AgentDashboard onNavigate={navigate} refreshKey={refreshKey} />}
           {effectiveView === "invoices"         && <InvoiceList onNavigate={navigate} refreshKey={refreshKey} />}
