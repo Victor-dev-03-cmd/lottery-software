@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Users, TrendingUp, Package, RotateCcw, RefreshCw, Home, ChevronRight, CreditCard } from "lucide-react";
+import { People, TrendUp, Box1, RotateLeft, Refresh2, Home2, ArrowRight2, Card } from "iconsax-react";
+
 import { getDb } from "../services/database";
 
 interface AgentDistribution {
@@ -66,6 +67,7 @@ async function getDistributionSummary(): Promise<AgentDistribution[]> {
 }
 
 export default function DistributionSummary() {
+  // useLanguage hook available for future label translation
   const [data, setData]     = useState<AgentDistribution[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -94,13 +96,13 @@ export default function DistributionSummary() {
     <div style={{ background: "#F5F5F5", minHeight: "100%" }}>
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
-          <Home size={12}/><ChevronRight size={11}/>
+          <Home2 size={12} variant="Linear" color="currentColor"/><ArrowRight2 size={11} variant="Linear" color="currentColor"/>
           <span className="font-semibold" style={{ color: "#1D1D1D" }}>Distribution Summary</span>
         </nav>
         <button onClick={load} disabled={loading}
           className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}>
-          <RefreshCw size={13} className={loading ? "animate-spin" : ""}/> Refresh
+          <Refresh2 size={14} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""}/> Refresh
         </button>
       </div>
 
@@ -121,11 +123,11 @@ export default function DistributionSummary() {
         {/* Totals row */}
         <div className="grid grid-cols-5 gap-3">
           {[
-            { label:"Total Invoiced",  val: totals.invoiced,    color:"#2563eb", icon:<Package size={16}/> },
-            { label:"Collected",       val: totals.collected,   color:"#16a34a", icon:<TrendingUp size={16}/> },
-            { label:"Returns",         val: totals.returns,     color:"#7c3aed", icon:<RotateCcw size={16}/> },
-            { label:"Commission",      val: totals.commission,  color:"#d97706", icon:<CreditCard size={16}/> },
-            { label:"Outstanding",     val: totals.outstanding, color:"#CF291D", icon:<Users size={16}/> },
+            { label:"Total Invoiced",  val: totals.invoiced,    color:"#2563eb", icon:<Box1 size={18} variant="Linear" color="currentColor"/> },
+            { label:"Collected",       val: totals.collected,   color:"#16a34a", icon:<TrendUp size={18} variant="Linear" color="currentColor"/> },
+            { label:"Returns",         val: totals.returns,     color:"#7c3aed", icon:<RotateLeft size={18} variant="Linear" color="currentColor"/> },
+            { label:"Commission",      val: totals.commission,  color:"#d97706", icon:<Card size={18} variant="Linear" color="currentColor"/> },
+            { label:"Outstanding",     val: totals.outstanding, color:"#4285F4", icon:<People size={18} variant="Linear" color="currentColor"/> },
           ].map(c => (
             <div key={c.label} className="rounded-2xl p-4"
               style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: `3px solid ${c.color}`, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
@@ -139,7 +141,7 @@ export default function DistributionSummary() {
         {/* Agent table */}
         <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
           <div className="px-5 py-3 flex items-center justify-between"
-            style={{ background: "#FFFFFF", borderBottom: "1px solid #E8E8E8", borderLeft: "3px solid #CF291D" }}>
+            style={{ background: "#FFFFFF", borderBottom: "1px solid #E8E8E8", borderLeft: "3px solid #4285F4" }}>
             <span className="text-sm font-semibold" style={{ color: "#1D1D1D" }}>Agent Performance & Balance</span>
             <span className="text-[11px] px-2 py-0.5 rounded-full font-medium"
               style={{ background: "#F3F4F6", color: "#6B7280" }}>
@@ -151,7 +153,7 @@ export default function DistributionSummary() {
             <div className="p-10 text-center text-sm" style={{ color: "#9CA3AF" }}>Loading…</div>
           ) : filtered.length === 0 ? (
             <div className="p-10 text-center">
-              <Users size={36} className="mx-auto mb-2" style={{ color: "#E8E8E8" }}/>
+              <People size={18} variant="Linear" color="currentColor" className="mx-auto mb-2" style={{ color: "#E8E8E8" }}/>
               <p className="text-sm" style={{ color: "#9CA3AF" }}>No agents found</p>
             </div>
           ) : (
@@ -169,7 +171,7 @@ export default function DistributionSummary() {
                   {filtered.map(a => {
                     const live = Math.max(0, a.live_outstanding);
                     const rate = a.collection_rate;
-                    const rateColor = rate >= 90 ? "#16a34a" : rate >= 70 ? "#d97706" : "#CF291D";
+                    const rateColor = rate >= 90 ? "#16a34a" : rate >= 70 ? "#d97706" : "#4285F4";
                     return (
                       <tr key={a.agent_id} className="hover:bg-gray-50/60 transition-colors"
                         style={{ borderBottom: "1px solid #F9F9F9" }}>
@@ -193,14 +195,14 @@ export default function DistributionSummary() {
                           {a.commission_amount > 0 ? `Rs. ${fmt(a.commission_amount)}` : "—"}
                         </td>
                         <td className="px-4 py-3 text-sm text-right font-bold"
-                          style={{ color: live > 0 ? "#CF291D" : "#16a34a" }}>
+                          style={{ color: live > 0 ? "#4285F4" : "#16a34a" }}>
                           Rs. {fmt(live)}
                         </td>
                         <td className="px-4 py-3 text-center">
                           <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
                             style={{
                               background: live <= 0 ? "#DCFCE7" : "#FEE2E2",
-                              color:      live <= 0 ? "#16a34a" : "#CF291D",
+                              color:      live <= 0 ? "#16a34a" : "#4285F4",
                             }}>
                             {live <= 0 ? "Settled" : "Owing"}
                           </span>
@@ -210,7 +212,7 @@ export default function DistributionSummary() {
                   })}
                 </tbody>
                 <tfoot>
-                  <tr style={{ background: "#374151", borderTop: "2px solid #CF291D" }}>
+                  <tr style={{ background: "#374151", borderTop: "2px solid #4285F4" }}>
                     <td className="px-4 py-3 text-xs font-semibold uppercase text-right" style={{ color: "#9CA3AF" }} colSpan={2}>Totals</td>
                     <td className="px-4 py-3 text-sm text-right font-bold text-white">{fmt(totals.invoiced)}</td>
                     <td className="px-4 py-3 text-sm text-right font-bold" style={{ color: "#4ade80" }}>{fmt(totals.collected)}</td>

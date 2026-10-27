@@ -1,5 +1,6 @@
 import { useEffect, useState, useContext } from "react";
-import { RefreshCw, Eye, RotateCcw, Trash2, Search } from "lucide-react";
+import { Refresh2, Eye, RotateLeft, Trash, SearchNormal1 } from "iconsax-react";
+import { useLanguage } from "../i18n";
 import {
   getInvoices,
   deleteInvoice,
@@ -21,6 +22,7 @@ function fmtRs(n: number) {
 // ── CancelledInvoices ─────────────────────────────────────────────────────────
 
 export default function CancelledInvoices() {
+  const { t: _t } = useLanguage(); // i18n: translation hook — labels will be added in Phase 4/6 audit
   const { requireAdminPin } = useContext(PinGuardContext);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filtered, setFiltered] = useState<Invoice[]>([]);
@@ -111,13 +113,13 @@ export default function CancelledInvoices() {
               cursor: "pointer",
             }}
           >
-            <RefreshCw size={14} /> Refresh
+            <Refresh2 size={14} variant="Linear" color="currentColor" /> Refresh
           </button>
         </div>
 
         {/* Search */}
         <div style={{ position: "relative", marginTop: "12px", maxWidth: "320px" }}>
-          <Search size={13} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#9CA3AF" }} />
+          <SearchNormal1 size={14} variant="Linear" color="#9AA0A6" style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)" }} />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -185,7 +187,7 @@ export default function CancelledInvoices() {
                     }}
                   >
                     <td style={{ padding: "10px 14px" }}>
-                      <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#CF291D" }}>
+                      <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#4285F4" }}>
                         #{inv.invoice_number}
                       </span>
                     </td>
@@ -232,7 +234,7 @@ export default function CancelledInvoices() {
                             alignItems: "center",
                           }}
                         >
-                          <Eye size={14} />
+                          <Eye size={14} variant="Linear" color="currentColor" />
                         </button>
 
                         {/* Restore to draft */}
@@ -250,7 +252,7 @@ export default function CancelledInvoices() {
                             alignItems: "center",
                           }}
                         >
-                          <RotateCcw size={14} />
+                          <RotateLeft size={14} variant="Linear" color="currentColor" />
                         </button>
 
                         {/* Delete */}
@@ -268,7 +270,7 @@ export default function CancelledInvoices() {
                             alignItems: "center",
                           }}
                         >
-                          <Trash2 size={14} />
+                          <Trash size={14} variant="Linear" color="currentColor" />
                         </button>
                       </div>
                     </td>
@@ -392,7 +394,7 @@ export default function CancelledInvoices() {
                   flexShrink: 0,
                 }}
               >
-                <Trash2 size={18} color="#DC2626" />
+                <Trash size={14} variant="Linear" color="#EA4335" />
               </div>
               <div>
                 <div style={{ fontWeight: 700, fontSize: "15px", color: "#111827" }}>
@@ -435,7 +437,7 @@ export default function CancelledInvoices() {
                   gap: "6px",
                 }}
               >
-                <Trash2 size={14} /> Delete Permanently
+                <Trash size={14} variant="Linear" color="currentColor" /> Delete Permanently
               </button>
             </div>
           </div>

@@ -1,8 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  Plus, Trash2, X, Save, RefreshCw, Home, ChevronRight,
-  RotateCcw, CheckCircle, AlertTriangle, ShoppingCart, Image,
-} from "lucide-react";
+import { AddCircle, Trash, CloseCircle, Save2, Refresh2, Home2, ArrowRight2, RotateLeft, TickCircle, Warning2, ShoppingCart, GalleryAdd } from "iconsax-react";
 import TicketLogoPicker from "./TicketLogoPicker";
 import { resolveLogoUrl } from "./TicketLogoPicker";
 import {
@@ -108,7 +105,7 @@ async function deleteSupplierReturn(id: number): Promise<void> {
 
 const RETURN_REASONS: { value: ReturnReason; label: string; color: string }[] = [
   { value: "unsold",       label: "Unsold",        color: "#6B7280" },
-  { value: "damaged",      label: "Damaged",       color: "#CF291D" },
+  { value: "damaged",      label: "Damaged",       color: "#EA4335" },
   { value: "expired_draw", label: "Expired Draw",  color: "#d97706" },
   { value: "exchange",     label: "Exchange",      color: "#2563eb" },
   { value: "other",        label: "Other",         color: "#7c3aed" },
@@ -291,8 +288,8 @@ export default function SupplierReturns() {
       {/* Breadcrumb */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
-          <Home size={12} />
-          <ChevronRight size={11} />
+          <Home2 size={12} variant="Linear" color="currentColor" />
+          <ArrowRight2 size={11} variant="Linear" color="currentColor" />
           <span className="font-semibold" style={{ color: "#1D1D1D" }}>Supplier Returns</span>
         </nav>
       </div>
@@ -301,9 +298,9 @@ export default function SupplierReturns() {
       {authError && (
         <div
           className="mx-6 mt-2 flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium"
-          style={{ background: "#FEF2F2", border: "1px solid #FECACA", color: "#CF291D" }}
+          style={{ background: "#FCE8E6", border: "1px solid #FECACA", color: "#EA4335" }}
         >
-          <AlertTriangle size={14} />
+          <Warning2 size={14} variant="Linear" color="currentColor" />
           <span>{authError}</span>
           <button className="ml-auto font-bold" onClick={() => setAuthError(null)}>×</button>
         </div>
@@ -328,14 +325,14 @@ export default function SupplierReturns() {
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:bg-gray-50 disabled:opacity-50"
               style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
             >
-              <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+              <Refresh2 size={14} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""} />
             </button>
             <button
               onClick={openNew}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-all"
-              style={{ background: "#CF291D" }}
+              style={{ background: "#4285F4" }}
             >
-              <Plus size={14} /> Record Return
+              <AddCircle size={15} variant="Linear" color="currentColor" /> Record Return
             </button>
           </div>
         </div>
@@ -347,21 +344,21 @@ export default function SupplierReturns() {
             value={totalReturns.toLocaleString()}
             sub="all time"
             accent="#3B82F6"
-            icon={<RotateCcw size={18} />}
+            icon={<RotateLeft size={14} variant="Linear" color="currentColor" />}
           />
           <StatCard
             label="Total Value"
             value={`Rs. ${fmt(totalValue)}`}
             sub="all returns"
-            accent="#CF291D"
-            icon={<ShoppingCart size={18} />}
+            accent="#4285F4"
+            icon={<ShoppingCart size={14} variant="Linear" color="currentColor" />}
           />
           <StatCard
             label="Credited"
             value={creditedCount.toLocaleString()}
             sub={`Rs. ${fmt(creditedValue)} applied`}
             accent="#16a34a"
-            icon={<CheckCircle size={18} />}
+            icon={<TickCircle size={14} variant="Linear" color="currentColor" />}
           />
         </div>
 
@@ -373,7 +370,7 @@ export default function SupplierReturns() {
           {/* Dark table header */}
           <div
             className="px-5 py-3 flex items-center justify-between"
-            style={{ background: "#374151", borderBottom: "2px solid #CF291D" }}
+            style={{ background: "#374151", borderBottom: "2px solid #4285F4" }}
           >
             <span className="text-sm font-semibold text-white">Returns Register</span>
             <span className="text-[11px]" style={{ color: "#9CA3AF" }}>
@@ -389,7 +386,7 @@ export default function SupplierReturns() {
                 className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
                 style={{ background: "#F3F4F6" }}
               >
-                <RotateCcw size={22} style={{ color: "#BFBFBF" }} />
+                <RotateLeft size={14} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
               </div>
               <p className="text-sm font-medium" style={{ color: "#6B7280" }}>No supplier returns yet</p>
               <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>
@@ -497,16 +494,16 @@ export default function SupplierReturns() {
                                 className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all hover:opacity-80"
                                 style={{ background: "#F0FDF4", color: "#16a34a", border: "1px solid #BBF7D0" }}
                               >
-                                <CheckCircle size={11} /> Apply
+                                <TickCircle size={14} variant="Linear" color="currentColor" /> Apply
                               </button>
                             )}
                             <button
                               onClick={() => handleDelete(r.id!)}
                               title="Delete"
                               className="p-1.5 rounded-lg hover:opacity-80 transition-all"
-                              style={{ background: "#FFF1F0", color: "#CF291D" }}
+                              style={{ background: "#FCE8E6", color: "#EA4335" }}
                             >
-                              <Trash2 size={13} />
+                              <Trash size={13} variant="Linear" color="currentColor" />
                             </button>
                           </div>
                         </td>
@@ -572,7 +569,7 @@ export default function SupplierReturns() {
         {/* Panel header */}
         <div
           className="flex items-center justify-between px-5 py-4 flex-shrink-0"
-          style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}
+          style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}
         >
           <div>
             <p className="font-bold text-sm" style={{ color: "#1D1D1D" }}>Record Supplier Return</p>
@@ -585,7 +582,7 @@ export default function SupplierReturns() {
             className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
             style={{ color: "#9CA3AF" }}
           >
-            <X size={16} />
+            <CloseCircle size={14} variant="Linear" color="currentColor" />
           </button>
         </div>
 
@@ -630,8 +627,8 @@ export default function SupplierReturns() {
             <button type="button" onClick={() => setLogoPicker(true)}
               style={{
                 display:"flex", alignItems:"center", gap:10, width:"100%",
-                padding:"8px 12px", border:`1px solid ${form.game_name?"#E5E7EB":"#CF291D"}`,
-                borderRadius:8, background: form.game_name?"#F9FAFB":"#FEF2F2",
+                padding:"8px 12px", border:`1px solid ${form.game_name?"#E5E7EB":"#EA4335"}`,
+                borderRadius:8, background: form.game_name?"#F9FAFB":"#FCE8E6",
                 cursor:"pointer", textAlign:"left",
               }}>
               {form.game_name ? (
@@ -644,8 +641,8 @@ export default function SupplierReturns() {
                 </>
               ) : (
                 <>
-                  <Image size={18} style={{ color:"#CF291D", flexShrink:0 }}/>
-                  <span style={{ fontSize:13, fontWeight:600, color:"#CF291D" }}>Click to select ticket…</span>
+                  <GalleryAdd size={18} variant="Linear" color="currentColor" style={{ color:"#EA4335", flexShrink:0 }}/>
+                  <span style={{ fontSize:13, fontWeight:600, color:"#EA4335" }}>Click to select ticket…</span>
                 </>
               )}
             </button>
@@ -687,13 +684,13 @@ export default function SupplierReturns() {
                         }}
                         style={{
                           display:"flex", alignItems:"center", justifyContent:"space-between",
-                          padding:"10px 14px", border:`2px solid ${isSelected?"#CF291D":"#E5E7EB"}`,
-                          borderRadius:10, background: isSelected?"#FEF2F2":"#F9FAFB",
+                          padding:"10px 14px", border:`2px solid ${isSelected?"#4285F4":"#E5E7EB"}`,
+                          borderRadius:10, background: isSelected?"#FCE8E6":"#F9FAFB",
                           cursor:"pointer", textAlign:"left", transition:"all 0.12s",
                         }}>
                         <div>
                           <div style={{ fontSize:12, fontWeight:700, color:"#111827", marginBottom:3 }}>
-                            {isSelected && <span style={{ marginRight:5, color:"#CF291D" }}>✓</span>}
+                            {isSelected && <span style={{ marginRight:5, color:"#4285F4" }}>✓</span>}
                             Batch #{b.id} · {b.batch_date}
                           </div>
                           <div style={{ fontSize:10, fontFamily:"monospace", color:"#6B7280" }}>
@@ -703,7 +700,7 @@ export default function SupplierReturns() {
                           </div>
                         </div>
                         <div style={{ textAlign:"right" }}>
-                          <div style={{ fontSize:14, fontWeight:900, color: b.remaining_qty < 100?"#CF291D":"#16A34A" }}>
+                          <div style={{ fontSize:14, fontWeight:900, color: b.remaining_qty < 100?"#EA4335":"#16A34A" }}>
                             {b.remaining_qty.toLocaleString()}
                           </div>
                           <div style={{ fontSize:9, color:"#9CA3AF" }}>available</div>
@@ -829,9 +826,9 @@ export default function SupplierReturns() {
             onClick={handleSave}
             disabled={saving}
             className="flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50"
-            style={{ background: "#CF291D" }}
+            style={{ background: "#4285F4" }}
           >
-            <Save size={14} />
+            <Save2 size={14} variant="Linear" color="currentColor" />
             {saving ? "Saving…" : "Save Return"}
           </button>
           <button
@@ -839,7 +836,7 @@ export default function SupplierReturns() {
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all"
             style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
           >
-            <X size={14} /> Cancel
+            <CloseCircle size={14} variant="Linear" color="currentColor" /> Cancel
           </button>
         </div>
       </div>
@@ -854,9 +851,9 @@ export default function SupplierReturns() {
             <div className="flex items-start gap-3 mb-4">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
-                style={{ background: "#FEF2F2" }}
+                style={{ background: "#FCE8E6" }}
               >
-                <AlertTriangle size={18} style={{ color: "#CF291D" }} />
+                <Warning2 size={14} variant="Linear" color="currentColor" style={{ color: "#EA4335" }} />
               </div>
               <div>
                 <p className="font-bold text-sm" style={{ color: "#1D1D1D" }}>Apply Supplier Credit?</p>
@@ -867,7 +864,7 @@ export default function SupplierReturns() {
                   </span>{" "}
                   of <span className="font-semibold" style={{ color: "#1D1D1D" }}>{confirmCredit.game_name}</span> and
                   credit{" "}
-                  <span className="font-semibold" style={{ color: "#CF291D" }}>
+                  <span className="font-semibold" style={{ color: "#EA4335" }}>
                     Rs. {fmt(confirmCredit.total_value)}
                   </span>{" "}
                   to the supplier account.
@@ -890,7 +887,7 @@ export default function SupplierReturns() {
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-all"
                 style={{ background: "#16a34a" }}
               >
-                <CheckCircle size={13} /> Apply Credit
+                <TickCircle size={14} variant="Linear" color="currentColor" /> Apply Credit
               </button>
             </div>
           </div>
@@ -959,7 +956,7 @@ function FocusInput(
       {...rest}
       className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-none${mono ? " font-mono" : ""}`}
       style={{
-        border: `1px solid ${focused ? "#CF291D" : "#E8E8E8"}`,
+        border: `1px solid ${focused ? "#4285F4" : "#E8E8E8"}`,
         background: "#FAFAFA",
         color: "#1D1D1D",
         ...propStyle,
@@ -978,7 +975,7 @@ function FocusSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
       {...rest}
       className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
       style={{
-        border: `1px solid ${focused ? "#CF291D" : "#E8E8E8"}`,
+        border: `1px solid ${focused ? "#4285F4" : "#E8E8E8"}`,
         background: "#FAFAFA",
         color: "#1D1D1D",
       }}

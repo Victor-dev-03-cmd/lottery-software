@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Plus, CheckCircle, Trash2, X, Save, RefreshCw, Home, ChevronRight, RotateCcw, Zap, ShieldAlert } from "lucide-react";
+import { AddCircle, TickCircle, Trash, CloseCircle, Save2, Refresh2, Home2, ArrowRight2, RotateLeft, Flash, ShieldSlash } from "iconsax-react";
 import {
   getAgents, getInvoices, getLotteryGames,
   getTicketReturns, saveTicketReturn, settleTicketReturn, deleteTicketReturn, getReturnSummary,
@@ -20,7 +20,7 @@ interface ScannedItem {
 
 const RETURN_REASONS: { value: ReturnReason; label: string; color: string }[] = [
   { value: "unsold",       label: "Unsold",        color: "#6B7280" },
-  { value: "damaged",      label: "Damaged",       color: "#CF291D" },
+  { value: "damaged",      label: "Damaged",       color: "#EA4335" },
   { value: "expired_draw", label: "Expired Draw",  color: "#d97706" },
   { value: "exchange",     label: "Exchange",      color: "#2563eb" },
   { value: "other",        label: "Other",         color: "#7c3aed" },
@@ -263,8 +263,8 @@ export default function Returns() {
       {/* Breadcrumb */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
-          <Home size={12} />
-          <ChevronRight size={11} />
+          <Home2 size={12} variant="Linear" color="currentColor" />
+          <ArrowRight2 size={11} variant="Linear" color="currentColor" />
           <span className="font-semibold" style={{ color: "#1D1D1D" }}>Return &amp; Settlement</span>
         </nav>
       </div>
@@ -272,8 +272,8 @@ export default function Returns() {
       {/* Auth error banner */}
       {authError && (
         <div className="mx-6 mt-2 flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium"
-          style={{ background: "#FEF2F2", border: "1px solid #FECACA", color: "#CF291D" }}>
-          <ShieldAlert size={14}/> {authError}
+          style={{ background: "#FCE8E6", border: "1px solid #FECACA", color: "#EA4335" }}>
+          <ShieldSlash size={14} variant="Linear" color="currentColor"/> {authError}
           <button className="ml-auto font-bold" onClick={() => setAuthError(null)}>×</button>
         </div>
       )}
@@ -295,7 +295,7 @@ export default function Returns() {
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
             >
-              <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+              <Refresh2 size={14} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""} />
             </button>
             <button
               onClick={() => {
@@ -309,14 +309,14 @@ export default function Returns() {
                   : { background: "#EFF6FF", border: "1px solid #BFDBFE", color: "#1D4ED8" }
               }
             >
-              <Zap size={14} /> Quick Scan
+              <Flash size={14} variant="Linear" color="currentColor" /> Quick Scan
             </button>
             <button
               onClick={() => { setForm(EMPTY()); setQuickScanActive(false); }}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-all"
-              style={{ background: "#CF291D" }}
+              style={{ background: "#4285F4" }}
             >
-              <Plus size={14} /> Record Return
+              <AddCircle size={15} variant="Linear" color="currentColor" /> Record Return
             </button>
           </div>
         </div>
@@ -361,14 +361,14 @@ export default function Returns() {
               style={{ background: "#1D4ED8", borderBottom: "2px solid #1E40AF" }}
             >
               <div className="flex items-center gap-2">
-                <Zap size={16} className="text-white" />
+                <Flash size={14} variant="Linear" color="currentColor" className="text-white" />
                 <span className="font-semibold text-sm text-white">Quick Scan Mode</span>
               </div>
               <button
                 onClick={() => { setQuickScanActive(false); clearScanQueue(); }}
                 style={{ color: "#BFDBFE" }}
               >
-                <X size={16} />
+                <CloseCircle size={14} variant="Linear" color="currentColor" />
               </button>
             </div>
 
@@ -501,10 +501,10 @@ export default function Returns() {
                               <button
                                 onClick={() => removeScanItem(idx)}
                                 className="p-1 rounded hover:bg-red-50 transition-colors"
-                                style={{ color: "#CF291D" }}
+                                style={{ color: "#EA4335" }}
                                 title="Remove"
                               >
-                                <X size={12} />
+                                <CloseCircle size={14} variant="Linear" color="currentColor" />
                               </button>
                             </td>
                           </tr>
@@ -532,7 +532,7 @@ export default function Returns() {
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50"
                   style={{ background: "#1D4ED8" }}
                 >
-                  <Zap size={14} />
+                  <Flash size={14} variant="Linear" color="currentColor" />
                   {scanSettling ? "Settling…" : `Settle All Scanned (${scanQueue.length})`}
                 </button>
                 <button
@@ -540,7 +540,7 @@ export default function Returns() {
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all"
                   style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#6B7280" }}
                 >
-                  <RotateCcw size={14} /> Clear
+                  <RotateLeft size={14} variant="Linear" color="currentColor" /> Clear
                 </button>
               </div>
             </div>
@@ -555,13 +555,13 @@ export default function Returns() {
           >
             <div
               className="flex items-center justify-between px-5 py-3.5"
-              style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}
+              style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}
             >
               <span className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>
                 New Return Entry
               </span>
               <button style={{ color: "#9CA3AF" }} onClick={() => resetForm()}>
-                <X size={16} />
+                <CloseCircle size={14} variant="Linear" color="currentColor" />
               </button>
             </div>
             <div className="p-5 space-y-4">
@@ -620,8 +620,8 @@ export default function Returns() {
                   style={{
                     display:"flex", alignItems:"center", gap:12, width:"100%",
                     padding:"10px 14px", borderRadius:10, textAlign:"left", cursor:"pointer",
-                    border:`2px solid ${form.game_name?"#2563EB":"#CF291D"}`,
-                    background: form.game_name?"#EFF6FF":"#FEF2F2",
+                    border:`2px solid ${form.game_name?"#2563EB":"#EA4335"}`,
+                    background: form.game_name?"#EFF6FF":"#FCE8E6",
                     transition:"all 0.15s",
                   }}>
                   {form.game_name ? (
@@ -634,7 +634,7 @@ export default function Returns() {
                       </div>
                     </>
                   ) : (
-                    <div style={{ fontSize:12, color:"#CF291D", fontWeight:600 }}>
+                    <div style={{ fontSize:12, color:"#EA4335", fontWeight:600 }}>
                       🎫 Click to select ticket — choose from image picker
                     </div>
                   )}
@@ -685,13 +685,13 @@ export default function Returns() {
                             }}
                             style={{
                               display:"flex", alignItems:"center", justifyContent:"space-between",
-                              padding:"10px 14px", border:`2px solid ${isSelected?"#CF291D":"#E5E7EB"}`,
-                              borderRadius:10, background: isSelected?"#FEF2F2":"#F9FAFB",
+                              padding:"10px 14px", border:`2px solid ${isSelected?"#4285F4":"#E5E7EB"}`,
+                              borderRadius:10, background: isSelected?"#FCE8E6":"#F9FAFB",
                               cursor:"pointer", textAlign:"left", transition:"all 0.12s",
                             }}>
                             <div>
                               <div style={{ fontSize:12, fontWeight:700, color:"#111827", marginBottom:3 }}>
-                                {isSelected && <span style={{ marginRight:5, color:"#CF291D" }}>✓</span>}
+                                {isSelected && <span style={{ marginRight:5, color:"#4285F4" }}>✓</span>}
                                 Batch #{b.id} · {b.batch_date}
                               </div>
                               <div style={{ fontSize:10, fontFamily:"monospace", color:"#6B7280" }}>
@@ -703,12 +703,12 @@ export default function Returns() {
                                 </span>
                               </div>
                               <div style={{ fontSize:9, color:"#6B7280", marginTop:2 }}>
-                                Issued: <strong style={{ color:"#CF291D" }}>{b.sold_from_invoices.toLocaleString()}</strong> tickets ·
+                                Issued: <strong style={{ color:"#4285F4" }}>{b.sold_from_invoices.toLocaleString()}</strong> tickets ·
                                 Remaining in stock: <strong style={{ color:"#16A34A" }}>{b.remaining_qty.toLocaleString()}</strong>
                               </div>
                             </div>
                             <div style={{ textAlign:"right" }}>
-                              <div style={{ fontSize:14, fontWeight:900, color: b.remaining_qty < 100?"#CF291D":"#16A34A" }}>
+                              <div style={{ fontSize:14, fontWeight:900, color: b.remaining_qty < 100?"#EA4335":"#16A34A" }}>
                                 {b.remaining_qty.toLocaleString()}
                               </div>
                               <div style={{ fontSize:9, color:"#9CA3AF" }}>available</div>
@@ -768,7 +768,7 @@ export default function Returns() {
                   <select value={form.return_reason ?? "unsold"} onChange={e => setField("return_reason", e.target.value)}
                     className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
                     style={{ border:"1px solid #E8E8E8", background:"#FAFAFA", color:"#1D1D1D" }}
-                    onFocus={e => (e.currentTarget.style.borderColor = "#CF291D")}
+                    onFocus={e => (e.currentTarget.style.borderColor = "#4285F4")}
                     onBlur={e  => (e.currentTarget.style.borderColor = "#E8E8E8")}>
                     {RETURN_REASONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                   </select>
@@ -784,16 +784,16 @@ export default function Returns() {
                 <button
                   onClick={handleSave}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-all"
-                  style={{ background: "#CF291D" }}
+                  style={{ background: "#4285F4" }}
                 >
-                  <Save size={14} /> Save Return
+                  <Save2 size={14} variant="Linear" color="currentColor" /> Save Return
                 </button>
                 <button
                   onClick={() => resetForm()}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all"
                   style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
                 >
-                  <X size={14} /> Cancel
+                  <CloseCircle size={14} variant="Linear" color="currentColor" /> Cancel
                 </button>
               </div>
             </div>
@@ -808,7 +808,7 @@ export default function Returns() {
           {/* Dark table header with filter tabs */}
           <div
             className="px-5 py-3 flex items-center justify-between"
-            style={{ background: "#374151", borderBottom: "2px solid #CF291D" }}
+            style={{ background: "#374151", borderBottom: "2px solid #4285F4" }}
           >
             <span className="text-sm font-semibold text-white">Returns Register</span>
             <div className="flex items-center gap-2">
@@ -828,7 +828,7 @@ export default function Returns() {
                   }}
                   className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold transition-all"
                   style={{ background: "#16a34a", color: "#FFFFFF" }}>
-                  <CheckCircle size={11}/> Settle All ({pendingCount})
+                  <TickCircle size={14} variant="Linear" color="currentColor"/> Settle All ({pendingCount})
                 </button>
               )}
               <div className="flex items-center gap-1.5">
@@ -845,7 +845,7 @@ export default function Returns() {
                     className="px-3 py-1 rounded-full text-[11px] font-semibold transition-all"
                     style={
                       filter === key
-                        ? { background: "#CF291D", color: "#FFFFFF" }
+                        ? { background: "#4285F4", color: "#FFFFFF" }
                         : { background: "#2D2D2D", color: "#9CA3AF" }
                     }
                   >
@@ -864,7 +864,7 @@ export default function Returns() {
                 className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
                 style={{ background: "#F3F4F6" }}
               >
-                <RotateCcw size={22} style={{ color: "#BFBFBF" }} />
+                <RotateLeft size={14} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
               </div>
               <p className="text-sm font-medium" style={{ color: "#6B7280" }}>No returns found</p>
               <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>
@@ -961,16 +961,16 @@ export default function Returns() {
                               className="p-1.5 rounded-lg hover:opacity-80"
                               style={{ background: "#F0FDF4", color: "#16a34a" }}
                             >
-                              <CheckCircle size={13} />
+                              <TickCircle size={14} variant="Linear" color="currentColor" />
                             </button>
                           )}
                           <button
                             onClick={() => handleDelete(r.id!)}
                             className="p-1.5 rounded-lg hover:opacity-80"
-                            style={{ background: "#FFF1F0", color: "#CF291D" }}
+                            style={{ background: "#FCE8E6", color: "#EA4335" }}
                             title="Delete"
                           >
-                            <Trash2 size={13} />
+                            <Trash size={13} variant="Linear" color="currentColor" />
                           </button>
                         </div>
                       </td>
@@ -1032,7 +1032,7 @@ function FocusInput(
       {...rest}
       className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-none${mono ? " font-mono" : ""}`}
       style={{
-        border: `1px solid ${focused ? "#CF291D" : "#E8E8E8"}`,
+        border: `1px solid ${focused ? "#4285F4" : "#E8E8E8"}`,
         background: "#FAFAFA",
         ...propStyle,
       }}
@@ -1050,7 +1050,7 @@ function FocusSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
       {...rest}
       className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
       style={{
-        border: `1px solid ${focused ? "#CF291D" : "#E8E8E8"}`,
+        border: `1px solid ${focused ? "#4285F4" : "#E8E8E8"}`,
         background: "#FAFAFA",
       }}
       onFocus={(e) => { setFocused(true); onFocus?.(e); }}

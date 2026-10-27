@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Trash2, X, Save, AlertTriangle, Package, RefreshCw, Calculator, Home, ChevronRight, Pencil, Grid, List } from "lucide-react";
+import { AddCircle, Trash, CloseCircle, Save2, Warning2, Box1, Refresh2, Calculator, Home2, ArrowRight2, Edit2, Grid2, AlignLeft } from "iconsax-react";
 import { resolveLogoUrl } from "./TicketLogoPicker";
 import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, lastTicketBarcode } from "../utils/barcode";
 import {
@@ -164,8 +164,8 @@ export default function Inventory() {
       {/* Breadcrumb */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
-          <Home size={12} />
-          <ChevronRight size={11} />
+          <Home2 size={12} variant="Linear" color="currentColor" />
+          <ArrowRight2 size={11} variant="Linear" color="currentColor" />
           <span className="font-semibold" style={{ color: "#1D1D1D" }}>Inventory</span>
         </nav>
       </div>
@@ -174,9 +174,9 @@ export default function Inventory() {
       {syncMsg && (
         <div className="mx-6 mt-2 px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2"
           style={{
-            background: syncMsg.startsWith("✓") ? "#F0FFF4" : "#FEF2F2",
+            background: syncMsg.startsWith("✓") ? "#F0FFF4" : "#FCE8E6",
             border: `1px solid ${syncMsg.startsWith("✓") ? "#BBF7D0" : "#FECACA"}`,
-            color: syncMsg.startsWith("✓") ? "#16a34a" : "#CF291D",
+            color: syncMsg.startsWith("✓") ? "#16a34a" : "#EA4335",
           }}>
           {syncMsg}
         </div>
@@ -204,29 +204,29 @@ export default function Inventory() {
             {/* Grid / List toggle */}
             <div style={{ display:"flex", borderRadius:8, border:"1px solid #E5E7EB", overflow:"hidden" }}>
               <button onClick={() => setViewMode("grid")}
-                style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", border:"none", fontSize:12, fontWeight:600, cursor:"pointer", background: viewMode==="grid"?"#CF291D":"#fff", color: viewMode==="grid"?"#fff":"#6B7280" }}>
-                <Grid size={14}/> Grid
+                style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", border:"none", fontSize:12, fontWeight:600, cursor:"pointer", background: viewMode==="grid"?"#4285F4":"#fff", color: viewMode==="grid"?"#fff":"#6B7280" }}>
+                <Grid2 size={16} variant="Linear" color="currentColor"/> Grid
               </button>
               <button onClick={() => setViewMode("list")}
-                style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", border:"none", fontSize:12, fontWeight:600, cursor:"pointer", background: viewMode==="list"?"#CF291D":"#fff", color: viewMode==="list"?"#fff":"#6B7280" }}>
-                <List size={14}/> List
+                style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", border:"none", fontSize:12, fontWeight:600, cursor:"pointer", background: viewMode==="list"?"#4285F4":"#fff", color: viewMode==="list"?"#fff":"#6B7280" }}>
+                <AlignLeft size={16} variant="Linear" color="currentColor"/> List
               </button>
             </div>
             <button onClick={load} disabled={loading}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:bg-gray-50 disabled:opacity-50"
               style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", color:"#1D1D1D" }}>
-              <RefreshCw size={13} className={loading ? "animate-spin" : ""}/>
+              <Refresh2 size={14} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""}/>
             </button>
             <button onClick={handleSync} disabled={syncing || loading}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50"
               style={{ background:"#EFF6FF", border:"1px solid #BFDBFE", color:"#2563eb" }}>
-              <RefreshCw size={13} className={syncing?"animate-spin":""}/>
+              <Refresh2 size={14} variant="Linear" color="currentColor" className={syncing?"animate-spin":""}/>
               Sync Stock
             </button>
             <button onClick={() => setForm(EMPTY())}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all"
               style={{ background:"#F9FAFB", border:"1px solid #E5E7EB", color:"#6B7280" }}>
-              <Plus size={14}/> Add Batch
+              <AddCircle size={15} variant="Linear" color="currentColor"/> Add Batch
             </button>
           </div>
         </div>
@@ -255,7 +255,7 @@ export default function Inventory() {
             label="Low Stock Alerts"
             value={String(lowStockCount)}
             sub={lowStockCount > 0 ? "batches need attention" : "all batches healthy"}
-            accent={lowStockCount > 0 ? "#CF291D" : "#9CA3AF"}
+            accent={lowStockCount > 0 ? "#EA4335" : "#9CA3AF"}
           />
         </div>
 
@@ -267,13 +267,13 @@ export default function Inventory() {
           >
             <div
               className="flex items-center justify-between px-5 py-3.5"
-              style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}
+              style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}
             >
               <span className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>
                 {form.id ? "Edit Batch" : "New Stock Batch"}
               </span>
               <button style={{ color: "#9CA3AF" }} onClick={() => setForm(null)}>
-                <X size={16} />
+                <CloseCircle size={14} variant="Linear" color="currentColor" />
               </button>
             </div>
             <div className="p-5">
@@ -341,7 +341,7 @@ export default function Inventory() {
                   >
                     Barcode End *
                     <span title="Auto-calculated from Start + Qty">
-                      <Calculator size={10} style={{ color: "#CF291D" }} />
+                      <Calculator size={14} variant="Linear" color="currentColor" style={{ color: "#4285F4" }} />
                     </span>
                   </label>
                   <FocusInput
@@ -359,7 +359,7 @@ export default function Inventory() {
                   >
                     Total Qty
                     <span title="Auto-calculated from barcodes">
-                      <Calculator size={10} style={{ color: "#CF291D" }} />
+                      <Calculator size={14} variant="Linear" color="currentColor" style={{ color: "#4285F4" }} />
                     </span>
                   </label>
                   <FocusInput
@@ -493,16 +493,16 @@ export default function Inventory() {
                 <button
                   onClick={handleSave}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-all"
-                  style={{ background: "#CF291D" }}
+                  style={{ background: "#4285F4" }}
                 >
-                  <Save size={14} /> Save Batch
+                  <Save2 size={14} variant="Linear" color="currentColor" /> Save Batch
                 </button>
                 <button
                   onClick={() => setForm(null)}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all"
                   style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
                 >
-                  <X size={14} /> Cancel
+                  <CloseCircle size={14} variant="Linear" color="currentColor" /> Cancel
                 </button>
               </div>
             </div>
@@ -535,7 +535,7 @@ export default function Inventory() {
           {/* Dark table header with filter tabs */}
           <div
             className="px-5 py-3 flex items-center justify-between"
-            style={{ background: "#374151", borderBottom: "2px solid #CF291D" }}
+            style={{ background: "#374151", borderBottom: "2px solid #4285F4" }}
           >
             <span className="text-sm font-semibold text-white">Batch Inventory</span>
             <div className="flex items-center gap-1.5">
@@ -552,7 +552,7 @@ export default function Inventory() {
                   className="px-3 py-1 rounded-full text-[11px] font-semibold transition-all"
                   style={
                     tabFilter === key
-                      ? { background: "#CF291D", color: "#FFFFFF" }
+                      ? { background: "#4285F4", color: "#FFFFFF" }
                       : { background: "#2D2D2D", color: "#9CA3AF" }
                   }
                 >
@@ -572,7 +572,7 @@ export default function Inventory() {
                 className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
                 style={{ background: "#F3F4F6" }}
               >
-                <Package size={22} style={{ color: "#BFBFBF" }} />
+                <Box1 size={18} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
               </div>
               <p className="text-sm font-medium" style={{ color: "#6B7280" }}>
                 {batches.length === 0 ? "No batches yet" : "No results"}
@@ -624,7 +624,7 @@ export default function Inventory() {
                               onError={e=>{(e.currentTarget as HTMLImageElement).src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='52'%3E%3Crect width='52' height='52' rx='8' fill='%23F3F4F6'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='24'%3E🎫%3C/text%3E%3C/svg%3E"}}/>
                             <div>
                               <div style={{ fontSize:13, fontWeight:700, color:"#111827", display:"flex", alignItems:"center", gap:5 }}>
-                                {isLow && <AlertTriangle size={12} style={{ color:"#CF291D" }}/>}
+                                {isLow && <Warning2 size={14} variant="Linear" color="currentColor" style={{ color:"#EA4335" }}/>}
                                 {b.game_name}
                               </div>
                               <span style={{
@@ -668,14 +668,14 @@ export default function Inventory() {
 
                         {/* Remaining — big green/red */}
                         <td style={{ padding:"10px 14px", textAlign:"right" }}>
-                          <div style={{ fontSize:16, fontWeight:900, color: isLow?"#CF291D":"#16a34a" }}>
+                          <div style={{ fontSize:16, fontWeight:900, color: isLow?"#EA4335":"#16a34a" }}>
                             {b.remaining_qty.toLocaleString()}
                           </div>
                           {b.total_qty > 0 && (
                             <div style={{ height:4, background:"#F3F4F6", borderRadius:999, marginTop:3, overflow:"hidden" }}>
                               <div style={{ height:"100%", borderRadius:999,
                                 width:`${Math.min(100,(b.remaining_qty/b.total_qty)*100)}%`,
-                                background: isLow?"#CF291D":"#16a34a", transition:"width 0.3s" }}/>
+                                background: isLow?"#EA4335":"#16a34a", transition:"width 0.3s" }}/>
                             </div>
                           )}
                         </td>
@@ -691,7 +691,7 @@ export default function Inventory() {
                             display:"inline-block", padding:"4px 12px", borderRadius:20,
                             fontSize:11, fontWeight:700,
                             background: isLow?"#FEE2E2":"#DCFCE7",
-                            color: isLow?"#CF291D":"#16a34a",
+                            color: isLow?"#EA4335":"#16a34a",
                             border: `1px solid ${isLow?"#FECACA":"#BBF7D0"}`,
                           }}>
                             {isLow ? "⚠ Low Stock" : "✓ In Stock"}
@@ -705,15 +705,15 @@ export default function Inventory() {
                               style={{ background: "#F0F4FF", color: "#3B82F6" }}
                               title="Edit"
                             >
-                              <Pencil size={12} />
+                              <Edit2 size={13} variant="Linear" color="currentColor" />
                             </button>
                             <button
                               onClick={() => handleDelete(b.id!, b.game_name)}
                               className="p-1.5 rounded-lg hover:opacity-80"
-                              style={{ background: "#FFF1F0", color: "#CF291D" }}
+                              style={{ background: "#FCE8E6", color: "#EA4335" }}
                               title="Delete"
                             >
-                              <Trash2 size={12} />
+                              <Trash size={13} variant="Linear" color="currentColor" />
                             </button>
                           </div>
                         </td>
@@ -806,7 +806,7 @@ function InventoryGridView({
                       display:"flex", flexDirection:"column", alignItems:"center",
                       padding:"16px 12px", borderRadius:12,
                       border: `2px solid ${hasStock ? (isLow?"#FDE68A":"#BBF7D0") : noStock?"#E5E7EB":"#FECACA"}`,
-                      background: hasStock ? (isLow?"#FFFBEB":"#F0FFF4") : noStock?"#F9FAFB":"#FFF1F0",
+                      background: hasStock ? (isLow?"#FFFBEB":"#F0FFF4") : noStock?"#F9FAFB":"#FCE8E6",
                       cursor: g.batches>0?"pointer":"default",
                       transition:"all 0.15s",
                       opacity: noStock ? 0.6 : 1,
@@ -839,7 +839,7 @@ function InventoryGridView({
                     {/* Stock numbers */}
                     {g.batches > 0 ? (
                       <>
-                        <div style={{ fontSize:20, fontWeight:900, color: hasStock?(isLow?"#D97706":"#16A34A"):"#CF291D" }}>
+                        <div style={{ fontSize:20, fontWeight:900, color: hasStock?(isLow?"#D97706":"#16A34A"):"#EA4335" }}>
                           {fmt(g.remaining)}
                         </div>
                         <div style={{ fontSize:9, color:"#9CA3AF", marginTop:1 }}>available</div>
@@ -965,14 +965,14 @@ function BatchDetailPopup({
                 {/* Progress */}
                 <div style={{ flex:1 }}>
                   <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, marginBottom:4 }}>
-                    <span style={{ color:"#6B7280" }}>Sold: <strong style={{ color:"#CF291D" }}>{fmt(b.sold_from_invoices)}</strong></span>
+                    <span style={{ color:"#6B7280" }}>Sold: <strong style={{ color:"#4285F4" }}>{fmt(b.sold_from_invoices)}</strong></span>
                     <span style={{ color:"#6B7280" }}>Remaining: <strong style={{ color:"#16A34A" }}>{fmt(b.remaining_qty)}</strong></span>
                     <span style={{ color:"#6B7280" }}>Total: <strong>{fmt(b.total_qty)}</strong></span>
                   </div>
                   <div style={{ background:"#F3F4F6", borderRadius:999, height:6, overflow:"hidden" }}>
                     <div style={{ height:"100%", borderRadius:999,
                       width:`${b.total_qty>0?(b.sold_from_invoices/b.total_qty*100):0}%`,
-                      background:"#CF291D", transition:"width 0.3s" }}/>
+                      background:"#EA4335", transition:"width 0.3s" }}/>
                   </div>
                 </div>
                 <div style={{ fontSize:11, color:"#2563EB", fontWeight:600, flexShrink:0 }}>
@@ -999,7 +999,7 @@ function BatchDetailPopup({
                       <tbody>
                         {(salesRows[b.id]??[]).map((r:any,i:number) => (
                           <tr key={i} style={{ borderBottom:"1px solid #F9FAFB" }}>
-                            <td style={{ padding:"6px 10px", fontFamily:"monospace", fontWeight:700, color:"#CF291D" }}>#{r.invoice_number}</td>
+                            <td style={{ padding:"6px 10px", fontFamily:"monospace", fontWeight:700, color:"#4285F4" }}>#{r.invoice_number}</td>
                             <td style={{ padding:"6px 10px", fontWeight:600, color:"#111827" }}>{r.agent_name}</td>
                             <td style={{ padding:"6px 10px", color:"#6B7280" }}>{r.invoice_date}</td>
                             <td style={{ padding:"6px 10px", fontFamily:"monospace", color:"#2563EB" }}>{r.barcode_start}</td>
@@ -1020,7 +1020,7 @@ function BatchDetailPopup({
                           <td colSpan={5} style={{ padding:"6px 10px", fontSize:10, color:"#6B7280", fontWeight:700 }}>
                             TOTAL SOLD FROM THIS BATCH
                           </td>
-                          <td style={{ padding:"6px 10px", fontWeight:900, color:"#CF291D" }}>
+                          <td style={{ padding:"6px 10px", fontWeight:900, color:"#EA4335" }}>
                             {fmt((salesRows[b.id]??[]).reduce((s:number,r:any)=>s+r.qty,0))}
                           </td>
                           <td/>
@@ -1129,7 +1129,7 @@ function FocusInput(
       {...rest}
       className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-none${mono ? " font-mono" : ""}`}
       style={{
-        border: `1px solid ${focused ? "#CF291D" : "#E8E8E8"}`,
+        border: `1px solid ${focused ? "#4285F4" : "#E8E8E8"}`,
         background: "#FAFAFA",
         ...propStyle,
       }}

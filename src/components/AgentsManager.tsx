@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  Plus, Trash2, X, Save, RefreshCw, Users, Home,
-  ChevronRight, Camera, User, Pencil,
-} from "lucide-react";
+import { AddCircle, Trash, CloseCircle, Save2, Refresh2, People, Home2, ArrowRight2, Camera, UserSquare, Edit2 } from "iconsax-react";
+
 import { getAgents, saveAgent, deleteAgent } from "../services/database";
 import { usePinGuardContext } from "../App";
 import type { Agent } from "../types";
@@ -42,6 +40,7 @@ const EMPTY_AGENT = (): Agent => ({
 });
 
 export default function AgentsManager() {
+  
   const [agents, setAgents]       = useState<Agent[]>([]);
   const [form, setForm]           = useState<Agent | null>(null);
   const [loading, setLoading]     = useState(true);
@@ -93,7 +92,7 @@ export default function AgentsManager() {
       {/* ── Toolbar: breadcrumb + Refresh + Add Agent side by side ── */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
-          <Home size={12} /><ChevronRight size={11} />
+          <Home2 size={12} variant="Linear" color="currentColor" /><ArrowRight2 size={11} variant="Linear" color="currentColor" />
           <span className="font-semibold" style={{ color: "#1D1D1D" }}>
             Agents
           </span>
@@ -108,13 +107,13 @@ export default function AgentsManager() {
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#6B7280" }}
             title="Refresh">
-            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+            <Refresh2 size={14} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""} />
             <span>Refresh</span>
           </button>
           <button onClick={() => { setForm(EMPTY_AGENT()); setViewAgent(null); }}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-all"
-            style={{ background: "#CF291D" }}>
-            <Plus size={14} /> Add Agent
+            style={{ background: "#4285F4" }}>
+            <AddCircle size={15} variant="Linear" color="currentColor" /> Add Agent
           </button>
         </div>
       </div>
@@ -132,14 +131,14 @@ export default function AgentsManager() {
         {form && (
           <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
             <div className="flex items-center justify-between px-5 py-3.5"
-              style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
+              style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
               <div>
                 <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>
                   {form.id ? `Edit — ${form.name}` : "New Agent"}
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Fill in the agent's profile details</p>
               </div>
-              <button onClick={() => setForm(null)} style={{ color: "#9CA3AF" }}><X size={16} /></button>
+              <button onClick={() => setForm(null)} style={{ color: "#9CA3AF" }}><CloseCircle size={14} variant="Linear" color="currentColor" /></button>
             </div>
 
             <div className="p-5">
@@ -152,17 +151,17 @@ export default function AgentsManager() {
                     onClick={() => photoRef.current?.click()}>
                     {form.photo
                       ? <img src={form.photo} alt="agent" className="w-full h-full object-cover" />
-                      : <User size={32} style={{ color: "#BFBFBF" }} />
+                      : <UserSquare size={40} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
                     }
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"
                       style={{ background: "rgba(207,41,29,0.75)" }}>
-                      <Camera size={20} className="text-white" />
+                      <Camera size={16} variant="Linear" color="currentColor" className="text-white" />
                     </div>
                   </div>
                   <input ref={photoRef} type="file" accept="image/*" className="hidden"
                     onChange={handlePhotoChange} />
                   <button onClick={() => photoRef.current?.click()}
-                    className="text-xs font-medium hover:underline" style={{ color: "#CF291D" }}>
+                    className="text-xs font-medium hover:underline" style={{ color: "#4285F4" }}>
                     {form.photo ? "Change Photo" : "Upload Photo"}
                   </button>
                   {form.photo && (
@@ -191,7 +190,7 @@ export default function AgentsManager() {
                       onChange={(e) => set("bank_name", e.target.value)}
                       className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
                       style={{ border: "1px solid #E8E8E8", background: "#FAFAFA" }}
-                      onFocus={(e) => (e.currentTarget.style.borderColor = "#CF291D")}
+                      onFocus={(e) => (e.currentTarget.style.borderColor = "#4285F4")}
                       onBlur={(e)  => (e.currentTarget.style.borderColor = "#E8E8E8")}
                     >
                       <option value="">— Select Bank —</option>
@@ -230,8 +229,8 @@ export default function AgentsManager() {
               <div className="flex gap-2 mt-5 pt-4" style={{ borderTop: "1px solid #F3F4F6" }}>
                 <button onClick={handleSave}
                   className="flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90"
-                  style={{ background: "#CF291D" }}>
-                  <Save size={14} /> {form.id ? "Update Agent" : "Save Agent"}
+                  style={{ background: "#4285F4" }}>
+                  <Save2 size={14} variant="Linear" color="currentColor" /> {form.id ? "Update Agent" : "Save Agent"}
                 </button>
                 <button onClick={() => setForm(null)}
                   className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50"
@@ -247,15 +246,15 @@ export default function AgentsManager() {
         {viewAgent && !form && (
           <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
             <div className="flex items-center justify-between px-5 py-3.5"
-              style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
+              style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
               <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Agent Profile</p>
               <div className="flex gap-2">
                 <button onClick={() => { setForm({ ...viewAgent }); setViewAgent(null); }}
                   className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium"
                   style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE" }}>
-                  <Pencil size={12} /> Edit
+                  <Edit2 size={13} variant="Linear" color="currentColor" /> Edit
                 </button>
-                <button onClick={() => setViewAgent(null)} style={{ color: "#9CA3AF" }}><X size={16} /></button>
+                <button onClick={() => setViewAgent(null)} style={{ color: "#9CA3AF" }}><CloseCircle size={14} variant="Linear" color="currentColor" /></button>
               </div>
             </div>
             <div className="p-5 flex gap-6">
@@ -264,7 +263,7 @@ export default function AgentsManager() {
                 {viewAgent.photo
                   ? <img src={viewAgent.photo} alt={viewAgent.name} className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center">
-                      <User size={28} style={{ color: "#BFBFBF" }} />
+                      <UserSquare size={40} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
                     </div>
                 }
               </div>
@@ -289,13 +288,13 @@ export default function AgentsManager() {
         {/* ── Agents table ── */}
         <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
           <div className="flex items-center justify-between px-5 py-3"
-            style={{ background: "#374151", borderBottom: "2px solid #CF291D" }}>
+            style={{ background: "#374151", borderBottom: "2px solid #4285F4" }}>
             <div className="flex items-center gap-2">
-              <Users size={15} className="text-white" />
+              <People size={32} variant="Linear" color="currentColor" className="text-white" />
               <p className="font-bold text-sm text-white">All Agents</p>
             </div>
             <span className="text-xs px-2 py-0.5 rounded-full font-semibold text-white"
-              style={{ background: "#CF291D" }}>
+              style={{ background: "#4285F4" }}>
               {agents.length} total
             </span>
           </div>
@@ -306,7 +305,7 @@ export default function AgentsManager() {
             <div className="flex flex-col items-center justify-center py-14">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
                 style={{ background: "#F3F4F6" }}>
-                <Users size={22} style={{ color: "#BFBFBF" }} />
+                <People size={32} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
               </div>
               <p className="text-sm font-medium" style={{ color: "#6B7280" }}>No agents yet</p>
               <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>Click "Add Agent" to get started</p>
@@ -337,7 +336,7 @@ export default function AgentsManager() {
                           {a.photo
                             ? <img src={a.photo} alt={a.name} className="w-full h-full object-cover" />
                             : <div className="w-full h-full flex items-center justify-center">
-                                <User size={16} style={{ color: "#BFBFBF" }} />
+                                <UserSquare size={40} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
                               </div>
                           }
                         </div>
@@ -368,13 +367,13 @@ export default function AgentsManager() {
                             onClick={() => { setForm({ ...a }); setViewAgent(null); }}
                             className="p-1.5 rounded-lg transition-all hover:opacity-80"
                             style={{ background: "#EFF6FF", color: "#2563EB" }}>
-                            <Pencil size={13} />
+                            <Edit2 size={13} variant="Linear" color="currentColor" />
                           </button>
                           <button
                             onClick={() => handleDelete(a.id!, a.name)}
                             className="p-1.5 rounded-lg transition-all hover:opacity-80"
-                            style={{ background: "#FFF1F0", color: "#CF291D" }}>
-                            <Trash2 size={13} />
+                            style={{ background: "#FCE8E6", color: "#EA4335" }}>
+                            <Trash size={13} variant="Linear" color="currentColor" />
                           </button>
                         </div>
                       </td>
@@ -412,7 +411,7 @@ function FInput({ value, onChange, placeholder, type = "text", autoFocus = false
       placeholder={placeholder} autoFocus={autoFocus}
       className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
       style={{ border: "1px solid #E8E8E8", background: "#FAFAFA" }}
-      onFocus={(e) => (e.currentTarget.style.borderColor = "#CF291D")}
+      onFocus={(e) => (e.currentTarget.style.borderColor = "#4285F4")}
       onBlur={(e)  => (e.currentTarget.style.borderColor = "#E8E8E8")}
     />
   );

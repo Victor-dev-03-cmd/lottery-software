@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Printer, RefreshCw, Plus, Home, ChevronRight, FileText, Lock } from "lucide-react";
+import { Printer, Refresh2, AddCircle, Home2, ArrowRight2, DocumentText, Lock1 } from "iconsax-react";
+
 import { getInvoices } from "../services/database";
 import type { Invoice, View } from "../types";
 
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function InvoiceList({ onNavigate, refreshKey }: Props) {
+  
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
@@ -60,8 +62,8 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
       {/* Breadcrumb */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
-          <Home size={12} />
-          <ChevronRight size={11} />
+          <Home2 size={12} variant="Linear" color="currentColor" />
+          <ArrowRight2 size={11} variant="Linear" color="currentColor" />
           <span className="font-semibold" style={{ color: "#1D1D1D" }}>Invoices</span>
         </nav>
       </div>
@@ -79,14 +81,14 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
             >
-              <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh
+              <Refresh2 size={14} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""} /> Refresh
             </button>
             <button
               onClick={() => onNavigate("new-invoice")}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
-              style={{ background: "#CF291D" }}
+              style={{ background: "#4285F4" }}
             >
-              <Plus size={14} /> New Invoice
+              <AddCircle size={14} variant="Linear" color="currentColor" /> New Invoice
             </button>
           </div>
         </div>
@@ -100,7 +102,7 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
             onChange={(e) => setFilter(e.target.value)}
             className="rounded-lg px-3 py-2 text-sm focus:outline-none w-56"
             style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#1D1D1D" }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = "#CF291D")}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "#4285F4")}
             onBlur={(e) => (e.currentTarget.style.borderColor = "#E8E8E8")}
           />
           <select
@@ -108,7 +110,7 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
             onChange={(e) => setStatusFilter(e.target.value as "" | "outstanding" | "settled")}
             className="rounded-lg px-3 py-2 text-sm focus:outline-none"
             style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#1D1D1D" }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = "#CF291D")}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "#4285F4")}
             onBlur={(e) => (e.currentTarget.style.borderColor = "#E8E8E8")}
           >
             <option value="">All Statuses</option>
@@ -120,7 +122,7 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
               <span className="font-semibold" style={{ color: "#1D1D1D" }}>{filtered.length}</span> invoices
               {totalOutstanding > 0 && (
                 <> &nbsp;·&nbsp; Outstanding:{" "}
-                  <span className="font-semibold" style={{ color: "#CF291D" }}>{fmt(totalOutstanding)}</span>
+                  <span className="font-semibold" style={{ color: "#EA4335" }}>{fmt(totalOutstanding)}</span>
                 </>
               )}
             </span>
@@ -132,14 +134,14 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ background: "#F3F4F6" }}>
-                <RefreshCw size={22} style={{ color: "#BFBFBF" }} />
+                <Refresh2 size={14} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
               </div>
               <p className="text-sm font-medium" style={{ color: "#6B7280" }}>Loading invoices…</p>
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ background: "#F3F4F6" }}>
-                <FileText size={22} style={{ color: "#BFBFBF" }} />
+                <DocumentText size={14} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
               </div>
               <p className="text-sm font-medium" style={{ color: "#6B7280" }}>No invoices found</p>
               <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>
@@ -151,9 +153,9 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
                 <button
                   onClick={() => onNavigate("new-invoice")}
                   className="mt-4 flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
-                  style={{ background: "#CF291D" }}
+                  style={{ background: "#4285F4" }}
                 >
-                  <Plus size={14} /> New Invoice
+                  <AddCircle size={14} variant="Linear" color="currentColor" /> New Invoice
                 </button>
               )}
             </div>
@@ -161,7 +163,7 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
             <div className="overflow-x-auto">
               <table className="w-full text-sm border-collapse">
                 <thead>
-                  <tr style={{ background: "#374151", borderBottom: "2px solid #CF291D" }}>
+                  <tr style={{ background: "#374151", borderBottom: "2px solid #4285F4" }}>
                     {[
                       { label: "Invoice #", cls: "text-left" },
                       { label: "Date", cls: "text-left" },
@@ -197,7 +199,7 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
                       className="hover:bg-gray-50/60 transition-colors"
                       style={{ borderBottom: "1px solid #F9F9F9" }}
                     >
-                      <td className="px-4 py-3 text-sm font-semibold" style={{ color: "#CF291D" }}>
+                      <td className="px-4 py-3 text-sm font-semibold" style={{ color: "#4285F4" }}>
                         {inv.invoice_number}
                       </td>
                       <td className="px-4 py-3 text-sm" style={{ color: "#1D1D1D" }}>
@@ -219,13 +221,13 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
                         {fmt(inv.cash_received)}
                       </td>
                       <td className="px-4 py-3 text-sm text-right font-bold"
-                        style={{ color: inv.outstanding_balance > 0 ? "#CF291D" : "#16a34a" }}>
+                        style={{ color: inv.outstanding_balance > 0 ? "#EA4335" : "#16a34a" }}>
                         {fmt(Math.max(0, inv.outstanding_balance))}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span
                           className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-white"
-                          style={{ background: inv.outstanding_balance > 0 ? "#CF291D" : "#16a34a" }}
+                          style={{ background: inv.outstanding_balance > 0 ? "#EA4335" : "#16a34a" }}
                         >
                           {inv.outstanding_balance > 0 ? "Outstanding" : "Settled"}
                         </span>
@@ -236,9 +238,9 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
                             onClick={() => onNavigate("print" as View, inv.id)}
                             title="Print"
                             className="p-1.5 rounded-lg transition-all hover:opacity-80"
-                            style={{ background: "#FFF1F0", color: "#CF291D" }}
+                            style={{ background: "#FCE8E6", color: "#EA4335" }}
                           >
-                            <Printer size={14} />
+                            <Printer size={14} variant="Linear" color="currentColor" />
                           </button>
                           {/* Paid invoices are fully locked — no deletion allowed */}
                           <button
@@ -247,7 +249,7 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
                             className="p-1.5 rounded-lg transition-all"
                             style={{ background: "#F3F4F6", color: "#9CA3AF", cursor: "not-allowed" }}
                           >
-                            <Lock size={14} />
+                            <Lock1 size={12} variant="Linear" color="currentColor" />
                           </button>
                         </div>
                       </td>
@@ -255,16 +257,16 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr style={{ background: "#374151", borderTop: "2px solid #CF291D" }}>
+                  <tr style={{ background: "#374151", borderTop: "2px solid #4285F4" }}>
                     <td
                       colSpan={7}
                       className="px-4 py-3 text-sm font-semibold"
-                      style={{ color: "#CF291D" }}
+                      style={{ color: "#4285F4" }}
                     >
                       TOTAL
                     </td>
                     <td className="px-4 py-3 text-sm text-right font-bold"
-                      style={{ color: totalOutstanding > 0 ? "#CF291D" : "#4ade80" }}>
+                      style={{ color: totalOutstanding > 0 ? "#EA4335" : "#4ade80" }}>
                       {totalOutstanding > 0
                         ? fmt(totalOutstanding)
                         : <span style={{ color: "#4ade80" }}>All Settled ✓</span>

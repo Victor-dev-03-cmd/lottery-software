@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Save, Printer, Calculator, Home, ChevronRight, Eye, EyeOff, Building2, Image } from "lucide-react";
+import { AddCircle, Trash, Save2, Printer, Calculator, Home2, ArrowRight2, Eye, EyeSlash, Buildings2, GalleryAdd } from "iconsax-react";
 import TicketLogoPicker, { resolveLogoUrl } from "./TicketLogoPicker";
 import { getCompanySettings } from "../services/database";
 import type { CompanySettings } from "../types";
@@ -340,10 +340,10 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
       {/* ── Top chrome ── */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
-          <Home size={12} />
-          <ChevronRight size={11} />
+          <Home2 size={12} variant="Linear" color="currentColor" />
+          <ArrowRight2 size={11} variant="Linear" color="currentColor" />
           <span>Sales</span>
-          <ChevronRight size={11} />
+          <ArrowRight2 size={11} variant="Linear" color="currentColor" />
           <span className="font-semibold" style={{ color: "#1D1D1D" }}>
             {editInvoiceId ? "Edit Invoice" : "New Invoice"}
           </span>
@@ -361,7 +361,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
               color: showPreview ? "#FFFFFF" : "#1D1D1D",
             }}
           >
-            {showPreview ? <EyeOff size={14}/> : <Eye size={14}/>}
+            {showPreview ? <EyeSlash size={14} variant="Linear" color="currentColor"/> : <Eye size={14} variant="Linear" color="currentColor"/>}
             {showPreview ? "Hide Preview" : "Preview"}
           </button>
           {/* Save as Draft (gray) */}
@@ -372,7 +372,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
             style={{ background: "#6B7280" }}
           >
-            <Save size={15} /> {saving ? "Saving…" : "Save Draft"}
+            <Save2 size={14} variant="Linear" color="currentColor" /> {saving ? "Saving…" : "Save Draft"}
           </button>
           {/* Confirm Invoice (blue) */}
           <button
@@ -381,7 +381,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
             style={{ background: "#2563EB" }}
           >
-            <Save size={15} /> Confirm
+            <Save2 size={14} variant="Linear" color="currentColor" /> Confirm
           </button>
           <button
             onClick={() => handleSave("print")}
@@ -389,7 +389,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:bg-gray-50 disabled:opacity-50"
             style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
           >
-            <Printer size={15} /> Print
+            <Printer size={14} variant="Linear" color="currentColor" /> Print
           </button>
         </div>
       </div>
@@ -414,7 +414,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
         <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
           <div
             className="flex items-center justify-between px-5 py-3.5"
-            style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}
+            style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}
           >
             <span className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Invoice Details</span>
           </div>
@@ -435,7 +435,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                   onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); (e.currentTarget.closest(".grid")?.querySelectorAll("input,select")[1] as HTMLElement)?.focus(); }}}
                   className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
                   style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#1D1D1D" }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#CF291D")}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "#4285F4")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "#E8E8E8")}
                 />
               </div>
@@ -454,7 +454,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                   onChange={(e) => setInvoiceDate(e.target.value)}
                   className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
                   style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#1D1D1D" }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#CF291D")}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "#4285F4")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "#E8E8E8")}
                 />
               </div>
@@ -472,7 +472,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                   onChange={(e) => handleAgentChange(Number(e.target.value))}
                   className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
                   style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#1D1D1D" }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#CF291D")}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "#4285F4")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "#E8E8E8")}
                 >
                   <option value="">-- Select Agent --</option>
@@ -501,7 +501,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                   onChange={(e) => setPreparedBy(e.target.value)}
                   className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
                   style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#1D1D1D" }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#CF291D")}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "#4285F4")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "#E8E8E8")}
                 />
               </div>
@@ -510,9 +510,9 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
             {/* Credit limit warning */}
             {creditWarning && (
               <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium"
-                style={{ background: creditWarning.includes("OVER") ? "#FEE2E2" : "#FEF9C3",
+                style={{ background: creditWarning.includes("OVER") ? "#FCE8E6" : "#FEF9C3",
                   border: `1px solid ${creditWarning.includes("OVER") ? "#FECACA" : "#FDE68A"}`,
-                  color: creditWarning.includes("OVER") ? "#CF291D" : "#92400e" }}>
+                  color: creditWarning.includes("OVER") ? "#EA4335" : "#92400e" }}>
                 {creditWarning}
               </div>
             )}
@@ -526,7 +526,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                   placeholder="e.g. Colombo North, Route A"
                   className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
                   style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#1D1D1D" }}
-                  onFocus={e => (e.currentTarget.style.borderColor = "#CF291D")}
+                  onFocus={e => (e.currentTarget.style.borderColor = "#4285F4")}
                   onBlur={e  => (e.currentTarget.style.borderColor = "#E8E8E8")}/>
               </div>
               <div>
@@ -538,7 +538,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                   placeholder="Sales representative name"
                   className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
                   style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#1D1D1D" }}
-                  onFocus={e => (e.currentTarget.style.borderColor = "#CF291D")}
+                  onFocus={e => (e.currentTarget.style.borderColor = "#4285F4")}
                   onBlur={e  => (e.currentTarget.style.borderColor = "#E8E8E8")}/>
               </div>
             </div>
@@ -557,21 +557,21 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
         <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
           <div
             className="flex items-center justify-between px-5 py-3.5"
-            style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}
+            style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}
           >
             <span className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Ticket Lines</span>
             <button
               onClick={addItem}
               className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:opacity-90"
-              style={{ background: "#CF291D" }}
+              style={{ background: "#4285F4" }}
             >
-              <Plus size={13} /> Add Line
+              <AddCircle size={15} variant="Linear" color="currentColor" /> Add Line
             </button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr style={{ background: "#374151", borderBottom: "2px solid #CF291D" }}>
+                <tr style={{ background: "#374151", borderBottom: "2px solid #4285F4" }}>
                   <th
                     className="px-4 py-3 text-left w-8"
                     style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}
@@ -601,7 +601,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                     <span className="flex items-center gap-1">
                       ▷ Next Batch Starts
                       <span title="Auto-calculated from Start + Qty">
-                        <Calculator size={11} style={{ color: "#BFBFBF" }} />
+                        <Calculator size={14} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
                       </span>
                     </span>
                   </th>
@@ -612,7 +612,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                     <span className="flex items-center justify-end gap-1">
                       Qty
                       <span title="Auto-calculated from barcodes">
-                        <Calculator size={11} style={{ color: "#BFBFBF" }} />
+                        <Calculator size={14} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
                       </span>
                     </span>
                   </th>
@@ -656,7 +656,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                       <button type="button" onClick={() => setPickerRow(i)}
                         style={{
                           display:"flex", alignItems:"center", gap:8, width:"100%",
-                          padding:"5px 8px", border:`1px solid ${item.ticket_name?"#E5E7EB":"#CF291D"}`,
+                          padding:"5px 8px", border:`1px solid ${item.ticket_name?"#E5E7EB":"#EA4335"}`,
                           borderRadius:8, background: item.ticket_name?"transparent":"#FEF2F2",
                           cursor:"pointer", textAlign:"left", minWidth:180,
                         }}>
@@ -672,8 +672,8 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                           </>
                         ) : (
                           <>
-                            <Image size={16} style={{ color:"#CF291D", flexShrink:0 }}/>
-                            <span style={{ fontSize:12, fontWeight:600, color:"#CF291D" }}>Select Ticket…</span>
+                            <GalleryAdd size={16} variant="Linear" color="currentColor" style={{ color:"#4285F4", flexShrink:0 }}/>
+                            <span style={{ fontSize:12, fontWeight:600, color:"#4285F4" }}>Select Ticket…</span>
                           </>
                         )}
                       </button>
@@ -699,7 +699,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                               borderRadius:6, background: item.purchase_batch_id?"#F0FFF4":"#FAFAFA",
                               cursor:"pointer", textAlign:"left", fontSize:10,
                             }}>
-                            <span style={{ fontWeight:700, color: item.purchase_batch_id?"#16A34A":"#CF291D" }}>
+                            <span style={{ fontWeight:700, color: item.purchase_batch_id?"#16A34A":"#EA4335" }}>
                               {item.purchase_batch_id
                                 ? `📦 Batch #${item.purchase_batch_id}`
                                 : "📦 Select Batch"}
@@ -738,7 +738,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                                   </div>
                                   <div style={{ fontSize:10, color:"#6B7280", marginTop:2, fontFamily:"monospace" }}>
                                     Next start: <strong style={{ color:"#2563EB" }}>{b.next_start_barcode}</strong>
-                                    {b.sold_from_invoices > 0 && <span style={{ marginLeft:8, color:"#CF291D" }}>Sold: {b.sold_from_invoices.toLocaleString()}</span>}
+                                    {b.sold_from_invoices > 0 && <span style={{ marginLeft:8, color:"#EA4335" }}>Sold: {b.sold_from_invoices.toLocaleString()}</span>}
                                   </div>
                                 </button>
                               ))}
@@ -811,7 +811,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                                 background: overStock ? "#FEF2F2" : "transparent",
                                 color: "#1D1D1D",
                               }}
-                              onFocus={(e) => { e.target.select(); e.currentTarget.style.borderColor = overStock ? "#EF4444" : "#CF291D"; }}
+                              onFocus={(e) => { e.target.select(); e.currentTarget.style.borderColor = overStock ? "#EF4444" : "#4285F4"; }}
                               onBlur={(e) => (e.currentTarget.style.borderColor = overStock ? "#EF4444" : "transparent")}
                             />
                             {avail !== null && item.ticket_name && (
@@ -835,7 +835,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                         placeholder="Tickets"
                         className="w-full rounded px-2 py-1 text-sm focus:outline-none"
                         style={{ border: "1px solid transparent", background: "transparent", color: "#1D1D1D" }}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = "#CF291D")}
+                        onFocus={(e) => (e.currentTarget.style.borderColor = "#4285F4")}
                         onBlur={(e) => (e.currentTarget.style.borderColor = "transparent")}
                       />
                     </td>
@@ -850,7 +850,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                         onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); document.getElementById(`row-${i}-disc`)?.querySelector("input")?.focus(); }}}
                         className="w-full rounded px-2 py-1 text-sm text-right focus:outline-none"
                         style={{ border: "1px solid transparent", background: "transparent", color: "#1D1D1D" }}
-                        onFocus={(e) => { e.target.select(); e.currentTarget.style.borderColor = "#CF291D"; }}
+                        onFocus={(e) => { e.target.select(); e.currentTarget.style.borderColor = "#4285F4"; }}
                         onBlur={(e) => (e.currentTarget.style.borderColor = "transparent")}
                       />
                     </td>
@@ -866,7 +866,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                         onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addItem(); setTimeout(() => document.getElementById(`row-${i+1}-bc-start`)?.querySelector("input")?.focus(), 50); }}}
                         className="w-full rounded px-2 py-1 text-sm text-right focus:outline-none"
                         style={{ border:"1px solid transparent", background:"transparent", color:"#d97706" }}
-                        onFocus={e => { e.target.select(); e.currentTarget.style.borderColor = "#CF291D"; }}
+                        onFocus={e => { e.target.select(); e.currentTarget.style.borderColor = "#4285F4"; }}
                         onBlur={e  => (e.currentTarget.style.borderColor = "transparent")}/>
                     </td>
                     {/* Net Value (computed) */}
@@ -877,21 +877,21 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                       <button
                         onClick={() => removeItem(i)}
                         className="p-1.5 rounded-lg transition-all hover:opacity-80"
-                        style={{ background: "#FFF1F0", color: "#CF291D" }}
+                        style={{ background: "#FCE8E6", color: "#EA4335" }}
                       >
-                        <Trash2 size={13} />
+                        <Trash size={13} variant="Linear" color="currentColor" />
                       </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr style={{ background: "#374151", borderTop: "2px solid #CF291D" }}>
+                <tr style={{ background: "#374151", borderTop: "2px solid #4285F4" }}>
                   <td colSpan={4} className="px-4 py-3 text-sm" style={{ color: "#9CA3AF" }}>
                     {totalTickets.toLocaleString()} Tickets
                     {discountTotal > 0 && <span className="ml-3" style={{ color:"#FCD34D" }}>Discount: Rs. {fmt(discountTotal)}</span>}
                   </td>
-                  <td colSpan={4} className="px-4 py-3 text-right text-sm font-semibold" style={{ color: "#CF291D" }}>
+                  <td colSpan={4} className="px-4 py-3 text-right text-sm font-semibold" style={{ color: "#4285F4" }}>
                     INVOICE TOTAL
                   </td>
                   <td className="px-4 py-3 text-right text-sm font-bold" style={{ color: "#FFFFFF" }}>
@@ -912,7 +912,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
               ["Enter in Cash", "→ focuses Save button"],
             ].map(([key, desc]) => (
               <span key={key} style={{ fontSize:11, color:"#6B7280" }}>
-                <span style={{ fontWeight:700, color:"#CF291D" }}>{key}</span> {desc}
+                <span style={{ fontWeight:700, color:"#4285F4" }}>{key}</span> {desc}
               </span>
             ))}
           </div>
@@ -922,7 +922,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
         <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
           <div
             className="flex items-center justify-between px-5 py-3.5"
-            style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}
+            style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}
           >
             <span className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Payment &amp; Balance</span>
           </div>
@@ -984,7 +984,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                     onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); (document.querySelector("[data-save-draft]") as HTMLElement)?.focus(); }}}
                     className="w-full rounded-lg px-3 py-2 text-sm text-right focus:outline-none"
                     style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#1D1D1D" }}
-                    onFocus={(e) => { e.target.select(); e.currentTarget.style.borderColor = "#CF291D"; }}
+                    onFocus={(e) => { e.target.select(); e.currentTarget.style.borderColor = "#4285F4"; }}
                     onBlur={(e) => (e.currentTarget.style.borderColor = "#E8E8E8")}
                   />
                 </div>
@@ -1002,7 +1002,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                     onChange={(e) => setDlbWinning(parseFloat(e.target.value) || 0)}
                     className="w-full rounded-lg px-3 py-2 text-sm text-right focus:outline-none"
                     style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#1D1D1D" }}
-                    onFocus={(e) => { e.target.select(); e.currentTarget.style.borderColor = "#CF291D"; }}
+                    onFocus={(e) => { e.target.select(); e.currentTarget.style.borderColor = "#4285F4"; }}
                     onBlur={(e) => (e.currentTarget.style.borderColor = "#E8E8E8")}
                   />
                 </div>
@@ -1020,7 +1020,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                     onChange={(e) => setNlbWinning(parseFloat(e.target.value) || 0)}
                     className="w-full rounded-lg px-3 py-2 text-sm text-right focus:outline-none"
                     style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#1D1D1D" }}
-                    onFocus={(e) => { e.target.select(); e.currentTarget.style.borderColor = "#CF291D"; }}
+                    onFocus={(e) => { e.target.select(); e.currentTarget.style.borderColor = "#4285F4"; }}
                     onBlur={(e) => (e.currentTarget.style.borderColor = "#E8E8E8")}
                   />
                 </div>
@@ -1060,7 +1060,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
 
                   <div
                     className="mt-5 pt-4 rounded-lg px-4 py-4 text-center"
-                    style={{ background: "#FFFFFF", border: "2px solid #CF291D" }}
+                    style={{ background: "#FFFFFF", border: "2px solid #4285F4" }}
                   >
                     <p
                       className="text-[11px] font-semibold uppercase tracking-widest mb-1"
@@ -1070,7 +1070,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                     </p>
                     <p
                       className="text-3xl font-bold"
-                      style={{ color: outstandingBalance > 0 ? "#CF291D" : "#16a34a" }}
+                      style={{ color: outstandingBalance > 0 ? "#EA4335" : "#16a34a" }}
                     >
                       {fmt(outstandingBalance)}
                     </p>
@@ -1093,7 +1093,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                     {outstandingBalance > 0 && (
                       <span
                         className="mt-2 inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-white"
-                        style={{ background: "#CF291D" }}
+                        style={{ background: "#4285F4" }}
                       >
                         Outstanding
                       </span>
@@ -1115,10 +1115,10 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
             {/* Panel header */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Eye size={14} style={{ color: "#CF291D" }}/>
+                <Eye size={14} variant="Linear" color="currentColor" style={{ color: "#4285F4" }}/>
                 <span className="text-sm font-bold" style={{ color: "#1D1D1D" }}>Live Preview</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
-                  style={{ background: "#FEE2E2", color: "#CF291D" }}>A4</span>
+                  style={{ background: "#FCE8E6", color: "#4285F4" }}>A4</span>
               </div>
               <span className="text-[11px]" style={{ color: "#9CA3AF" }}>Updates as you type</span>
             </div>
@@ -1137,9 +1137,9 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 8, background: "#CF291D",
+                      <div style={{ width: 36, height: 36, borderRadius: 8, background: "#4285F4",
                         display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Building2 size={18} color="#FFFFFF"/>
+                        <Buildings2 size={20} variant="Linear" color="#FFFFFF"/>
                       </div>
                       <div>
                         <p style={{ fontSize: 16, fontWeight: 800, color: "#FFFFFF", margin: 0 }}>
@@ -1157,7 +1157,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                     <div style={{ background: "rgba(207,41,29,0.25)", border: "1px solid rgba(207,41,29,0.4)",
                       borderRadius: 8, padding: "8px 14px" }}>
                       <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase",
-                        letterSpacing: "0.1em", color: "#CF291D", margin: "0 0 2px" }}>Invoice</p>
+                        letterSpacing: "0.1em", color: "#4285F4", margin: "0 0 2px" }}>Invoice</p>
                       <p style={{ fontSize: 18, fontWeight: 900, color: "#FFFFFF", margin: 0 }}>
                         #{invoiceNumber || "—"}
                       </p>
@@ -1269,7 +1269,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                     <span style={{ fontSize: 12, color: row.bold ? "#1D1D1D" : "#6B7280",
                       fontWeight: row.bold ? 700 : 400 }}>{row.label}</span>
                     <span style={{ fontSize: 12, fontWeight: row.bold ? 800 : 500,
-                      color: (row as any).green ? "#16a34a" : row.val < 0 ? "#CF291D" : row.bold ? "#1D1D1D" : "#374151" }}>
+                      color: (row as any).green ? "#16a34a" : row.val < 0 ? "#EA4335" : row.bold ? "#1D1D1D" : "#374151" }}>
                       {row.val < 0 ? "−" : ""}Rs. {fmt(Math.abs(row.val))}
                     </span>
                   </div>
@@ -1296,14 +1296,14 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
               {/* Outstanding balance highlight */}
               <div style={{ margin: "8px 24px 20px", padding: "14px 16px", borderRadius: 10,
                 background: outstandingBalance > 0 ? "#FEF2F2" : "#F0FDF4",
-                border: `2px solid ${outstandingBalance > 0 ? "#CF291D" : "#16a34a"}` }}>
+                border: `2px solid ${outstandingBalance > 0 ? "#EA4335" : "#16a34a"}` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase",
-                    letterSpacing: "0.06em", color: outstandingBalance > 0 ? "#CF291D" : "#16a34a" }}>
+                    letterSpacing: "0.06em", color: outstandingBalance > 0 ? "#EA4335" : "#16a34a" }}>
                     Outstanding Balance
                   </span>
                   <span style={{ fontSize: 22, fontWeight: 900,
-                    color: outstandingBalance > 0 ? "#CF291D" : "#16a34a" }}>
+                    color: outstandingBalance > 0 ? "#EA4335" : "#16a34a" }}>
                     Rs. {fmt(outstandingBalance)}
                   </span>
                 </div>

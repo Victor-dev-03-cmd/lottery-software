@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Plus, Printer, Trash2, X, Save, Home, ChevronRight } from "lucide-react";
+import { AddCircle, Printer, Trash, CloseCircle, Save2, Home2, ArrowRight2 } from "iconsax-react";
+
 import { getAgents, getDailyCollections, saveDailyCollection, deleteDailyCollection, getCollectionDates } from "../services/database";
 import type { Agent, DailyCollection } from "../types";
 
@@ -19,6 +20,7 @@ const EMPTY = (date: string): DailyCollection => ({
 });
 
 export default function DailyCollectionView() {
+  
   const [agents, setAgents] = useState<Agent[]>([]);
   const [dates, setDates] = useState<{ date: string; total: number; count: number }[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
@@ -72,7 +74,7 @@ export default function DailyCollectionView() {
   });
 
   const inputStyle = (field: string) => ({
-    border: `1px solid ${focusedField === field ? "#CF291D" : "#E8E8E8"}`,
+    border: `1px solid ${focusedField === field ? "#4285F4" : "#E8E8E8"}`,
     background: "#FAFAFA",
   });
 
@@ -81,8 +83,8 @@ export default function DailyCollectionView() {
       {/* Breadcrumb + toolbar */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2 no-print">
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
-          <Home size={12} />
-          <ChevronRight size={11} />
+          <Home2 size={12} variant="Linear" color="currentColor" />
+          <ArrowRight2 size={11} variant="Linear" color="currentColor" />
           <span className="font-semibold" style={{ color: "#1D1D1D" }}>Daily Collections</span>
         </nav>
         <div className="flex gap-2">
@@ -98,14 +100,14 @@ export default function DailyCollectionView() {
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all no-print"
             style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
           >
-            <Printer size={14} /> Print Sheet
+            <Printer size={14} variant="Linear" color="currentColor" /> Print Sheet
           </button>
           <button
             onClick={() => setForm(EMPTY(selectedDate))}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-all no-print"
-            style={{ background: "#CF291D" }}
+            style={{ background: "#4285F4" }}
           >
-            <Plus size={15} /> Add Entry
+            <AddCircle size={15} variant="Linear" color="currentColor" /> Add Entry
           </button>
         </div>
       </div>
@@ -140,8 +142,8 @@ export default function DailyCollectionView() {
                   onClick={() => setSelectedDate(d.date)}
                   className="flex-shrink-0 px-3 py-2 rounded-lg text-xs text-left transition-all"
                   style={{
-                    background: isSelected ? "#CF291D" : "#FFFFFF",
-                    border: `1px solid ${isSelected ? "#CF291D" : "#E8E8E8"}`,
+                    background: isSelected ? "#4285F4" : "#FFFFFF",
+                    border: `1px solid ${isSelected ? "#4285F4" : "#E8E8E8"}`,
                     color: isSelected ? "#FFFFFF" : "#1D1D1D",
                   }}
                 >
@@ -177,9 +179,9 @@ export default function DailyCollectionView() {
             <p className="text-2xl font-black" style={{ color: "#EA580C" }}>Rs. {fmt(totalDlb)}</p>
             <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>DLB winning tickets</p>
           </div>
-          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #CF291D" }}>
+          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #4285F4" }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>Grand Total</p>
-            <p className="text-2xl font-black" style={{ color: "#CF291D" }}>Rs. {fmt(grandTotal)}</p>
+            <p className="text-2xl font-black" style={{ color: "#4285F4" }}>Rs. {fmt(grandTotal)}</p>
             <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>{collections.length} entr{collections.length !== 1 ? "ies" : "y"}</p>
           </div>
         </div>
@@ -187,11 +189,11 @@ export default function DailyCollectionView() {
         {/* Add form */}
         {form && (
           <div className="rounded-2xl overflow-hidden shadow-sm no-print" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-            <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
+            <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-bold" style={{ color: "#1D1D1D" }}>New Collection Entry — {dateLabel}</h2>
                 <button onClick={() => setForm(null)} className="p-1 rounded" style={{ color: "#9CA3AF" }}>
-                  <X size={15} />
+                  <CloseCircle size={14} variant="Linear" color="currentColor" />
                 </button>
               </div>
             </div>
@@ -344,9 +346,9 @@ export default function DailyCollectionView() {
                 <button
                   onClick={handleSave}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-all"
-                  style={{ background: "#CF291D" }}
+                  style={{ background: "#4285F4" }}
                 >
-                  <Save size={14} /> Save Entry
+                  <Save2 size={14} variant="Linear" color="currentColor" /> Save Entry
                 </button>
                 <button
                   onClick={() => setForm(null)}
@@ -362,7 +364,7 @@ export default function DailyCollectionView() {
 
         {/* Collection table */}
         <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-          <div className="px-5 py-3 no-print" style={{ background: "#374151", borderBottom: "2px solid #CF291D" }}>
+          <div className="px-5 py-3 no-print" style={{ background: "#374151", borderBottom: "2px solid #4285F4" }}>
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-white">{dateLabel}</span>
               <span className="text-xs" style={{ color: "#9CA3AF" }}>{collections.length} entr{collections.length !== 1 ? "ies" : "y"}</span>
@@ -409,9 +411,9 @@ export default function DailyCollectionView() {
                           <button
                             onClick={() => handleDelete(c.id!)}
                             className="p-1.5 rounded-lg"
-                            style={{ background: "#FFF1F0", color: "#CF291D" }}
+                            style={{ background: "#FFF1F0", color: "#EA4335" }}
                           >
-                            <Trash2 size={12} />
+                            <Trash size={14} variant="Linear" color="currentColor" />
                           </button>
                         </td>
                       </tr>
@@ -419,13 +421,13 @@ export default function DailyCollectionView() {
                   })}
                 </tbody>
                 <tfoot>
-                  <tr style={{ background: "#374151", borderTop: "2px solid #CF291D" }}>
+                  <tr style={{ background: "#374151", borderTop: "2px solid #4285F4" }}>
                     <td colSpan={4} className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: "#9CA3AF" }}>TOTALS</td>
                     <td className="px-4 py-3 text-right text-sm font-bold" style={{ color: "#FFFFFF" }}>{fmt(totalCash)}</td>
                     <td className="px-4 py-3 text-right text-sm font-bold" style={{ color: "#FFFFFF" }}>{fmt(totalCheque)}</td>
                     <td className="px-4 py-3 text-right text-sm font-bold" style={{ color: "#FFFFFF" }}>{fmt(totalNlb)}</td>
                     <td className="px-4 py-3 text-right text-sm font-bold" style={{ color: "#FFFFFF" }}>{fmt(totalDlb)}</td>
-                    <td className="px-4 py-3 text-right text-sm font-bold" style={{ color: "#CF291D" }}>Rs. {fmt(grandTotal)}</td>
+                    <td className="px-4 py-3 text-right text-sm font-bold" style={{ color: "#4285F4" }}>Rs. {fmt(grandTotal)}</td>
                     <td className="no-print"></td>
                   </tr>
                 </tfoot>

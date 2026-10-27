@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { RefreshCw, Eye, CheckCircle, X, Sparkles } from "lucide-react";
+import { Refresh2, Eye, TickCircle, CloseCircle, Star1 } from "iconsax-react";
+import { useLanguage } from "../i18n";
 import {
   getInvoices,
   cancelInvoice,
@@ -24,6 +25,7 @@ function fmtRs(n: number) {
 // ── ConfirmedInvoices ─────────────────────────────────────────────────────────
 
 export default function ConfirmedInvoices({ onNavigate }: Props) {
+  const { t: _t } = useLanguage(); // i18n ready
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [tab, setTab] = useState<TabFilter>("all");
   const [company, setCompany] = useState<CompanySettings | null>(null);
@@ -85,7 +87,7 @@ export default function ConfirmedInvoices({ onNavigate }: Props) {
         display: "flex",
         flexDirection: "column",
         background: "#FFFFFF",
-        borderRight: "1px solid #CF291D",
+        borderRight: "1px solid #4285F4",
         overflow: "hidden",
       }}>
         {/* Header */}
@@ -103,11 +105,11 @@ export default function ConfirmedInvoices({ onNavigate }: Props) {
               <button onClick={async () => { await reconcilePaidInvoices(); load(); }}
                 title="Auto-mark invoices as Paid if their outstanding balance is zero"
                 style={{ padding: "5px 10px", border: "1px solid #BBF7D0", borderRadius: "6px", background: "#F0FDF4", color: "#16A34A", fontSize: "12px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
-                <Sparkles size={12} /> Auto-Reconcile
+                <Star1 size={14} variant="Linear" color="currentColor" /> Auto-Reconcile
               </button>
               <button onClick={load} disabled={loading}
                 style={{ padding: "5px 10px", border: "1px solid #E5E7EB", borderRadius: "6px", background: "#F9FAFB", color: "#374151", fontSize: "12px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
-                <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> Refresh
+                <Refresh2 size={14} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""} /> Refresh
               </button>
             </div>
           </div>
@@ -154,7 +156,7 @@ export default function ConfirmedInvoices({ onNavigate }: Props) {
                 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontFamily: "monospace", fontWeight: 700, color: "#CF291D", fontSize: "13px" }}>
+                    <div style={{ fontFamily: "monospace", fontWeight: 700, color: "#4285F4", fontSize: "13px" }}>
                       #{inv.invoice_number}
                     </div>
                     <div style={{ fontSize: "13px", fontWeight: 600, color: "#111827", marginTop: "2px" }}>
@@ -179,7 +181,7 @@ export default function ConfirmedInvoices({ onNavigate }: Props) {
                   {outstanding > 0 ? (
                     <button onClick={() => handleMarkPaid(inv.id!)}
                       style={{ flex: 1, padding: "5px 8px", border: "none", borderRadius: "5px", background: "#16A34A", color: "#fff", fontSize: "11px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
-                      <CheckCircle size={11} /> Mark Paid
+                      <TickCircle size={14} variant="Linear" color="currentColor" /> Mark Paid
                     </button>
                   ) : (
                     <span style={{ flex: 1, padding: "5px 8px", borderRadius: "5px", background: "#DCFCE7", color: "#16A34A", fontSize: "11px", fontWeight: 700, textAlign: "center" }}>
@@ -201,7 +203,7 @@ export default function ConfirmedInvoices({ onNavigate }: Props) {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {!previewInvoice ? (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#9CA3AF" }}>
-            <Eye size={48} style={{ marginBottom: "12px", opacity: 0.3 }} />
+            <Eye size={14} variant="Linear" color="currentColor" style={{ marginBottom: "12px", opacity: 0.3 }} />
             <div style={{ fontSize: "14px" }}>Select an invoice to preview</div>
             <div style={{ fontSize: "12px", marginTop: "4px", opacity: 0.7 }}>Click any invoice on the left</div>
           </div>
@@ -230,7 +232,7 @@ export default function ConfirmedInvoices({ onNavigate }: Props) {
                 {(previewInvoice.outstanding_balance ?? 0) > 0 ? (
                   <button onClick={() => handleMarkPaid(previewInvoice.id!)}
                     style={{ padding: "7px 18px", border: "none", borderRadius: "6px", background: "#16A34A", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <CheckCircle size={14} /> Mark as Paid
+                    <TickCircle size={14} variant="Linear" color="currentColor" /> Mark as Paid
                   </button>
                 ) : (
                   <span style={{ padding: "7px 14px", borderRadius: "6px", background: "#DCFCE7", color: "#16A34A", fontSize: "13px", fontWeight: 700, border: "1px solid #BBF7D0" }}>
@@ -239,7 +241,7 @@ export default function ConfirmedInvoices({ onNavigate }: Props) {
                 )}
                 <button onClick={() => handleCancel(previewInvoice.id!)}
                   style={{ padding: "7px 16px", border: "1px solid #FECACA", borderRadius: "6px", background: "#fff", color: "#DC2626", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <X size={13} /> Cancel Invoice
+                  <CloseCircle size={14} variant="Linear" color="currentColor" /> Cancel Invoice
                 </button>
               </div>
             </div>
@@ -289,7 +291,7 @@ export default function ConfirmedInvoices({ onNavigate }: Props) {
                     }}
                   >
                     <td style={{ padding: "10px 14px" }}>
-                      <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#CF291D" }}>
+                      <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#4285F4" }}>
                         #{inv.invoice_number}
                       </span>
                     </td>
@@ -338,7 +340,7 @@ export default function ConfirmedInvoices({ onNavigate }: Props) {
                             alignItems: "center",
                           }}
                         >
-                          <Eye size={14} />
+                          <Eye size={14} variant="Linear" color="currentColor" />
                         </button>
 
                         {/* Mark Paid */}
@@ -360,7 +362,7 @@ export default function ConfirmedInvoices({ onNavigate }: Props) {
                               whiteSpace: "nowrap",
                             }}
                           >
-                            <CheckCircle size={12} /> Mark Paid
+                            <TickCircle size={14} variant="Linear" color="currentColor" /> Mark Paid
                           </button>
                         ) : (
                           <span
@@ -393,7 +395,7 @@ export default function ConfirmedInvoices({ onNavigate }: Props) {
                             alignItems: "center",
                           }}
                         >
-                          <X size={14} />
+                          <CloseCircle size={14} variant="Linear" color="currentColor" />
                         </button>
                       </div>
                     </td>

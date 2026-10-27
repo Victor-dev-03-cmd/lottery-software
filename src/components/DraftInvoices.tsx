@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { RefreshCw, Search, Pencil, CheckCircle, X, FileText, AlertTriangle } from "lucide-react";
+import { Refresh2, SearchNormal1, Edit2, TickCircle, CloseCircle, DocumentText, Warning2 } from "iconsax-react";
+import { useLanguage } from "../i18n";
 import {
   getInvoices,
   confirmInvoice,
@@ -71,7 +72,7 @@ function ConfirmInvoiceDialog({
         <div style={{ padding: "18px 20px 12px", borderBottom: "1px solid #F3F4F6" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <AlertTriangle size={18} color="#2563EB" />
+              <Warning2 size={18} variant="Linear" color="#4285F4" />
             </div>
             <div>
               <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>{lang.title}</div>
@@ -101,8 +102,8 @@ function ConfirmInvoiceDialog({
             {lang.cancel}
           </button>
           <button onClick={onConfirm}
-            style={{ padding: "8px 20px", border: "none", borderRadius: 8, background: "#2563EB", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-            <CheckCircle size={14} /> {lang.agree}
+            style={{ padding: "8px 20px", border: "none", borderRadius: 8, background: "#4285F4", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+            <TickCircle size={14} variant="Linear" color="currentColor" /> {lang.agree}
           </button>
         </div>
       </div>
@@ -115,6 +116,7 @@ function ConfirmInvoiceDialog({
 // ── DraftInvoices ─────────────────────────────────────────────────────────────
 
 export default function DraftInvoices({ onNavigate }: Props) {
+  const { t: _t } = useLanguage(); // i18n ready
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filtered, setFiltered] = useState<Invoice[]>([]);
   const [search, setSearch] = useState("");
@@ -190,7 +192,7 @@ export default function DraftInvoices({ onNavigate }: Props) {
           width: "380px",
           flexShrink: 0,
           background: "#fff",
-          borderRight: "1px solid #CF291D",
+          borderRight: "1px solid #4285F4",
           display: "flex",
           flexDirection: "column",
         }}
@@ -229,13 +231,13 @@ export default function DraftInvoices({ onNavigate }: Props) {
                 cursor: "pointer",
               }}
             >
-              <RefreshCw size={13} /> Refresh
+              <Refresh2 size={13} variant="Linear" color="currentColor" /> Refresh
             </button>
           </div>
 
           {/* Search */}
           <div style={{ position: "relative" }}>
-            <Search size={13} style={{ position: "absolute", left: "9px", top: "50%", transform: "translateY(-50%)", color: "#9CA3AF" }} />
+            <SearchNormal1 size={13} variant="Linear" color="currentColor" style={{ position: "absolute", left: "9px", top: "50%", transform: "translateY(-50%)", color: "#9CA3AF" }} />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -263,7 +265,7 @@ export default function DraftInvoices({ onNavigate }: Props) {
             </div>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: "center", padding: "40px 16px", color: "#9CA3AF" }}>
-              <Pencil size={32} style={{ margin: "0 auto 10px", opacity: 0.4 }} />
+              <Edit2 size={32} variant="Linear" color="currentColor" style={{ margin: "0 auto 10px", opacity: 0.4 }} />
               <div style={{ fontSize: "13px" }}>No draft invoices</div>
             </div>
           ) : (
@@ -288,7 +290,7 @@ export default function DraftInvoices({ onNavigate }: Props) {
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div style={{ fontFamily: "monospace", fontSize: "13px", fontWeight: 700, color: "#CF291D" }}>
+                    <div style={{ fontFamily: "monospace", fontSize: "13px", fontWeight: 700, color: "#4285F4" }}>
                       #{inv.invoice_number}
                     </div>
                     <span
@@ -334,7 +336,7 @@ export default function DraftInvoices({ onNavigate }: Props) {
                           gap: "3px",
                         }}
                       >
-                        <Pencil size={11} /> Edit
+                        <Edit2 size={11} variant="Linear" color="currentColor" /> Edit
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleConfirm(inv.id!); }}
@@ -354,7 +356,7 @@ export default function DraftInvoices({ onNavigate }: Props) {
                           gap: "3px",
                         }}
                       >
-                        <CheckCircle size={11} /> Confirm
+                        <TickCircle size={11} variant="Linear" color="currentColor" /> Confirm
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleCancel(inv.id!); }}
@@ -372,7 +374,7 @@ export default function DraftInvoices({ onNavigate }: Props) {
                           justifyContent: "center",
                         }}
                       >
-                        <X size={12} />
+                        <CloseCircle size={12} variant="Linear" color="currentColor" />
                       </button>
                     </div>
                   )}
@@ -406,7 +408,7 @@ export default function DraftInvoices({ onNavigate }: Props) {
               color: "#9CA3AF",
             }}
           >
-            <FileText size={48} style={{ marginBottom: "12px", opacity: 0.35 }} />
+            <DocumentText size={48} variant="Linear" color="currentColor" style={{ marginBottom: "12px", opacity: 0.35 }} />
             <div style={{ fontSize: "14px" }}>Select a draft invoice to preview</div>
           </div>
         ) : (
@@ -437,15 +439,15 @@ export default function DraftInvoices({ onNavigate }: Props) {
               <div style={{ display: "flex", gap: "8px" }}>
                 <button onClick={() => onNavigate("edit-invoice", selectedInvoice.id)}
                   style={{ padding: "7px 16px", border: "1px solid #D1D5DB", borderRadius: "6px", background: "#FFFFFF", color: "#374151", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <Pencil size={13} /> Edit
+                  <Edit2 size={13} variant="Linear" color="currentColor" /> Edit
                 </button>
                 <button onClick={() => handleConfirm(selectedInvoice.id!)}
                   style={{ padding: "7px 16px", border: "none", borderRadius: "6px", background: "#2563EB", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <CheckCircle size={13} /> Confirm Invoice
+                  <TickCircle size={13} variant="Linear" color="currentColor" /> Confirm Invoice
                 </button>
                 <button onClick={() => handleCancel(selectedInvoice.id!)}
                   style={{ padding: "7px 16px", border: "1px solid #FECACA", borderRadius: "6px", background: "#fff", color: "#DC2626", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <X size={13} /> Cancel
+                  <CloseCircle size={13} variant="Linear" color="currentColor" /> Cancel
                 </button>
               </div>
             </div>
@@ -492,7 +494,7 @@ export default function DraftInvoices({ onNavigate }: Props) {
                   gap: "6px",
                 }}
               >
-                <Pencil size={14} /> Edit Invoice
+                <Edit2 size={14} variant="Linear" color="currentColor" /> Edit Invoice
               </button>
               <button
                 onClick={() => handleConfirm(selectedInvoice.id!)}
@@ -510,7 +512,7 @@ export default function DraftInvoices({ onNavigate }: Props) {
                   gap: "6px",
                 }}
               >
-                <CheckCircle size={14} /> Confirm Invoice
+                <TickCircle size={14} variant="Linear" color="currentColor" /> Confirm Invoice
               </button>
               <button
                 onClick={() => handleCancel(selectedInvoice.id!)}
@@ -528,7 +530,7 @@ export default function DraftInvoices({ onNavigate }: Props) {
                   gap: "6px",
                 }}
               >
-                <X size={14} /> Cancel Invoice
+                <CloseCircle size={14} variant="Linear" color="currentColor" /> Cancel Invoice
               </button>
             </div>
           </>

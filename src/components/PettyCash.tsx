@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
-import {
-  Home, ChevronRight, Plus, Trash2, Pencil, Save,
-  TrendingUp, TrendingDown, Wallet, AlertTriangle, CheckCircle, RefreshCw,
-} from "lucide-react";
+import { Home2, ArrowRight2, AddCircle, Trash, Edit2, Save2, TrendUp, TrendDown, Wallet, Warning2, TickCircle, Refresh2 } from "iconsax-react";
+
 import {
   getPettyCashTransactions, addPettyCashTransaction, updatePettyCashTransaction,
   deletePettyCashTransaction, getPettyCashClosing, savePettyCashClosing,
@@ -54,6 +52,7 @@ const EMPTY_CLOSING = (date: string): PettyCashClosing => ({
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 export default function PettyCash() {
+  
   const [date, setDate]             = useState(today());
   const [txs, setTxs]               = useState<PettyCashTx[]>([]);
   const [income, setIncome]         = useState({ invoice_cash: 0, post_payments: 0, daily_collections: 0, total: 0 });
@@ -165,7 +164,7 @@ export default function PettyCash() {
                 </label>
                 <select value={form.category} onChange={e => setForm(p=>({...p, category:e.target.value}))}
                   style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:"1px solid #E5E7EB", fontSize:13, background:"#FAFAFA", color:"#1D1D1D", outline:"none" }}
-                  onFocus={e => e.currentTarget.style.borderColor="#CF291D"}
+                  onFocus={e => e.currentTarget.style.borderColor="#4285F4"}
                   onBlur={e => e.currentTarget.style.borderColor="#E5E7EB"}>
                   {CATEGORIES.map(c => <CatOption key={c} cat={c} />)}
                 </select>
@@ -178,7 +177,7 @@ export default function PettyCash() {
                   onChange={e => setForm(p=>({...p, amount:parseFloat(e.target.value)||0}))}
                   onFocus={e => e.target.select()}
                   style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:"1px solid #E5E7EB", fontSize:14, fontWeight:700, background:"#FAFAFA", color:"#1D1D1D", outline:"none" }}
-                  onFocusCapture={e => e.currentTarget.style.borderColor="#CF291D"}
+                  onFocusCapture={e => e.currentTarget.style.borderColor="#4285F4"}
                   onBlurCapture={e => e.currentTarget.style.borderColor="#E5E7EB"}
                   placeholder="0.00"
                   autoFocus />
@@ -191,7 +190,7 @@ export default function PettyCash() {
                   onChange={e => setForm(p=>({...p, reason:e.target.value}))}
                   onKeyDown={e => { if (e.key==="Enter" && e.ctrlKey) handleSave(); }}
                   style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:"1px solid #E5E7EB", fontSize:13, background:"#FAFAFA", color:"#1D1D1D", outline:"none", resize:"none", fontFamily:"inherit" }}
-                  onFocus={e => e.currentTarget.style.borderColor="#CF291D"}
+                  onFocus={e => e.currentTarget.style.borderColor="#4285F4"}
                   onBlur={e => e.currentTarget.style.borderColor="#E5E7EB"}
                   placeholder='e.g. "Paid salary to helper Kumar"' />
                 <span style={{ fontSize:10, color:"#9CA3AF" }}>Ctrl+Enter to save</span>
@@ -202,8 +201,8 @@ export default function PettyCash() {
                   Cancel
                 </button>
                 <button onClick={handleSave} disabled={saving}
-                  style={{ padding:"8px 18px", borderRadius:8, border:"none", background:"#CF291D", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", opacity:saving?0.6:1 }}>
-                  <Save size={13} style={{ display:"inline", marginRight:4 }}/>
+                  style={{ padding:"8px 18px", borderRadius:8, border:"none", background:"#4285F4", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", opacity:saving?0.6:1 }}>
+                  <Save2 size={14} variant="Linear" color="currentColor" style={{ display:"inline", marginRight:4 }}/>
                   {saving ? "Saving…" : editTx ? "Update" : "Add Expense"}
                 </button>
               </div>
@@ -215,7 +214,7 @@ export default function PettyCash() {
       {/* Breadcrumb */}
       <div className="flex items-center px-6 pt-4 pb-2">
         <nav className="flex items-center gap-1 text-xs" style={{ color:"#9CA3AF" }}>
-          <Home size={12}/><ChevronRight size={11}/>
+          <Home2 size={12} variant="Linear" color="currentColor"/><ArrowRight2 size={11} variant="Linear" color="currentColor"/>
           <span style={{ color:"#1D1D1D", fontWeight:600 }}>Petty Cash</span>
         </nav>
       </div>
@@ -225,7 +224,7 @@ export default function PettyCash() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold" style={{ color:"#1D1D1D" }}>
-              <Wallet size={22} style={{ display:"inline", marginRight:8, verticalAlign:"middle" }}/>
+              <Wallet size={16} variant="Linear" color="currentColor" style={{ display:"inline", marginRight:8, verticalAlign:"middle" }}/>
               Petty Cash
             </h1>
             <p className="text-xs mt-0.5" style={{ color:"#9CA3AF" }}>
@@ -244,7 +243,7 @@ export default function PettyCash() {
             )}
             <button onClick={load} disabled={loading}
               style={{ padding:"7px 10px", borderRadius:8, border:"1px solid #E5E7EB", background:"#fff", color:"#6B7280", cursor:"pointer" }}>
-              <RefreshCw size={13} className={loading?"animate-spin":""}/>
+              <Refresh2 size={13} variant="Linear" color="currentColor" className={loading?"animate-spin":""}/>
             </button>
           </div>
         </div>
@@ -252,23 +251,23 @@ export default function PettyCash() {
         {/* Closed banner */}
         {isClosed && (
           <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 16px", background:"#F0FFF4", border:"1px solid #BBF7D0", borderRadius:10, fontSize:12, color:"#16A34A", fontWeight:600 }}>
-            <CheckCircle size={15}/> This day is closed and reconciled. Records are locked.
+            <TickCircle size={14} variant="Linear" color="currentColor"/> This day is closed and reconciled. Records are locked.
           </div>
         )}
 
         {/* ── Summary cards ── */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(5, 1fr)", gap:12 }}>
           {[
-            { en:"Opening Balance", si:SI.openingBalance, value: closing.opening_balance, color:"#6B7280",  icon:<Wallet size={16}/> },
-            { en:"Daily Income",    si:SI.dailyIncome,    value: income.total,            color:"#2563EB",  icon:<TrendingUp size={16}/> },
-            { en:"Total Outflows",  si:SI.cashOutflows,   value: totalOutflow,            color:"#CF291D",  icon:<TrendingDown size={16}/> },
-            { en:"Expected in Drawer", si:SI.expectedCash, value: expectedCash,           color:"#D97706",  icon:<Wallet size={16}/> },
+            { en:"Opening Balance", si:SI.openingBalance, value: closing.opening_balance, color:"#6B7280",  icon:<Wallet size={16} variant="Linear" color="currentColor"/> },
+            { en:"Daily Income",    si:SI.dailyIncome,    value: income.total,            color:"#2563EB",  icon:<TrendUp size={16} variant="Linear" color="currentColor"/> },
+            { en:"Total Outflows",  si:SI.cashOutflows,   value: totalOutflow,            color:"#EA4335",  icon:<TrendDown size={16} variant="Linear" color="currentColor"/> },
+            { en:"Expected in Drawer", si:SI.expectedCash, value: expectedCash,           color:"#D97706",  icon:<Wallet size={16} variant="Linear" color="currentColor"/> },
             {
               en: isBalanced ? "✓ Balanced" : "Discrepancy",
               si: isBalanced ? SI.balanced : SI.variance,
               value: Math.abs(discrepancy),
-              color: isBalanced ? "#16A34A" : "#CF291D",
-              icon: isBalanced ? <CheckCircle size={16}/> : <AlertTriangle size={16}/>,
+              color: isBalanced ? "#16A34A" : "#EA4335",
+              icon: isBalanced ? <TickCircle size={14} variant="Linear" color="currentColor"/> : <Warning2 size={16} variant="Linear" color="currentColor"/>,
               sub: !isBalanced ? (discrepancy > 0 ? `Rs. ${fmt(discrepancy)} over / ${SI.cashOver}` : `Rs. ${fmt(-discrepancy)} short / ${SI.cashShort}`) : "All balanced",
             },
           ].map((c, i) => (
@@ -294,7 +293,7 @@ export default function PettyCash() {
             <div style={{ background:"#fff", borderRadius:12, border:"1px solid #E8E8E8", overflow:"hidden" }}>
               <div style={{ padding:"12px 16px", borderBottom:"1px solid #F3F4F6", borderLeft:"3px solid #2563EB", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                 <span>
-                  <TrendingUp size={14} style={{ display:"inline", marginRight:6, color:"#2563EB", verticalAlign:"middle" }}/>
+                  <TrendUp size={16} variant="Linear" color="currentColor" style={{ display:"inline", marginRight:6, color:"#2563EB", verticalAlign:"middle" }}/>
                   <SectionLabel en={`Cash Income — ${date}`} si={`${SI.dailyIncome} — ${date}`} />
                 </span>
                 <span style={{ fontSize:12, fontWeight:800, color:"#2563EB" }}>Rs. {fmt(income.total)}</span>
@@ -320,15 +319,15 @@ export default function PettyCash() {
 
             {/* Outflows table */}
             <div style={{ background:"#fff", borderRadius:12, border:"1px solid #E8E8E8", overflow:"hidden" }}>
-              <div style={{ padding:"12px 16px", borderBottom:"1px solid #F3F4F6", borderLeft:"3px solid #CF291D", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div style={{ padding:"12px 16px", borderBottom:"1px solid #F3F4F6", borderLeft:"3px solid #4285F4", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                 <span>
-                  <TrendingDown size={14} style={{ display:"inline", marginRight:6, color:"#CF291D", verticalAlign:"middle" }}/>
+                  <TrendDown size={16} variant="Linear" color="currentColor" style={{ display:"inline", marginRight:6, color:"#EA4335", verticalAlign:"middle" }}/>
                   <SectionLabel en="Cash Outflows / Expenses" si={`${SI.cashOutflows} / ${SI.expenses}`} />
                 </span>
                 {!isClosed && (
                   <button onClick={openAdd}
-                    style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", borderRadius:7, border:"none", background:"#CF291D", color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer" }}>
-                    <Plus size={13}/> Add Expense
+                    style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", borderRadius:7, border:"none", background:"#4285F4", color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                    <AddCircle size={15} variant="Linear" color="currentColor"/> Add Expense
                     <span className="si" style={{ fontSize:10, fontWeight:400 }}>· {SI.addExpense}</span>
                   </button>
                 )}
@@ -338,6 +337,7 @@ export default function PettyCash() {
                   No expenses recorded for {date}
                 </div>
               ) : (
+              <div className="overflow-x-auto">
                 <table style={{ width:"100%", borderCollapse:"collapse" }}>
                   <thead>
                     <tr style={{ background:"#374151" }}>
@@ -354,12 +354,12 @@ export default function PettyCash() {
                           {fmtTime(tx.created_at ?? "")}
                         </td>
                         <td style={{ padding:"8px 12px", fontSize:11, fontWeight:600, color:"#374151" }}>
-                          <span style={{ padding:"2px 8px", borderRadius:20, background:"#FEF2F2", color:"#CF291D", fontSize:10, fontWeight:700 }}>
+                          <span style={{ padding:"2px 8px", borderRadius:20, background:"#FEF2F2", color:"#EA4335", fontSize:10, fontWeight:700 }}>
                             {tx.category}
                           </span>
                         </td>
                         <td style={{ padding:"8px 12px", fontSize:12, color:"#1D1D1D" }}>{tx.reason}</td>
-                        <td style={{ padding:"8px 12px", fontSize:13, fontWeight:800, color:"#CF291D", whiteSpace:"nowrap" }}>
+                        <td style={{ padding:"8px 12px", fontSize:13, fontWeight:800, color:"#EA4335", whiteSpace:"nowrap" }}>
                           Rs. {fmt(tx.amount)}
                         </td>
                         <td style={{ padding:"8px 8px", whiteSpace:"nowrap" }}>
@@ -367,11 +367,11 @@ export default function PettyCash() {
                             <div style={{ display:"flex", gap:4 }}>
                               <button onClick={() => openEdit(tx)}
                                 style={{ border:"none", background:"#EFF6FF", color:"#2563EB", cursor:"pointer", borderRadius:6, padding:"4px 7px" }}>
-                                <Pencil size={12}/>
+                                <Edit2 size={13} variant="Linear" color="currentColor"/>
                               </button>
                               <button onClick={() => handleDelete(tx.id!)}
-                                style={{ border:"none", background:"#FEF2F2", color:"#CF291D", cursor:"pointer", borderRadius:6, padding:"4px 7px" }}>
-                                <Trash2 size={12}/>
+                                style={{ border:"none", background:"#FEF2F2", color:"#EA4335", cursor:"pointer", borderRadius:6, padding:"4px 7px" }}>
+                                <Trash size={13} variant="Linear" color="currentColor"/>
                               </button>
                             </div>
                           )}
@@ -384,13 +384,14 @@ export default function PettyCash() {
                       <td colSpan={3} style={{ padding:"8px 12px", fontSize:11, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase" }}>
                         Total Outflows
                       </td>
-                      <td style={{ padding:"8px 12px", fontSize:14, fontWeight:900, color:"#CF291D" }}>
+                      <td style={{ padding:"8px 12px", fontSize:14, fontWeight:900, color:"#EA4335" }}>
                         Rs. {fmt(totalOutflow)}
                       </td>
                       <td/>
                     </tr>
                   </tfoot>
                 </table>
+              </div>
               )}
             </div>
           </div>
@@ -419,7 +420,7 @@ export default function PettyCash() {
                 {!isClosed && (
                   <button onClick={handleSaveOpening}
                     style={{ padding:"8px 10px", borderRadius:8, border:"none", background:"#374151", color:"#fff", cursor:"pointer", fontSize:12 }}>
-                    <Save size={13}/>
+                    <Save2 size={14} variant="Linear" color="currentColor"/>
                   </button>
                 )}
               </div>
@@ -453,10 +454,10 @@ export default function PettyCash() {
                     background: isBalanced ? "#F0FFF4" : "#FEF2F2",
                     border:`1px solid ${isBalanced?"#BBF7D0":"#FECACA"}` }}>
                     <div style={{ fontSize:10, color:"#6B7280", marginBottom:3 }}>VARIANCE (Actual − Expected)</div>
-                    <div style={{ fontSize:16, fontWeight:900, color: isBalanced?"#16A34A":"#CF291D" }}>
+                    <div style={{ fontSize:16, fontWeight:900, color: isBalanced?"#16A34A":"#EA4335" }}>
                       {discrepancy >= 0 ? "+" : ""}Rs. {fmt(discrepancy)}
                     </div>
-                    <div style={{ fontSize:10, color: isBalanced?"#16A34A":"#CF291D", marginTop:2 }}>
+                    <div style={{ fontSize:10, color: isBalanced?"#16A34A":"#EA4335", marginTop:2 }}>
                       {isBalanced ? "✓ Perfectly balanced" : discrepancy > 0 ? "Cash over (possible unrecorded income)" : "Cash short (possible unrecorded expense)"}
                     </div>
                   </div>
@@ -477,7 +478,7 @@ export default function PettyCash() {
                   disabled={isClosed}
                   style={{ width:"100%", padding:"8px 10px", borderRadius:8, border:"1px solid #E5E7EB", fontSize:12, color:"#374151", background: isClosed?"#F9FAFB":"#fff", resize:"none", outline:"none", fontFamily:"inherit" }}
                   placeholder="Any notes for this day…"
-                  onFocus={e => e.currentTarget.style.borderColor="#CF291D"}
+                  onFocus={e => e.currentTarget.style.borderColor="#4285F4"}
                   onBlur={e => e.currentTarget.style.borderColor="#E5E7EB"}/>
               </div>
             </div>
@@ -490,7 +491,7 @@ export default function PettyCash() {
                   color:"#fff", fontSize:13, fontWeight:800, cursor: closing.actual_cash > 0 ? "pointer" : "default",
                   display:"flex", alignItems:"center", justifyContent:"center", gap:8,
                   opacity: closingSaving ? 0.6 : 1 }}>
-                <CheckCircle size={16}/>
+                <TickCircle size={14} variant="Linear" color="currentColor"/>
                 <span>
                   {closingSaving ? "Saving…" : "Close Day & Save Reconciliation"}
                   <span className="si" style={{ display:"block", fontSize:9, fontWeight:400, opacity:0.7 }}>{SI.closeDay} · {SI.reconciliation}</span>
@@ -498,7 +499,7 @@ export default function PettyCash() {
               </button>
             ) : (
               <div style={{ padding:"12px 16px", borderRadius:10, background:"#F0FFF4", border:"1px solid #BBF7D0", display:"flex", alignItems:"center", gap:8, fontSize:12, fontWeight:700, color:"#16A34A" }}>
-                <CheckCircle size={15}/> Day closed — Reconciliation saved
+                <TickCircle size={14} variant="Linear" color="currentColor"/> Day closed — Reconciliation saved
               </div>
             )}
 
@@ -508,7 +509,7 @@ export default function PettyCash() {
               {[
                 { label:"Opening Balance",  value: closing.opening_balance, color:"#6B7280" },
                 { label:"+ Income",         value: income.total,            color:"#2563EB" },
-                { label:"− Expenses",       value: totalOutflow,            color:"#CF291D" },
+                { label:"− Expenses",       value: totalOutflow,            color:"#EA4335" },
                 { label:"= Expected Cash",  value: expectedCash,            color:"#D97706", bold:true },
                 { label:"Physical Count",   value: closing.actual_cash,     color:"#374151", bold:true },
               ].map(r => (
@@ -518,8 +519,8 @@ export default function PettyCash() {
                 </div>
               ))}
               <div style={{ borderTop:"1px solid #E5E7EB", marginTop:8, paddingTop:8, display:"flex", justifyContent:"space-between" }}>
-                <span style={{ fontSize:11, fontWeight:700, color: isBalanced?"#16A34A":"#CF291D" }}>Variance</span>
-                <span style={{ fontSize:13, fontWeight:900, color: isBalanced?"#16A34A":"#CF291D" }}>
+                <span style={{ fontSize:11, fontWeight:700, color: isBalanced?"#16A34A":"#EA4335" }}>Variance</span>
+                <span style={{ fontSize:13, fontWeight:900, color: isBalanced?"#16A34A":"#EA4335" }}>
                   {discrepancy >= 0 ? "+" : ""}Rs. {fmt(discrepancy)}
                 </span>
               </div>

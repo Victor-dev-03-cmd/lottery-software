@@ -1,9 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import {
-  Plus, Trash2, X, Save, RefreshCw, Users, Home, ChevronRight,
-  CheckCircle, DollarSign, Banknote, CreditCard, UserCheck, Camera,
-  Calendar, Building2, ShieldAlert,
-} from "lucide-react";
+import { AddCircle, Trash, CloseCircle, Save2, Refresh2, People, Home2, ArrowRight2, TickCircle, DollarCircle, Moneys, Card, UserTick, Camera, Calendar, Buildings2, ShieldSlash } from "iconsax-react";
 import {
   getWorkers, saveWorker, deleteWorker,
   getWorkerSalaries, saveWorkerSalary, markSalaryPaid,
@@ -88,7 +84,7 @@ function FormField({ label, required = false, children }: {
     <div>
       <label className="text-xs font-semibold block mb-1.5">
         <span style={{ color: "#374151" }}>{label}</span>
-        {required && <span style={{ color: "#CF291D" }}> *</span>}
+        {required && <span style={{ color: "#4285F4" }}> *</span>}
       </label>
       {children}
     </div>
@@ -284,7 +280,7 @@ export default function Payroll() {
     return (
       <div style={{ background: "#F5F5F5", minHeight: "100%" }}
         className="flex items-center justify-center">
-        <RefreshCw size={24} className="animate-spin" style={{ color: "#CF291D" }} />
+        <Refresh2 size={24} variant="Linear" className="animate-spin" style={{ color: "#4285F4" }} />
       </div>
     );
   }
@@ -297,10 +293,10 @@ export default function Payroll() {
       {authError && (
         <div className="flex items-center gap-2 px-6 py-2 text-sm font-medium"
           style={{ background: "#FEF2F2", borderBottom: "1px solid #FECACA", color: "#DC2626" }}>
-          <ShieldAlert size={15} />
+          <ShieldSlash size={15} variant="Linear" color="currentColor" />
           <span>{authError}</span>
           <button onClick={() => setAuthError(null)} className="ml-auto hover:opacity-70">
-            <X size={14} />
+            <CloseCircle size={14} variant="Linear" color="currentColor" />
           </button>
         </div>
       )}
@@ -309,8 +305,8 @@ export default function Payroll() {
       {/* ── Toolbar: breadcrumb + Refresh + Add Worker side by side ── */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
-          <Home size={12} />
-          <ChevronRight size={11} />
+          <Home2 size={12} variant="Linear" color="currentColor" />
+          <ArrowRight2 size={11} variant="Linear" color="currentColor" />
           <span className="font-semibold" style={{ color: "#1D1D1D" }}>Workers &amp; Salary</span>
           <span className="ml-2 text-[11px] font-medium" style={{ color: "#9CA3AF" }}>
             · {activeWorkers.length} active
@@ -325,14 +321,14 @@ export default function Payroll() {
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#6B7280" }}
             title="Refresh">
-            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+            <Refresh2 size={13} variant="Linear" className={loading ? "animate-spin" : ""} />
             <span>Refresh</span>
           </button>
           {tab === "workers" && (
             <button onClick={openAdd}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-all"
-              style={{ background: "#CF291D" }}>
-              <Plus size={14} /> Add Worker
+              style={{ background: "#4285F4" }}>
+              <AddCircle size={14} variant="Linear" color="currentColor" /> Add Worker
             </button>
           )}
         </div>
@@ -358,7 +354,7 @@ export default function Payroll() {
             <button key={t} onClick={() => setTab(t)}
               className="px-5 py-2 rounded-lg text-sm font-medium transition-all"
               style={tab === t
-                ? { background: "#CF291D", color: "#FFFFFF" }
+                ? { background: "#4285F4", color: "#FFFFFF" }
                 : { color: "#9CA3AF" }}>
               {t === "workers" ? "Workers" : "Salary"}
             </button>
@@ -374,7 +370,7 @@ export default function Payroll() {
               <div className="rounded-2xl p-4 flex items-center gap-4"
                 style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
                 <div className="rounded-xl p-2.5" style={{ background: "#FEF2F2" }}>
-                  <UserCheck size={20} style={{ color: "#CF291D" }} />
+                  <UserTick size={20} variant="Linear" style={{ color: "#4285F4" }} />
                 </div>
                 <div>
                   <p className="text-xs font-medium" style={{ color: "#9CA3AF" }}>Active Workers</p>
@@ -385,7 +381,7 @@ export default function Payroll() {
               <div className="rounded-2xl p-4 flex items-center gap-4"
                 style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
                 <div className="rounded-xl p-2.5" style={{ background: "#F0FDF4" }}>
-                  <Banknote size={20} style={{ color: "#16A34A" }} />
+                  <Moneys size={20} variant="Linear" style={{ color: "#16A34A" }} />
                 </div>
                 <div>
                   <p className="text-xs font-medium" style={{ color: "#9CA3AF" }}>Monthly Salary Est.</p>
@@ -396,7 +392,7 @@ export default function Payroll() {
               <div className="rounded-2xl p-4 flex items-center gap-4"
                 style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
                 <div className="rounded-xl p-2.5" style={{ background: "#FFFBEB" }}>
-                  <DollarSign size={20} style={{ color: "#D97706" }} />
+                  <DollarCircle size={20} variant="Linear" style={{ color: "#D97706" }} />
                 </div>
                 <div>
                   <p className="text-xs font-medium" style={{ color: "#9CA3AF" }}>Pending This Month</p>
@@ -413,7 +409,7 @@ export default function Payroll() {
               <div className="rounded-2xl flex flex-col items-center justify-center py-16 gap-4"
                 style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
                 <div className="rounded-2xl p-5" style={{ background: "#F5F5F5" }}>
-                  <Users size={40} style={{ color: "#D1D5DB" }} />
+                  <People size={40} variant="Linear" color="currentColor" style={{ color: "#D1D5DB" }} />
                 </div>
                 <div className="text-center">
                   <p className="font-semibold text-base" style={{ color: "#1D1D1D" }}>No workers yet</p>
@@ -421,8 +417,8 @@ export default function Payroll() {
                 </div>
                 <button onClick={openAdd}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90"
-                  style={{ background: "#CF291D" }}>
-                  <Plus size={15} /> Add Worker
+                  style={{ background: "#4285F4" }}>
+                  <AddCircle size={15} variant="Linear" color="currentColor" /> Add Worker
                 </button>
               </div>
             ) : (
@@ -541,7 +537,7 @@ export default function Payroll() {
                       {w.bank_name && (
                         <div className="flex items-center gap-2 text-xs px-1"
                           style={{ color: "#6B7280" }}>
-                          <CreditCard size={12} />
+                          <Card size={12} variant="Linear" color="currentColor" />
                           <span className="truncate">{w.bank_name}</span>
                           {w.bank_account && (
                             <span className="ml-auto font-mono whitespace-nowrap"
@@ -555,7 +551,7 @@ export default function Payroll() {
                       {/* Work start */}
                       {w.work_start_date && (
                         <div className="flex items-center gap-1.5 text-xs" style={{ color: "#9CA3AF" }}>
-                          <Calendar size={11} />
+                          <Calendar size={11} variant="Linear" color="currentColor" />
                           <span>Since {fmtDate(w.work_start_date)}</span>
                         </div>
                       )}
@@ -571,7 +567,7 @@ export default function Payroll() {
                           onClick={() => { if (w.id !== undefined) void handleDeleteWorker(w.id); }}
                           className="py-1.5 px-3 rounded-lg text-xs font-medium hover:opacity-80"
                           style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}>
-                          <Trash2 size={13} />
+                          <Trash size={13} variant="Linear" color="currentColor" />
                         </button>
                       </div>
                     </div>
@@ -591,7 +587,7 @@ export default function Payroll() {
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-2 rounded-xl px-3 py-2"
                 style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-                <Calendar size={14} style={{ color: "#9CA3AF" }} />
+                <Calendar size={14} variant="Linear" color="currentColor" style={{ color: "#9CA3AF" }} />
                 <input type="month" value={payrollMonth}
                   onChange={e => setPayrollMonth(e.target.value)}
                   className="text-sm font-medium outline-none"
@@ -599,10 +595,10 @@ export default function Payroll() {
               </div>
               <button onClick={() => void handleGenerate()} disabled={generating}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
-                style={{ background: "#CF291D" }}>
+                style={{ background: "#4285F4" }}>
                 {generating
-                  ? <RefreshCw size={14} className="animate-spin" />
-                  : <CheckCircle size={14} />}
+                  ? <Refresh2 size={14} variant="Linear" className="animate-spin" />
+                  : <TickCircle size={14} variant="Linear" color="currentColor" />}
                 Generate Salary
               </button>
             </div>
@@ -614,7 +610,7 @@ export default function Payroll() {
                 border: `1px solid ${payrollPct > 30 ? "#FCD34D" : "#E8E8E8"}`,
               }}>
               <div className="flex items-center gap-2 mb-4">
-                <DollarSign size={16} style={{ color: payrollPct > 30 ? "#D97706" : "#CF291D" }} />
+                <DollarCircle size={16} variant="Linear" style={{ color: payrollPct > 30 ? "#D97706" : "#4285F4" }} />
                 <h3 className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>
                   Cash Flow Impact
                 </h3>
@@ -639,7 +635,7 @@ export default function Payroll() {
                     Total Salary
                   </p>
                   <p className="text-xl font-bold"
-                    style={{ color: payrollPct > 30 ? "#B45309" : "#CF291D" }}>
+                    style={{ color: payrollPct > 30 ? "#B45309" : "#4285F4" }}>
                     {fmt(totalPayroll)}
                   </p>
                   {totalRevenue > 0 && (
@@ -655,7 +651,7 @@ export default function Payroll() {
                     Net Impact
                   </p>
                   <p className="text-xl font-bold"
-                    style={{ color: netImpact >= 0 ? "#1D4ED8" : "#CF291D" }}>
+                    style={{ color: netImpact >= 0 ? "#1D4ED8" : "#EA4335" }}>
                     {netImpact >= 0 ? "+" : ""}{fmt(netImpact)}
                   </p>
                 </div>
@@ -682,14 +678,14 @@ export default function Payroll() {
                   <button onClick={() => void handleMarkAllPaid()}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:opacity-90"
                     style={{ background: "#16A34A" }}>
-                    <CheckCircle size={13} /> Mark All Paid
+                    <TickCircle size={13} variant="Linear" color="currentColor" /> Mark All Paid
                   </button>
                 )}
               </div>
 
               {salaries.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 gap-3">
-                  <Banknote size={32} style={{ color: "#D1D5DB" }} />
+                  <Moneys size={32} variant="Linear" style={{ color: "#D1D5DB" }} />
                   <p className="text-sm font-medium" style={{ color: "#6B7280" }}>
                     No salary records for {payrollMonth}
                   </p>
@@ -803,7 +799,7 @@ export default function Payroll() {
                                 onFocus={(e) => e.target.select()} />
                             </td>
                             <td className="px-3 py-3 font-bold whitespace-nowrap"
-                              style={{ color: "#CF291D" }}>
+                              style={{ color: "#4285F4" }}>
                               {fmt(s.net_salary)}
                             </td>
                             <td className="px-3 py-3 whitespace-nowrap">
@@ -832,13 +828,13 @@ export default function Payroll() {
                                   onClick={() => void handleSaveSalary(s)}
                                   className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-white hover:opacity-80"
                                   style={{ background: isDirty ? "#2563EB" : "#9CA3AF" }}>
-                                  <Save size={11} /> Save
+                                  <Save2 size={14} variant="Linear" color="currentColor" /> Save
                                 </button>
                                 {s.status === "pending" && (
                                   <button onClick={() => void handleMarkPaid(s)}
                                     className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-white hover:opacity-90"
                                     style={{ background: "#16A34A" }}>
-                                    <CheckCircle size={11} /> Paid
+                                    <TickCircle size={11} variant="Linear" color="currentColor" /> Paid
                                   </button>
                                 )}
                               </div>
@@ -914,7 +910,7 @@ export default function Payroll() {
               </div>
               <button onClick={() => setShowForm(false)}
                 className="rounded-lg p-1.5 hover:bg-gray-100">
-                <X size={18} style={{ color: "#6B7280" }} />
+                <CloseCircle size={18} variant="Linear" color="#6B7280" />
               </button>
             </div>
 
@@ -924,7 +920,7 @@ export default function Payroll() {
               {formError && (
                 <div className="rounded-xl px-4 py-3 text-sm flex items-center gap-2"
                   style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}>
-                  <ShieldAlert size={15} /> {formError}
+                  <ShieldSlash size={15} variant="Linear" color="currentColor" /> {formError}
                 </div>
               )}
 
@@ -990,7 +986,7 @@ export default function Payroll() {
                 style={{ background: "#F9FAFB", border: "1px solid #E8E8E8" }}>
                 <p className="text-xs font-bold uppercase tracking-wide flex items-center gap-1.5"
                   style={{ color: "#9CA3AF" }}>
-                  <Banknote size={13} /> Salary &amp; Allowances
+                  <Moneys size={13} variant="Linear" color="currentColor" /> Salary &amp; Allowances
                   <span className="si" style={{ fontWeight:400, textTransform:"none" }}>· වේතනය සහ දීමනා</span>
                 </p>
 
@@ -1004,11 +1000,11 @@ export default function Payroll() {
                       <button key={v} type="button" onClick={() => setForm(p=>({...p, salary_type:v}))}
                         style={{
                           flex:1, padding:"8px 10px", borderRadius:8, border:"2px solid",
-                          borderColor: form.salary_type===v ? "#CF291D" : "#E5E7EB",
+                          borderColor: form.salary_type===v ? "#4285F4" : "#E5E7EB",
                           background: form.salary_type===v ? "#FEF2F2" : "#fff",
                           cursor:"pointer", textAlign:"center",
                         }}>
-                        <div style={{ fontSize:12, fontWeight:700, color: form.salary_type===v?"#CF291D":"#374151" }}>{en}</div>
+                        <div style={{ fontSize:12, fontWeight:700, color: form.salary_type===v?"#4285F4":"#374151" }}>{en}</div>
                         <div className="si" style={{ fontSize:9, color:"#9CA3AF" }}>{si}</div>
                       </button>
                     ))}
@@ -1070,7 +1066,7 @@ export default function Payroll() {
                 style={{ background: "#F9FAFB", border: "1px solid #E8E8E8" }}>
                 <p className="text-xs font-bold uppercase tracking-wide flex items-center gap-1.5"
                   style={{ color: "#9CA3AF" }}>
-                  <Building2 size={13} /> Bank Details
+                  <Buildings2 size={20} variant="Linear" color="currentColor" /> Bank Details
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   <FormField label="Bank Name">
@@ -1106,7 +1102,7 @@ export default function Payroll() {
                     checked={form.is_active === 1}
                     onChange={e => setForm(p => ({ ...p, is_active: e.target.checked ? 1 : 0 }))}
                     className="w-4 h-4 rounded"
-                    style={{ accentColor: "#CF291D" }} />
+                    style={{ accentColor: "#4285F4" }} />
                   <label htmlFor="worker_active" className="text-sm font-medium"
                     style={{ color: "#374151" }}>
                     Active Worker
@@ -1144,10 +1140,10 @@ export default function Payroll() {
             <div className="px-6 pb-8 pt-2">
               <button onClick={() => void handleSaveWorker()} disabled={saving}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white hover:opacity-90 disabled:opacity-50"
-                style={{ background: "#CF291D" }}>
+                style={{ background: "#4285F4" }}>
                 {saving
-                  ? <RefreshCw size={15} className="animate-spin" />
-                  : <Save size={15} />}
+                  ? <Refresh2 size={15} variant="Linear" color="currentColor" className="animate-spin" />
+                  : <Save2 size={14} variant="Linear" color="currentColor" />}
                 {saving ? "Saving…" : form.id ? "Update Worker" : "Add Worker"}
               </button>
             </div>
