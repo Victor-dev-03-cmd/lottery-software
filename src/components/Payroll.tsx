@@ -280,7 +280,7 @@ export default function Payroll() {
     return (
       <div style={{ background: "#F5F5F5", minHeight: "100%" }}
         className="flex items-center justify-center">
-        <Refresh2 size={24} variant="Linear" className="animate-spin" style={{ color: "#4285F4" }} />
+        <Refresh2 size={24} variant="Linear" color="#4285F4" className="animate-spin" />
       </div>
     );
   }
@@ -321,7 +321,7 @@ export default function Payroll() {
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#6B7280" }}
             title="Refresh">
-            <Refresh2 size={13} variant="Linear" className={loading ? "animate-spin" : ""} />
+            <Refresh2 size={13} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""} />
             <span>Refresh</span>
           </button>
           {tab === "workers" && (
@@ -370,7 +370,7 @@ export default function Payroll() {
               <div className="rounded-2xl p-4 flex items-center gap-4"
                 style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
                 <div className="rounded-xl p-2.5" style={{ background: "#FEF2F2" }}>
-                  <UserTick size={20} variant="Linear" style={{ color: "#4285F4" }} />
+                  <UserTick size={20} variant="Linear" color="#4285F4" />
                 </div>
                 <div>
                   <p className="text-xs font-medium" style={{ color: "#9CA3AF" }}>Active Workers</p>
@@ -381,7 +381,7 @@ export default function Payroll() {
               <div className="rounded-2xl p-4 flex items-center gap-4"
                 style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
                 <div className="rounded-xl p-2.5" style={{ background: "#F0FDF4" }}>
-                  <Moneys size={20} variant="Linear" style={{ color: "#16A34A" }} />
+                  <Moneys size={20} variant="Linear" color="#16A34A" />
                 </div>
                 <div>
                   <p className="text-xs font-medium" style={{ color: "#9CA3AF" }}>Monthly Salary Est.</p>
@@ -392,7 +392,7 @@ export default function Payroll() {
               <div className="rounded-2xl p-4 flex items-center gap-4"
                 style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
                 <div className="rounded-xl p-2.5" style={{ background: "#FFFBEB" }}>
-                  <DollarCircle size={20} variant="Linear" style={{ color: "#D97706" }} />
+                  <DollarCircle size={20} variant="Linear" color="#D97706" />
                 </div>
                 <div>
                   <p className="text-xs font-medium" style={{ color: "#9CA3AF" }}>Pending This Month</p>
@@ -597,7 +597,7 @@ export default function Payroll() {
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
                 style={{ background: "#4285F4" }}>
                 {generating
-                  ? <Refresh2 size={14} variant="Linear" className="animate-spin" />
+                  ? <Refresh2 size={14} variant="Linear" color="currentColor" className="animate-spin" />
                   : <TickCircle size={14} variant="Linear" color="currentColor" />}
                 Generate Salary
               </button>
@@ -610,7 +610,7 @@ export default function Payroll() {
                 border: `1px solid ${payrollPct > 30 ? "#FCD34D" : "#E8E8E8"}`,
               }}>
               <div className="flex items-center gap-2 mb-4">
-                <DollarCircle size={16} variant="Linear" style={{ color: payrollPct > 30 ? "#D97706" : "#4285F4" }} />
+                <DollarCircle size={16} variant="Linear" color={payrollPct > 30 ? "#D97706" : "#4285F4"} />
                 <h3 className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>
                   Cash Flow Impact
                 </h3>
@@ -685,7 +685,7 @@ export default function Payroll() {
 
               {salaries.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 gap-3">
-                  <Moneys size={32} variant="Linear" style={{ color: "#D1D5DB" }} />
+                  <Moneys size={32} variant="Linear" color="#D1D5DB" />
                   <p className="text-sm font-medium" style={{ color: "#6B7280" }}>
                     No salary records for {payrollMonth}
                   </p>
