@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { AddCircle, Trash, CloseCircle, Save2, Warning2, Box1, Refresh2, Calculator, Home2, ArrowRight2, Edit2, Grid2, AlignLeft } from "iconsax-react";
+import { EmptyInventory } from "./illustrations";
+import { AddCircle, Trash, CloseCircle, Save2, Warning2, Refresh2, Calculator, Home2, ArrowRight2, Edit2, Grid2, AlignLeft } from "iconsax-react";
 import { resolveLogoUrl } from "./TicketLogoPicker";
 import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, lastTicketBarcode } from "../utils/barcode";
 import {
@@ -162,7 +163,7 @@ export default function Inventory() {
   const totalRemaining = batches.reduce((s, b) => s + b.remaining_qty, 0);
 
   return (
-    <div style={{ background: "#F8F9FA", minHeight: "100%" }}>
+    <div className="animate-fade-in-up" style={{ background: "#F8F9FA", minHeight: "100%" }}>
       {/* Breadcrumb */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9AA0A6" }}>
@@ -569,18 +570,13 @@ export default function Inventory() {
               Loading inventory…
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
-                style={{ background: "#F3F4F6" }}
-              >
-                <Box1 size={18} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
-              </div>
+            <div className="flex flex-col items-center justify-center py-16 animate-fade-in">
+              <EmptyInventory size={100} className="mb-4 opacity-90" />
               <p className="text-sm font-medium" style={{ color: "#5F6368" }}>
-                {batches.length === 0 ? "No batches yet" : "No results"}
+                {batches.length === 0 ? "No stock batches yet" : "No results"}
               </p>
               <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>
-                {batches.length === 0 ? "Add your first ticket batch to get started" : "Try adjusting the filter"}
+                {batches.length === 0 ? "Add a purchase invoice to begin tracking inventory" : "Try adjusting the filter"}
               </p>
             </div>
           ) : (

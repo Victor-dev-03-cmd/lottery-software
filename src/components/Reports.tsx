@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { EmptyReports } from "./illustrations";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
@@ -72,7 +73,7 @@ export default function Reports() {
   ] as const;
 
   return (
-    <div style={{ background: "#F5F5F5", minHeight: "100%" }}>
+    <div className="animate-fade-in-up" style={{ background: "#F8F9FA", minHeight: "100%" }}>
       {/* Breadcrumb + toolbar row */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9AA0A6" }}>
@@ -227,7 +228,11 @@ export default function Reports() {
             {activeTab === "games" && (
               <div className="space-y-5">
                 {games.length === 0 ? (
-                  <div className="rounded-2xl p-8 text-center shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", color: "#9AA0A6" }}>No invoice data yet.</div>
+                  <div className="rounded-2xl p-10 text-center shadow-sm animate-fade-in" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>
+                    <EmptyReports size={100} className="mx-auto mb-3 opacity-90" />
+                    <p className="text-sm font-medium" style={{ color: "#5F6368" }}>No analytics data yet</p>
+                    <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>Add agents and invoices to see your business analytics</p>
+                  </div>
                 ) : (
                   <>
                     <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>
@@ -301,7 +306,11 @@ export default function Reports() {
             {activeTab === "agents" && (
               <div className="space-y-5">
                 {agents.length === 0 ? (
-                  <div className="rounded-2xl p-8 text-center shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", color: "#9AA0A6" }}>No agent data.</div>
+                  <div className="rounded-2xl p-10 text-center shadow-sm animate-fade-in" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>
+                    <EmptyReports size={100} className="mx-auto mb-3 opacity-90" />
+                    <p className="text-sm font-medium" style={{ color: "#5F6368" }}>No agent data yet</p>
+                    <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>Create invoices to see agent performance analytics</p>
+                  </div>
                 ) : (
                   <>
                     <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>

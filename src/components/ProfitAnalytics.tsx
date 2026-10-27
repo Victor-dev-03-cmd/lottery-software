@@ -47,7 +47,7 @@ export default function ProfitAnalytics() {
   const maxNet = Math.max(...trend.map(t => Math.abs(t.net)), 1);
 
   return (
-    <div style={{ background: "var(--color-surface-dim, #F8F9FA)", minHeight: "100%" }}>
+    <div className="animate-fade-in" style={{ background: "var(--color-surface-dim, #F8F9FA)", minHeight: "100%" }}>
       {/* Breadcrumb */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9AA0A6" }}>
@@ -92,7 +92,7 @@ export default function ProfitAnalytics() {
 
         {/* KPI grid */}
         {summary && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in-up">
             {/* Revenue */}
             <div className="rounded-2xl p-5 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: `3px solid ${SUCCESS}` }}>
               <div className="flex items-start justify-between">

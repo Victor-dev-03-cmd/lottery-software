@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AddCircle, Trash, CloseCircle, Save2, Refresh2, People, Home2, ArrowRight2, Camera, UserSquare, Edit2 } from "iconsax-react";
+import { EmptyAgents } from "./illustrations";
 
 import { getAgents, saveAgent, deleteAgent } from "../services/database";
 import { usePinGuardContext } from "../App";
@@ -304,13 +305,10 @@ export default function AgentsManager() {
           {loading ? (
             <div className="p-8 text-center text-sm" style={{ color: "#9CA3AF" }}>Loading…</div>
           ) : agents.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-14">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
-                style={{ background: "#F3F4F6" }}>
-                <People size={32} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
-              </div>
-              <p className="text-sm font-medium" style={{ color: "#6B7280" }}>No agents yet</p>
-              <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>Click "Add Agent" to get started</p>
+            <div className="flex flex-col items-center justify-center py-14 animate-fade-in">
+              <EmptyAgents size={100} className="mb-4 opacity-90" />
+              <p className="text-sm font-medium" style={{ color: "#5F6368" }}>No agents yet</p>
+              <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>Click "Add Agent" to get started</p>
             </div>
           ) : (
             <div className="overflow-x-auto">

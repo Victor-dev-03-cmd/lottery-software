@@ -71,3 +71,86 @@
     background: white;
   }
 }
+
+/* ── Entrance animations ─────────────────────────────────────────────────── */
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.animate-fade-in-up  { animation: fadeInUp  var(--duration-normal, 200ms) var(--ease-default, cubic-bezier(0.2,0,0,1)) both; }
+.animate-fade-in     { animation: fadeIn    var(--duration-fast,   120ms) var(--ease-default, cubic-bezier(0.2,0,0,1)) both; }
+.animate-scale-in    { animation: scaleIn   var(--duration-normal, 200ms) var(--ease-default, cubic-bezier(0.2,0,0,1)) both; }
+.animate-slide-left  { animation: slideInLeft var(--duration-slow, 320ms) var(--ease-default, cubic-bezier(0.2,0,0,1)) both; }
+
+.delay-50  { animation-delay:  50ms; }
+.delay-100 { animation-delay: 100ms; }
+.delay-150 { animation-delay: 150ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-250 { animation-delay: 250ms; }
+.delay-300 { animation-delay: 300ms; }
+
+.skeleton {
+  background: linear-gradient(90deg, #F1F3F4 25%, #E8EAED 50%, #F1F3F4 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up,
+  .animate-fade-in,
+  .animate-scale-in,
+  .animate-slide-left { animation: none !important; }
+  .skeleton { animation: none !important; background: #F1F3F4 !important; }
+}
+
+/* ── Button micro-interactions ───────────────────────────────────────────── */
+button:not(:disabled) {
+  transition: opacity var(--duration-fast, 120ms),
+              transform var(--duration-fast, 120ms),
+              box-shadow var(--duration-fast, 120ms);
+}
+button:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+*:focus-visible {
+  outline: 2px solid #4285F4;
+  outline-offset: 2px;
+}
+
+.card-hover {
+  transition: box-shadow var(--duration-fast, 120ms) var(--ease-default, cubic-bezier(0.2,0,0,1)),
+              transform var(--duration-fast, 120ms) var(--ease-default, cubic-bezier(0.2,0,0,1));
+}
+.card-hover:hover {
+  box-shadow: 0 4px 16px rgba(32,33,36,0.10);
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button:not(:disabled):active { transform: none !important; }
+  .card-hover:hover { transform: none !important; }
+}

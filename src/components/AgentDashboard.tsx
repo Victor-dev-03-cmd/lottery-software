@@ -193,7 +193,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
   const kpiPeriodLabel = period === "All" ? "All-Time" : `${period} Revenue`;
 
   return (
-    <div style={{ background: "#F8F9FA", minHeight: "100%" }}>
+    <div className="animate-fade-in" style={{ background: "#F8F9FA", minHeight: "100%" }}>
 
       {/* ── Top chrome: breadcrumb + period controls ── */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
@@ -289,7 +289,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
         {/* ── KPI strip (period-aware) — 5 cards ── */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
           {/* Hero — period revenue */}
-          <div className="rounded-2xl p-5 relative overflow-hidden"
+          <div className="rounded-2xl p-5 relative overflow-hidden animate-fade-in-up"
             style={{ background: loading ? "#E8B4B0" : "#4285F4" }}>
             <div className="absolute top-3 right-3 w-9 h-9 rounded-xl flex items-center justify-center"
               style={{ background: "rgba(255,255,255,0.15)" }}>

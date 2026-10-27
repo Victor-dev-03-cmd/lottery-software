@@ -246,6 +246,7 @@ export default function PinModal({
     >
       <div
         onClick={e => e.stopPropagation()}
+        className="animate-scale-in"
         style={{
           width: 340, background: "#FFFFFF", borderRadius: 20,
           overflow: "hidden", boxShadow: "0 24px 80px rgba(0,0,0,0.45)",

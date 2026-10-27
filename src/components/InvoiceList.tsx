@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Printer, Refresh2, AddCircle, Home2, ArrowRight2, DocumentText, Lock1 } from "iconsax-react";
+import { Printer, Refresh2, AddCircle, Home2, ArrowRight2, Lock1 } from "iconsax-react";
+import { EmptyInvoice, EmptySearch } from "./illustrations";
 
 import { getInvoices } from "../services/database";
 import type { Invoice, View } from "../types";
@@ -60,7 +61,7 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
   );
 
   return (
-    <div style={{ background: "#F8F9FA", minHeight: "100%" }}>
+    <div className="animate-fade-in-up" style={{ background: "#F8F9FA", minHeight: "100%" }}>
       {/* Breadcrumb */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9AA0A6" }}>
@@ -141,15 +142,17 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
               <p className="text-sm font-medium" style={{ color: "#5F6368" }}>Loading invoices…</p>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ background: "#F3F4F6" }}>
-                <DocumentText size={14} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
-              </div>
-              <p className="text-sm font-medium" style={{ color: "#5F6368" }}>No invoices found</p>
+            <div className="flex flex-col items-center justify-center py-16 animate-fade-in">
+              {(filter || statusFilter)
+                ? <EmptySearch size={90} className="mb-4 opacity-90" />
+                : <EmptyInvoice size={100} className="mb-4 opacity-90" />}
+              <p className="text-sm font-medium" style={{ color: "#5F6368" }}>
+                {(filter || statusFilter) ? "No invoices match your search" : "No paid invoices yet"}
+              </p>
               <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>
                 {filter || statusFilter
                   ? "Try adjusting your search or filter"
-                  : "Create your first invoice to get started"}
+                  : "Confirmed invoices appear here once marked as paid"}
               </p>
               {!filter && !statusFilter && (
                 <button

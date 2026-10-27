@@ -152,7 +152,7 @@ export default function Sidebar({
     <aside
       className={`flex flex-col h-screen no-print shrink-0 transition-all duration-300
         ${mobileOpen
-          ? "fixed inset-y-0 left-0 z-50 w-56"
+          ? "fixed inset-y-0 left-0 z-50 w-56 animate-slide-left"
           : `hidden lg:flex ${collapsed ? "w-16" : "w-56"}`
         }`}
       style={{
