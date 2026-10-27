@@ -95,12 +95,12 @@ export default function DailyCollectionView() {
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
             className="rounded-lg px-3 py-2 text-sm focus:outline-none"
-            style={{ border: "1px solid #E8E8E8", background: "#FFFFFF" }}
+            style={{ border: "1px solid #E0E3E7", background: "#FFFFFF" }}
           />
           <button
             onClick={() => window.print()}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all no-print"
-            style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#202124" }}
+            style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", color: "#202124" }}
           >
             <Printer size={14} variant="Linear" color="currentColor" /> Print Sheet
           </button>
@@ -161,27 +161,27 @@ export default function DailyCollectionView() {
 
         {/* Summary metric cards */}
         <div className="grid grid-cols-5 gap-4 no-print">
-          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #16a34a" }}>
+          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #34A853" }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>Total Cash</p>
             <p className="text-2xl font-black" style={{ color: "#34A853" }}>Rs. {fmt(totalCash)}</p>
             <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>cash collections</p>
           </div>
-          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #2563eb" }}>
+          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #2563eb" }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>Total Cheque</p>
             <p className="text-2xl font-black" style={{ color: "#2563eb" }}>Rs. {fmt(totalCheque)}</p>
             <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>cheque receipts</p>
           </div>
-          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #7c3aed" }}>
+          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #7c3aed" }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>NLB Winnings</p>
             <p className="text-2xl font-black" style={{ color: "#7c3aed" }}>Rs. {fmt(totalNlb)}</p>
             <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>NLB winning tickets</p>
           </div>
-          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #EA580C" }}>
+          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #EA580C" }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>DLB Winnings</p>
             <p className="text-2xl font-black" style={{ color: "#EA580C" }}>Rs. {fmt(totalDlb)}</p>
             <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>DLB winning tickets</p>
           </div>
-          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #4285F4" }}>
+          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #4285F4" }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>Grand Total</p>
             <p className="text-2xl font-black" style={{ color: "#4285F4" }}>Rs. {fmt(grandTotal)}</p>
             <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>{collections.length} entr{collections.length !== 1 ? "ies" : "y"}</p>
@@ -190,7 +190,7 @@ export default function DailyCollectionView() {
 
         {/* Add form */}
         {form && (
-          <div className="rounded-2xl overflow-hidden shadow-sm no-print" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
+          <div className="rounded-2xl overflow-hidden shadow-sm no-print" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>
             <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-bold" style={{ color: "#202124" }}>New Collection Entry — {dateLabel}</h2>
@@ -355,7 +355,7 @@ export default function DailyCollectionView() {
                 <button
                   onClick={() => setForm(null)}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all"
-                  style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#202124" }}
+                  style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", color: "#202124" }}
                 >
                   Cancel
                 </button>
@@ -365,7 +365,7 @@ export default function DailyCollectionView() {
         )}
 
         {/* Collection table */}
-        <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
+        <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>
           <div className="px-5 py-3 no-print" style={{ background: "#374151", borderBottom: "2px solid #4285F4" }}>
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-white">{dateLabel}</span>
@@ -381,7 +381,7 @@ export default function DailyCollectionView() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr style={{ background: "#F9FAFB", borderBottom: "1px solid #E8E8E8" }}>
+                  <tr style={{ background: "#F9FAFB", borderBottom: "1px solid #E0E3E7" }}>
                     <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>#</th>
                     <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Agent</th>
                     <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9AA0A6", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Collector</th>

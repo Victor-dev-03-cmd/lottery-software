@@ -97,7 +97,7 @@ export default function Reports() {
           </div>
           <button onClick={load} disabled={loading}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#202124" }}>
+            style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", color: "#202124" }}>
             <Refresh2 size={13} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""}/> Refresh
           </button>
         </div>
@@ -145,7 +145,7 @@ export default function Reports() {
               <div className="space-y-5">
                 <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
                   {/* Daily bar chart */}
-                  <div className="lg:col-span-2 rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
+                  <div className="lg:col-span-2 rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>
                     <div className="flex items-start justify-between px-5 pt-4 pb-2">
                       <div>
                         <p className="font-semibold text-sm" style={{ color: "#202124" }}>Daily Revenue</p>
@@ -169,7 +169,7 @@ export default function Reports() {
                   </div>
 
                   {/* Collection pie */}
-                  <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
+                  <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>
                     <div className="flex items-start justify-between px-5 pt-4 pb-2">
                       <div>
                         <p className="font-semibold text-sm" style={{ color: "#202124" }}>Collection Status</p>
@@ -196,7 +196,7 @@ export default function Reports() {
                 </div>
 
                 {/* Monthly trend */}
-                <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
+                <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>
                   <div className="flex items-start justify-between px-5 pt-4 pb-2">
                     <div>
                       <p className="font-semibold text-sm" style={{ color: "#202124" }}>Monthly Revenue vs Collection</p>
@@ -227,10 +227,10 @@ export default function Reports() {
             {activeTab === "games" && (
               <div className="space-y-5">
                 {games.length === 0 ? (
-                  <div className="rounded-2xl p-8 text-center shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#9AA0A6" }}>No invoice data yet.</div>
+                  <div className="rounded-2xl p-8 text-center shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", color: "#9AA0A6" }}>No invoice data yet.</div>
                 ) : (
                   <>
-                    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
+                    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>
                       <div className="flex items-start justify-between px-5 pt-4 pb-2">
                         <div>
                           <p className="font-semibold text-sm" style={{ color: "#202124" }}>Top Games by Distribution Value</p>
@@ -250,7 +250,7 @@ export default function Reports() {
                       </div>
                     </div>
 
-                    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
+                    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>
                       <div className="px-5 py-3" style={{ borderBottom: "2px solid #4285F4", background: "#374151" }}>
                         <span className="font-semibold text-sm text-white">Game-Wise Breakdown</span>
                       </div>
@@ -301,10 +301,10 @@ export default function Reports() {
             {activeTab === "agents" && (
               <div className="space-y-5">
                 {agents.length === 0 ? (
-                  <div className="rounded-2xl p-8 text-center shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#9AA0A6" }}>No agent data.</div>
+                  <div className="rounded-2xl p-8 text-center shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", color: "#9AA0A6" }}>No agent data.</div>
                 ) : (
                   <>
-                    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
+                    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>
                       <div className="flex items-start justify-between px-5 pt-4 pb-2">
                         <div>
                           <p className="font-semibold text-sm" style={{ color: "#202124" }}>Top Agents by Distribution Value</p>
@@ -324,7 +324,7 @@ export default function Reports() {
                       </div>
                     </div>
 
-                    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
+                    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>
                       <div className="px-5 py-3" style={{ borderBottom: "2px solid #4285F4", background: "#374151" }}>
                         <span className="font-semibold text-sm text-white">Agent Performance Table</span>
                       </div>
@@ -395,7 +395,7 @@ export default function Reports() {
                   </div>
                 )}
 
-                <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
+                <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>
                   {aging.length === 0 ? (
                     <div className="p-8 text-center">
                       <div className="font-semibold text-sm" style={{ color: "#10b981" }}>All invoices settled — no outstanding balances.</div>
@@ -456,7 +456,7 @@ export default function Reports() {
 
 function KpiCard({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
   return (
-    <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #4285F4" }}>
+    <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #4285F4" }}>
       <div className="w-7 h-7 rounded-lg flex items-center justify-center mb-2" style={{ background: "#FFF1F0" }}>
         {icon}
       </div>

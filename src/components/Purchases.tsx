@@ -519,7 +519,7 @@ export default function Purchases() {
         <div className="flex gap-2">
           <button onClick={load} disabled={loading}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", color:"#202124" }}>
+            style={{ background:"#FFFFFF", border:"1px solid #E0E3E7", color:"#202124" }}>
             <Refresh2 size={14} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""}/> Refresh
           </button>
           <button onClick={openNew}
@@ -562,19 +562,19 @@ export default function Purchases() {
 
         {/* KPI cards */}
         <div className="grid grid-cols-3 gap-4">
-          <div className="rounded-xl p-4 shadow-sm" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", borderTop:"3px solid #4285F4" }}>
+          <div className="rounded-xl p-4 shadow-sm" style={{ background:"#FFFFFF", border:"1px solid #E0E3E7", borderTop:"3px solid #4285F4" }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color:"#9AA0A6" }}>Owed to Nimalsiri</p>
             <p className="text-2xl font-black" style={{ color: totalOwed > 0 ? "#EA4335" : "#34A853" }}>
               Rs. {fmt(totalOwed)}
             </p>
             <p className="text-xs mt-1" style={{ color:"#9AA0A6" }}>live outstanding balance</p>
           </div>
-          <div className="rounded-xl p-4 shadow-sm" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", borderTop:"3px solid #2563eb" }}>
+          <div className="rounded-xl p-4 shadow-sm" style={{ background:"#FFFFFF", border:"1px solid #E0E3E7", borderTop:"3px solid #2563eb" }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color:"#9AA0A6" }}>Total Purchases</p>
             <p className="text-2xl font-black" style={{ color:"#202124" }}>{purchases.length}</p>
             <p className="text-xs mt-1" style={{ color:"#9AA0A6" }}>purchase invoices</p>
           </div>
-          <div className="rounded-xl p-4 shadow-sm" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", borderTop:"3px solid #16a34a" }}>
+          <div className="rounded-xl p-4 shadow-sm" style={{ background:"#FFFFFF", border:"1px solid #E0E3E7", borderTop:"3px solid #34A853" }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color:"#9AA0A6" }}>Settled</p>
             <p className="text-2xl font-black" style={{ color:"#34A853" }}>
               {purchases.filter(p => p.status === "settled").length}
@@ -585,7 +585,7 @@ export default function Purchases() {
 
         {/* ── New/Edit Purchase Form ── */}
         {showForm && editPurchase && (
-          <div className="rounded-2xl shadow-sm overflow-hidden" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8" }}>
+          <div className="rounded-2xl shadow-sm overflow-hidden" style={{ background:"#FFFFFF", border:"1px solid #E0E3E7" }}>
             <div className="px-5 py-3.5 flex items-center justify-between"
               style={{ background:"linear-gradient(135deg,#1D1D1D,#374151)", borderBottom:"2px solid #4285F4" }}>
               <h2 className="text-sm font-bold text-white">
@@ -663,7 +663,7 @@ export default function Purchases() {
                   </div>
                 )}
 
-                <div className="rounded-xl overflow-hidden" style={{ border:"1px solid #E8E8E8" }}>
+                <div className="rounded-xl overflow-hidden" style={{ border:"1px solid #E0E3E7" }}>
                   <table className="w-full">
                     <thead>
                       <tr style={{ background:"#202124" }}>
@@ -787,7 +787,7 @@ export default function Purchases() {
                                 onChange={e => updateItem(idx, "unit_price", parseFloat(e.target.value) || 0)}
                                 onKeyDown={e => { if (e.key==="Enter") { e.preventDefault(); setFormItems(p=>[...p,EMPTY_ITEM()]); }}}
                                 className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none text-right"
-                                style={{ border:"1px solid #E8E8E8", background:"#FAFAFA" }}
+                                style={{ border:"1px solid #E0E3E7", background:"#FAFAFA" }}
                                 onFocus={e => e.target.select()}/>
                               {gameCostMap[it.game_name] && (
                                 <div style={{ fontSize:9, color:"#5F6368", marginTop:1, textAlign:"right" }}>
@@ -886,7 +886,7 @@ export default function Purchases() {
               )}
 
               {/* Payment summary */}
-              <div className="grid grid-cols-3 gap-4 p-4 rounded-xl" style={{ background:"#F9F9F9", border:"1px solid #E8E8E8" }}>
+              <div className="grid grid-cols-3 gap-4 p-4 rounded-xl" style={{ background:"#F9F9F9", border:"1px solid #E0E3E7" }}>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color:"#9AA0A6" }}>Invoice Total</p>
                   <p className="text-xl font-black" style={{ color:"#202124" }}>Rs. {fmt(formTotal)}</p>
@@ -930,7 +930,7 @@ export default function Purchases() {
                 </button>
                 <button onClick={() => { setShowForm(false); setEdit(null); }}
                   className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50"
-                  style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", color:"#202124" }}>
+                  style={{ background:"#FFFFFF", border:"1px solid #E0E3E7", color:"#202124" }}>
                   Cancel
                 </button>
               </div>
@@ -939,7 +939,7 @@ export default function Purchases() {
         )}
 
         {/* ── Purchase Invoices List ── */}
-        <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8" }}>
+        <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background:"#FFFFFF", border:"1px solid #E0E3E7" }}>
           <div className="px-5 py-3 flex items-center justify-between"
             style={{ background:"linear-gradient(135deg,#1D1D1D,#374151)", borderBottom:"2px solid #4285F4" }}>
             <div className="flex items-center gap-2">
@@ -981,7 +981,7 @@ export default function Purchases() {
                       {/* Status dot */}
                       <div className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                         style={{ background: isSettled ? "#34A853" : "#EA4335",
-                          boxShadow: isSettled ? "0 0 6px #16a34a60" : "0 0 6px #EA433560" }}/>
+                          boxShadow: isSettled ? "0 0 6px #34A85360" : "0 0 6px #EA433560" }}/>
 
                       {/* Purchase number + date */}
                       <div className="w-32">
@@ -1038,7 +1038,7 @@ export default function Purchases() {
                         <button onClick={() => toggleExpand(pur.id!)}
                           className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all"
                           style={{ background: isExpanded ? "#F3F4F6" : "#FFFFFF",
-                            border:"1px solid #E8E8E8", color:"#202124" }}>
+                            border:"1px solid #E0E3E7", color:"#202124" }}>
                           {isExpanded ? <ArrowUp size={14} variant="Linear" color="currentColor"/> : <ArrowDown2 size={14} variant="Linear" color="currentColor"/>}
                           {isExpanded ? "Hide" : "Details"}
                         </button>

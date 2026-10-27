@@ -216,7 +216,7 @@ export default function Inventory() {
             </div>
             <button onClick={load} disabled={loading}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:bg-gray-50 disabled:opacity-50"
-              style={{ background:"#FFFFFF", border:"1px solid #E8E8E8", color:"#202124" }}>
+              style={{ background:"#FFFFFF", border:"1px solid #E0E3E7", color:"#202124" }}>
               <Refresh2 size={14} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""}/>
             </button>
             <button onClick={handleSync} disabled={syncing || loading}
@@ -265,7 +265,7 @@ export default function Inventory() {
         {form && (
           <div
             className="rounded-2xl overflow-hidden shadow-sm"
-            style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}
+            style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}
           >
             <div
               className="flex items-center justify-between px-5 py-3.5"
@@ -449,7 +449,7 @@ export default function Inventory() {
                     <select value={form.nlb_dlb_category ?? ""}
                       onChange={e => setForm({ ...form, nlb_dlb_category: e.target.value })}
                       className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
-                      style={{ border: "1px solid #E8E8E8", background: "#FAFAFA", color: "#202124" }}>
+                      style={{ border: "1px solid #E0E3E7", background: "#FAFAFA", color: "#202124" }}>
                       <option value="">— Category —</option>
                       {NLB_DLB_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
@@ -502,7 +502,7 @@ export default function Inventory() {
                 <button
                   onClick={() => setForm(null)}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all"
-                  style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#202124" }}
+                  style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", color: "#202124" }}
                 >
                   <CloseCircle size={14} variant="Linear" color="currentColor" /> Cancel
                 </button>
@@ -532,7 +532,7 @@ export default function Inventory() {
         {viewMode === "list" && (
         <div
           className="rounded-2xl overflow-hidden shadow-sm"
-          style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}
+          style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}
         >
           {/* Dark table header with filter tabs */}
           <div
@@ -1101,7 +1101,7 @@ function StatCard({
       className="rounded-xl p-4 shadow-sm"
       style={{
         background: "#FFFFFF",
-        border: "1px solid #E8E8E8",
+        border: "1px solid #E0E3E7",
         borderTop: `3px solid ${accent}`,
       }}
     >

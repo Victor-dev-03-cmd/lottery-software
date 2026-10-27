@@ -173,7 +173,7 @@ export default function Ledger() {
             <button
               onClick={() => loadData(Number(selectedAgent))} disabled={loading}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#202124" }}
+              style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", color: "#202124" }}
             >
               <Refresh2 size={14} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""} /> Refresh
             </button>
@@ -199,7 +199,7 @@ export default function Ledger() {
         </div>
 
         {/* Agent selector card */}
-        <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
+        <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>
           <div className="p-5 flex items-end gap-4">
             <div className="flex-1">
               <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>
@@ -209,7 +209,7 @@ export default function Ledger() {
                 value={selectedAgent}
                 onChange={(e) => handleAgentChange(Number(e.target.value))}
                 className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
-                style={{ border: "1px solid #E8E8E8", background: "#FAFAFA" }}
+                style={{ border: "1px solid #E0E3E7", background: "#FAFAFA" }}
               >
                 <option value="">— Select Agent —</option>
                 {agents.map((a) => (
@@ -230,7 +230,7 @@ export default function Ledger() {
         </div>
 
         {!selectedAgent ? (
-          <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
+          <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>
             <div style={{ padding:"36px 40px", textAlign:"center" }}>
               <Card size={14} variant="Linear" color="currentColor" className="mx-auto mb-4" style={{ color: "#E0E3E7" }} />
               <p style={{ color:"#5F6368", fontSize:14, fontWeight:600, marginBottom:16 }}>
@@ -266,13 +266,13 @@ export default function Ledger() {
             {/* Summary metric cards */}
             <div className="grid grid-cols-3 gap-4">
               {/* Total Invoiced */}
-              <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #2563eb" }}>
+              <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #2563eb" }}>
                 <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>Total Invoiced</p>
                 <p className="text-2xl font-black" style={{ color: "#202124" }}>Rs. {fmt(totalInvoiced)}</p>
                 <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>{ledger.length} invoice{ledger.length !== 1 ? "s" : ""}</p>
               </div>
               {/* Payments Recorded */}
-              <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #16a34a" }}>
+              <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #34A853" }}>
                 <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>Payments Recorded</p>
                 <p className="text-2xl font-black" style={{ color: "#34A853" }}>Rs. {fmt(totalPaid)}</p>
                 <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>{payments.length} record{payments.length !== 1 ? "s" : ""}</p>
@@ -282,7 +282,7 @@ export default function Ledger() {
                 className="rounded-xl p-4 shadow-sm"
                 style={{
                   background: "#FFFFFF",
-                  border: "1px solid #E8E8E8",
+                  border: "1px solid #E0E3E7",
                   borderTop: `3px solid ${currentOutstanding <= 0 ? "#34A853" : agingBand?.borderColor ?? "#4285F4"}`,
                 }}
               >
@@ -318,7 +318,7 @@ export default function Ledger() {
 
             {/* Add payment form */}
             {form && (
-              <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
+              <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>
                 <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
                   <div className="flex items-center justify-between">
                     <h2 className="text-sm font-bold" style={{ color: "#202124" }}>Record Payment</h2>
@@ -371,7 +371,7 @@ export default function Ledger() {
 
                   {/* Single payment mode */}
                   {!multiMode && (
-                    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 p-4 rounded-xl" style={{ background:"#F9F9F9", border:"1px solid #E8E8E8" }}>
+                    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 p-4 rounded-xl" style={{ background:"#F9F9F9", border:"1px solid #E0E3E7" }}>
                       <div>
                         <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9AA0A6" }}>Type</label>
                         <select value={form.payment_type}
@@ -423,7 +423,7 @@ export default function Ledger() {
 
                   {/* Multi-split mode */}
                   {multiMode && (
-                    <div className="rounded-xl overflow-hidden" style={{ border:"1px solid #E8E8E8" }}>
+                    <div className="rounded-xl overflow-hidden" style={{ border:"1px solid #E0E3E7" }}>
                       <div className="px-4 py-2 flex items-center justify-between" style={{ background:"#374151" }}>
                         <span className="text-xs font-bold text-white">Payment Splits</span>
                         <div className="flex items-center gap-2">
@@ -443,7 +443,7 @@ export default function Ledger() {
                             <select value={split.payment_type}
                               onChange={e => setSplits(s => s.map((x,i)=>i===si?{...x,payment_type:e.target.value as PaymentType}:x))}
                               className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none"
-                              style={{ border:"1px solid #E8E8E8", background:"#fff" }}>
+                              style={{ border:"1px solid #E0E3E7", background:"#fff" }}>
                               {PAYMENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                             </select>
                           </div>
@@ -452,7 +452,7 @@ export default function Ledger() {
                             <input type="number" step="0.01" value={split.amount || ""}
                               onChange={e => setSplits(s => s.map((x,i)=>i===si?{...x,amount:parseFloat(e.target.value)||0}:x))}
                               className="w-full rounded-lg px-2 py-1.5 text-xs font-bold focus:outline-none"
-                              style={{ border:"1px solid #E8E8E8", background:"#fff", color:"#34A853" }}/>
+                              style={{ border:"1px solid #E0E3E7", background:"#fff", color:"#34A853" }}/>
                           </div>
                           {split.payment_type === "cheque" && (
                             <>
@@ -461,14 +461,14 @@ export default function Ledger() {
                                 <input type="text" value={split.cheque_number}
                                   onChange={e => setSplits(s => s.map((x,i)=>i===si?{...x,cheque_number:e.target.value}:x))}
                                   placeholder="CHQ-12345" className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none"
-                                  style={{ border:"1px solid #E8E8E8", background:"#fff" }}/>
+                                  style={{ border:"1px solid #E0E3E7", background:"#fff" }}/>
                               </div>
                               <div>
                                 <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color:"#9AA0A6" }}>Bank</label>
                                 <select value={split.bank_name}
                                   onChange={e => setSplits(s => s.map((x,i)=>i===si?{...x,bank_name:e.target.value}:x))}
                                   className="w-full rounded-lg px-2 py-1.5 text-xs focus:outline-none"
-                                  style={{ border:"1px solid #E8E8E8", background:"#fff" }}>
+                                  style={{ border:"1px solid #E0E3E7", background:"#fff" }}>
                                   <option value="">— Bank —</option>
                                   {SRI_LANKA_BANKS.map(b => <option key={b} value={b}>{b}</option>)}
                                 </select>
@@ -497,7 +497,7 @@ export default function Ledger() {
                     <button
                       onClick={() => setForm(null)}
                       className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all"
-                      style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#202124" }}
+                      style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", color: "#202124" }}
                     >
                       Cancel
                     </button>
@@ -530,7 +530,7 @@ export default function Ledger() {
 
             {/* Payments table */}
             {activeTab === "payments" && (
-              <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
+              <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>
                 <div className="px-5 py-3" style={{ background: "#374151", borderBottom: "2px solid #4285F4" }}>
                   <span className="text-sm font-semibold text-white">Payment History</span>
                 </div>
@@ -595,7 +595,7 @@ export default function Ledger() {
 
             {/* Invoice history table — live balance per invoice */}
             {activeTab === "invoices" && (
-              <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
+              <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7" }}>
                 <div className="px-5 py-3 flex items-center justify-between" style={{ background: "#374151", borderBottom: "2px solid #4285F4" }}>
                   <span className="text-sm font-semibold text-white">Invoice Ledger — Live Balances</span>
                   <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background:"rgba(255,255,255,0.15)", color:"#fff" }}>
