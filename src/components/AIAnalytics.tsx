@@ -1,10 +1,10 @@
 import { useEffect, useState, useRef } from "react";
 import {
-  Brain, TrendingUp, TrendingDown, AlertTriangle, CheckCircle,
-  RefreshCw, Home, ChevronRight, Lightbulb,
-  Users, Package, ShoppingCart, Send, Copy, ArrowRight,
-  Zap, ShieldAlert, X, Play,
-} from "lucide-react";
+  Cpu, TrendUp, TrendDown, Warning2, TickCircle,
+  Refresh2, Home2, ArrowRight2, Lamp,
+  People, Box1, ShoppingCart, Direct, Copy, ArrowRight,
+  Flash, ShieldSlash, CloseCircle, Play,
+} from "iconsax-react";
 import { invoke } from "@tauri-apps/api/core";
 import {
   getPeriodStats, getAgentRiskScores, getInventoryVelocity,
@@ -309,14 +309,14 @@ export default function AIAnalytics({ onNavigate }: Props) {
         {/* Breadcrumb + refresh */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <nav style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#9CA3AF" }}>
-            <Home size={12}/><ChevronRight size={11}/>
+            <Home2 size={12} variant="Linear" color="#9AA0A6"/><ArrowRight2 size={11} variant="Linear" color="#9AA0A6"/>
             <span style={{ fontWeight: 600, color: "#1D1D1D" }}>AI Analytics</span>
           </nav>
           <button onClick={loadData} disabled={loading}
             style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px",
               border: "1px solid #E8E8E8", borderRadius: 6, background: "#FFFFFF",
               fontSize: 12, fontWeight: 500, cursor: loading ? "not-allowed" : "pointer", color: "#1D1D1D" }}>
-            <RefreshCw size={12} className={loading ? "animate-spin" : ""}/>
+            <Refresh2 size={12} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""}/>
             {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString("en-LK", { hour: "2-digit", minute: "2-digit" })}` : "Refresh"}
           </button>
         </div>
@@ -334,7 +334,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
 
           {/* Business Health Score */}
           <div style={card}>
-            <div style={{ borderLeft: "3px solid #CF291D", paddingLeft: 10, marginBottom: 10 }}>
+            <div style={{ borderLeft: "3px solid #4285F4", paddingLeft: 10, marginBottom: 10 }}>
               <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "#374151", margin: 0 }}>Business Health Score</p>
             </div>
             {loading ? (
@@ -377,7 +377,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
 
           {/* Revenue & Profit Breakdown */}
           <div style={card}>
-            <div style={{ borderLeft: "3px solid #CF291D", paddingLeft: 10, marginBottom: 10 }}>
+            <div style={{ borderLeft: "3px solid #4285F4", paddingLeft: 10, marginBottom: 10 }}>
               <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "#374151", margin: 0 }}>Revenue & Profit Breakdown — Last 30 Days</p>
             </div>
             {loading ? (
@@ -387,11 +387,11 @@ export default function AIAnalytics({ onNavigate }: Props) {
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 {[
-                  { label: "Gross Revenue",    val: periodStats?.total_collected ?? 0, color: "#16A34A", icon: <TrendingUp size={14}/> },
-                  { label: "Stock Cost",       val: supplierOB,                         color: "#DC2626", icon: <ShoppingCart size={14}/> },
-                  { label: "Monthly Payroll",  val: payroll?.total_payroll ?? 0,        color: "#7C3AED", icon: <Users size={14}/> },
+                  { label: "Gross Revenue",    val: periodStats?.total_collected ?? 0, color: "#16A34A", icon: <TrendUp size={14} variant="Linear" color="#16A34A"/> },
+                  { label: "Stock Cost",       val: supplierOB,                         color: "#DC2626", icon: <ShoppingCart size={14} variant="Linear" color="#DC2626"/> },
+                  { label: "Monthly Payroll",  val: payroll?.total_payroll ?? 0,        color: "#7C3AED", icon: <People size={14} variant="Linear" color="#7C3AED"/> },
                   { label: "Net Profit (est)", val: Math.abs(netProfit),               color: netProfit >= 0 ? "#2563EB" : "#DC2626",
-                    icon: netProfit >= 0 ? <TrendingUp size={14}/> : <TrendingDown size={14}/>,
+                    icon: netProfit >= 0 ? <TrendUp size={14} variant="Linear" color="#2563EB"/> : <TrendDown size={14} variant="Linear" color="#DC2626"/>,
                     prefix: netProfit < 0 ? "−" : "" },
                 ].map(m => (
                   <div key={m.label} style={{ padding: "10px 12px", borderRadius: 6, border: "1px solid #F3F4F6", background: "#FAFAFA" }}>
@@ -425,9 +425,9 @@ export default function AIAnalytics({ onNavigate }: Props) {
 
         {/* Row 2: Collection Priority */}
         <div style={card}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: "3px solid #CF291D", paddingLeft: 10, marginBottom: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: "3px solid #4285F4", paddingLeft: 10, marginBottom: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <AlertTriangle size={14} color="#DC2626"/>
+              <Warning2 size={14} variant="Linear" color="#DC2626"/>
               <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "#374151", margin: 0 }}>Collection Priority — Urgent Follow-ups</p>
             </div>
             {agentRisks.some(a => a.risk_level === "critical") && (
@@ -442,7 +442,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
             </div>
           ) : agentRisks.length === 0 ? (
             <div style={{ textAlign: "center", padding: "20px 0", color: "#9CA3AF", fontSize: 13 }}>
-              <CheckCircle size={24} color="#16A34A" style={{ margin: "0 auto 6px" }}/>
+              <TickCircle size={24} variant="Linear" color="#16A34A" style={{ margin: "0 auto 6px" }}/>
               No outstanding balances — all agents settled ✓
             </div>
           ) : (
@@ -476,7 +476,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
 
         {/* Row 3: Inventory Velocity */}
         <div style={card}>
-          <div style={{ borderLeft: "3px solid #CF291D", paddingLeft: 10, marginBottom: 10 }}>
+          <div style={{ borderLeft: "3px solid #4285F4", paddingLeft: 10, marginBottom: 10 }}>
             <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "#374151", margin: 0 }}>Demand Forecast — Ticket Inventory Velocity</p>
           </div>
           {loading ? <SK h={120}/> : (
@@ -526,7 +526,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
         {/* Row 4: 6-month trend */}
         {trend.length > 0 && (
           <div style={card}>
-            <div style={{ borderLeft: "3px solid #CF291D", paddingLeft: 10, marginBottom: 10 }}>
+            <div style={{ borderLeft: "3px solid #4285F4", paddingLeft: 10, marginBottom: 10 }}>
               <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "#374151", margin: 0 }}>6-Month Revenue Trend</p>
             </div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80 }}>
@@ -563,8 +563,8 @@ export default function AIAnalytics({ onNavigate }: Props) {
 
         {/* Row 5: AI Recommendations */}
         <div style={card}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, borderLeft: "3px solid #CF291D", paddingLeft: 10, marginBottom: 10 }}>
-            <Lightbulb size={14} color="#D97706"/>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, borderLeft: "3px solid #4285F4", paddingLeft: 10, marginBottom: 10 }}>
+            <Lamp size={14} variant="Linear" color="#D97706"/>
             <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "#374151", margin: 0 }}>AI Recommendations</p>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -627,10 +627,10 @@ export default function AIAnalytics({ onNavigate }: Props) {
         {/* Quick stats footer */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
           {[
-            { icon: <Users size={14}/>, label: "Active Agents",   val: agentRisks.length,    color: "#2563EB" },
-            { icon: <Users size={14}/>, label: "Active Workers",  val: workers.filter(w => w.is_active).length, color: "#7C3AED" },
-            { icon: <Package size={14}/>, label: "Stock Batches", val: velocity.length,       color: "#D97706" },
-            { icon: <Brain size={14}/>, label: "Months Tracked",  val: trend.length,          color: "#16A34A" },
+            { icon: <People size={14} variant="Linear" color="#2563EB"/>, label: "Active Agents",   val: agentRisks.length,    color: "#2563EB" },
+            { icon: <People size={14} variant="Linear" color="#7C3AED"/>, label: "Active Workers",  val: workers.filter(w => w.is_active).length, color: "#7C3AED" },
+            { icon: <Box1   size={14} variant="Linear" color="#D97706"/>, label: "Stock Batches", val: velocity.length,       color: "#D97706" },
+            { icon: <Cpu    size={14} variant="Linear" color="#16A34A"/>, label: "Months Tracked",  val: trend.length,          color: "#16A34A" },
           ].map(s => (
             <div key={s.label} style={{ ...card, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, borderTop: `3px solid ${s.color}` }}>
               <div style={{ width: 32, height: 32, borderRadius: 6, background: `${s.color}12`,
@@ -661,7 +661,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 32, height: 32, borderRadius: 6, background: "#EFF6FF",
               display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Brain size={16} color="#2563EB"/>
+              <Cpu size={16} variant="Linear" color="#2563EB"/>
             </div>
             <div>
               <p style={{ fontSize: 14, fontWeight: 700, color: "#1D1D1D", margin: 0 }}>AI Business Assistant</p>
@@ -740,7 +740,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
           {chatHistory.length === 0 && !aiLoading && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
               justifyContent: "center", padding: "20px 0", color: "#9CA3AF", textAlign: "center" }}>
-              <Brain size={32} color="#E5E7EB" style={{ marginBottom: 10 }}/>
+              <Cpu size={32} variant="Linear" color="#E5E7EB" style={{ marginBottom: 10 }}/>
               <p style={{ fontSize: 13, fontWeight: 500, margin: 0 }}>Ask anything about your business</p>
               <p style={{ fontSize: 11, margin: "4px 0 0" }}>
                 {aiLanguage === "si" ? "සිංහල · English · தமிழ் supported" : aiLanguage === "ta" ? "தமிழ் · English · සිංහල supported" : "English · සිංහල · தமிழ் supported"}
@@ -757,7 +757,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
                   <div style={{ width: 20, height: 20, borderRadius: 4, flexShrink: 0, marginTop: 2,
                     background: isErr ? "#FEE2E2" : "#DCFCE7",
                     display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {isErr ? <ShieldAlert size={11} color="#DC2626"/> : <CheckCircle size={11} color="#16A34A"/>}
+                    {isErr ? <ShieldSlash size={11} variant="Linear" color="#DC2626"/> : <TickCircle size={11} variant="Linear" color="#16A34A"/>}
                   </div>
                   <div style={{ flex: 1, padding: "8px 12px", borderRadius: 6, fontSize: 12, lineHeight: 1.55,
                     background: isErr ? "#FEF2F2" : "#F0FDF4",
@@ -782,7 +782,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <div style={{ width: 18, height: 18, borderRadius: 4, background: "#EFF6FF",
                       display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Brain size={10} color="#2563EB"/>
+                      <Cpu size={10} variant="Linear" color="#2563EB"/>
                     </div>
                     <span style={{ fontSize: 10, color: "#9CA3AF" }}>
                       AI Controller · {msg.timestamp.toLocaleTimeString("en-LK", { hour: "2-digit", minute: "2-digit" })}
@@ -835,7 +835,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
                           boxShadow: `0 2px 8px ${actionColor}15`,
                         }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                            <Zap size={12} color={actionColor}/>
+                            <Flash size={12} variant="Linear" color={actionColor}/>
                             <span style={{ fontSize: 11, fontWeight: 700, color: actionColor }}>
                               AI ACTION READY
                             </span>
@@ -864,7 +864,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
                                 cursor: isExecuting || needsAdmin ? "not-allowed" : "pointer",
                               }}>
                               {isExecuting
-                                ? <><RefreshCw size={11} className="animate-spin"/> Executing…</>
+                                ? <><Refresh2 size={11} variant="Linear" color="currentColor" className="animate-spin"/> Executing…</>
                                 : <><Play size={11}/> Execute</>}
                             </button>
                             <button onClick={() => setChatHistory(h => h.map((m, idx) =>
@@ -874,7 +874,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
                                 padding: "5px 10px", borderRadius: 6,
                                 background: "#F9FAFB", border: "1px solid #E8E8E8",
                                 color: "#6B7280", fontSize: 12, cursor: "pointer" }}>
-                              <X size={11}/> Dismiss
+                              <CloseCircle size={11} variant="Linear" color="currentColor"/> Dismiss
                             </button>
                           </div>
                         </div>
@@ -898,7 +898,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{ width: 18, height: 18, borderRadius: 4, background: "#EFF6FF",
                   display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Brain size={10} color="#2563EB"/>
+                  <Cpu size={10} variant="Linear" color="#2563EB"/>
                 </div>
                 <span style={{ fontSize: 10, color: "#9CA3AF" }}>AI is typing…</span>
               </div>
@@ -920,7 +920,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
         {aiError && (
           <div style={{ padding: "8px 16px", background: "#FEF2F2", borderTop: "1px solid #FECACA",
             fontSize: 11, color: "#DC2626", flexShrink: 0, display: "flex", alignItems: "flex-start", gap: 6 }}>
-            <AlertTriangle size={12} style={{ flexShrink: 0, marginTop: 1 }}/>
+            <Warning2 size={12} variant="Linear" color="currentColor" style={{ flexShrink: 0, marginTop: 1 }}/>
             <span>
               {aiError.includes("API key") || aiError.includes("not configured")
                 ? <>API key missing — go to <strong>Settings → AI Configuration</strong> and add your free Gemini key from aistudio.google.com</>
@@ -962,7 +962,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
                 cursor: aiLoading || !chatInput.trim() ? "not-allowed" : "pointer",
                 transition: "background 0.15s",
               }}>
-              <Send size={14}/>
+              <Direct size={14} variant="Linear" color="currentColor"/>
               Send
             </button>
           </div>

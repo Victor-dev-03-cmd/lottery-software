@@ -4,9 +4,10 @@ import {
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from "recharts";
 import {
-  RefreshCw, TrendingUp, AlertTriangle,
-  Ticket, Trophy, Banknote, BarChart2, Home, ChevronRight,
-} from "lucide-react";
+  Refresh2, TrendUp, Warning2,
+  Tag, Cup, Moneys, Chart21, Home2, ArrowRight2,
+} from "iconsax-react";
+import { useLanguage } from "../i18n";
 import {
   getDailyRevenue,
   getMonthlyRevenue,
@@ -21,6 +22,7 @@ import type {
 } from "../types";
 
 export default function Reports() {
+  void useLanguage(); // translation infrastructure wired — label i18n in Phase 6 audit
   const [daily, setDaily] = useState<DailyRevenue[]>([]);
   const [monthly, setMonthly] = useState<MonthlyRevenue[]>([]);
   const [agents, setAgents] = useState<AgentPerformance[]>([]);
@@ -74,8 +76,8 @@ export default function Reports() {
       {/* Breadcrumb + toolbar row */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
-          <Home size={12} />
-          <ChevronRight size={11} />
+          <Home2 size={12} variant="Linear" color="#9AA0A6"/>
+          <ArrowRight2 size={11} variant="Linear" color="#9AA0A6"/>
           <span className="font-semibold" style={{ color: "#1D1D1D" }}>Reports</span>
         </nav>
         <div className="flex gap-2">
@@ -85,9 +87,9 @@ export default function Reports() {
               <button key={d} onClick={() => setPeriod(d)}
                 className="px-3 py-1 rounded-md text-xs font-semibold transition-all"
                 style={{
-                  background: period === d ? "#CF291D" : "#FFFFFF",
+                  background: period === d ? "#4285F4" : "#FFFFFF",
                   color: period === d ? "#FFFFFF" : "#6B7280",
-                  border: `1px solid ${period === d ? "#CF291D" : "#E8E8E8"}`,
+                  border: `1px solid ${period === d ? "#4285F4" : "#E8E8E8"}`,
                 }}>
                 {d}d
               </button>
@@ -96,7 +98,7 @@ export default function Reports() {
           <button onClick={load} disabled={loading}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}>
-            <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh
+            <Refresh2 size={13} variant="Linear" color="currentColor" className={loading ? "animate-spin" : ""}/> Refresh
           </button>
         </div>
       </div>
@@ -116,12 +118,12 @@ export default function Reports() {
           <>
             {/* KPI strip */}
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
-              <KpiCard label="Tickets Distributed" value={fmt(stats?.total_tickets_distributed ?? 0)} icon={<Ticket size={14} style={{ color: "#CF291D" }} />} />
-              <KpiCard label="Total Invoiced" value={`Rs. ${fmt(stats?.total_invoice_value ?? 0)}`} icon={<BarChart2 size={14} style={{ color: "#CF291D" }} />} />
-              <KpiCard label="Cash Collected" value={`Rs. ${fmt(stats?.total_cash_collected ?? 0)}`} icon={<Banknote size={14} style={{ color: "#CF291D" }} />} />
-              <KpiCard label="Winnings Returned" value={`Rs. ${fmt(stats?.total_winnings_returned ?? 0)}`} icon={<Trophy size={14} style={{ color: "#CF291D" }} />} />
-              <KpiCard label="Outstanding" value={`Rs. ${fmt(stats?.total_outstanding ?? 0)}`} icon={<AlertTriangle size={14} style={{ color: "#CF291D" }} />} />
-              <KpiCard label="Total Invoices" value={String(stats?.total_invoices ?? 0)} icon={<TrendingUp size={14} style={{ color: "#CF291D" }} />} />
+              <KpiCard label="Tickets Distributed" value={fmt(stats?.total_tickets_distributed ?? 0)} icon={<Tag size={14} variant="Linear" color="#4285F4"/>} />
+              <KpiCard label="Total Invoiced" value={`Rs. ${fmt(stats?.total_invoice_value ?? 0)}`} icon={<Chart21 size={14} variant="Linear" color="#4285F4"/>} />
+              <KpiCard label="Cash Collected" value={`Rs. ${fmt(stats?.total_cash_collected ?? 0)}`} icon={<Moneys size={14} variant="Linear" color="#4285F4"/>} />
+              <KpiCard label="Winnings Returned" value={`Rs. ${fmt(stats?.total_winnings_returned ?? 0)}`} icon={<Cup size={14} variant="Linear" color="#4285F4"/>} />
+              <KpiCard label="Outstanding" value={`Rs. ${fmt(stats?.total_outstanding ?? 0)}`} icon={<Warning2 size={14} variant="Linear" color="#EA4335"/>} />
+              <KpiCard label="Total Invoices" value={String(stats?.total_invoices ?? 0)} icon={<TrendUp size={14} variant="Linear" color="#4285F4"/>} />
             </div>
 
             {/* ASROZ tab bar */}
@@ -130,8 +132,8 @@ export default function Reports() {
                 <button key={t.key} onClick={() => setActiveTab(t.key)}
                   className="px-5 py-2.5 text-sm font-medium border-b-2 transition-colors"
                   style={{
-                    borderColor: activeTab === t.key ? "#CF291D" : "transparent",
-                    color: activeTab === t.key ? "#CF291D" : "#9CA3AF",
+                    borderColor: activeTab === t.key ? "#4285F4" : "transparent",
+                    color: activeTab === t.key ? "#4285F4" : "#9CA3AF",
                   }}>
                   {t.label}
                 </button>
@@ -149,7 +151,7 @@ export default function Reports() {
                         <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Daily Revenue</p>
                         <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>last {period} days</p>
                       </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#FFF1F0", color: "#CF291D" }}>{period}D</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#EAF1FB", color: "#4285F4" }}>{period}D</span>
                     </div>
                     <div className="px-4 pb-4">
                       {daily.length === 0 ? <EmptyChart /> : (
@@ -159,7 +161,7 @@ export default function Reports() {
                             <XAxis dataKey="day" tick={{ fontSize: 10 }} tickFormatter={(v) => v.slice(5)} />
                             <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                             <Tooltip formatter={(v) => [`Rs. ${fmt(Number(v))}`, "Revenue"]} labelFormatter={(l) => `Date: ${l}`} />
-                            <Bar dataKey="total" fill="#CF291D" radius={[3, 3, 0, 0]} />
+                            <Bar dataKey="total" fill="#4285F4" radius={[3, 3, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       )}
@@ -183,7 +185,7 @@ export default function Reports() {
                               label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                               labelLine={false} fontSize={11}>
                               <Cell fill="#10b981" />
-                              <Cell fill="#CF291D" />
+                              <Cell fill="#EA4335" />
                             </Pie>
                             <Tooltip formatter={(v) => `Rs. ${fmt(Number(v))}`} />
                           </PieChart>
@@ -200,7 +202,7 @@ export default function Reports() {
                       <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Monthly Revenue vs Collection</p>
                       <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>6-month trend</p>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#FFF1F0", color: "#CF291D" }}>6M</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#EAF1FB", color: "#4285F4" }}>6M</span>
                   </div>
                   <div className="px-4 pb-4">
                     {monthly.length === 0 ? <EmptyChart /> : (
@@ -211,7 +213,7 @@ export default function Reports() {
                           <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                           <Tooltip formatter={(v) => `Rs. ${fmt(Number(v))}`} />
                           <Legend />
-                          <Line type="monotone" dataKey="total" name="Invoiced" stroke="#CF291D" strokeWidth={2} dot={{ r: 3 }} />
+                          <Line type="monotone" dataKey="total" name="Invoiced" stroke="#4285F4" strokeWidth={2} dot={{ r: 3 }} />
                           <Line type="monotone" dataKey="collected" name="Collected" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
                         </LineChart>
                       </ResponsiveContainer>
@@ -242,14 +244,14 @@ export default function Reports() {
                             <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                             <YAxis type="category" dataKey="ticket_name" tick={{ fontSize: 11 }} width={140} />
                             <Tooltip formatter={(v) => [`Rs. ${fmt(Number(v))}`, "Value"]} />
-                            <Bar dataKey="total_value" fill="#CF291D" radius={[0, 4, 4, 0]} />
+                            <Bar dataKey="total_value" fill="#4285F4" radius={[0, 4, 4, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
                     </div>
 
                     <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-                      <div className="px-5 py-3" style={{ borderBottom: "2px solid #CF291D", background: "#374151" }}>
+                      <div className="px-5 py-3" style={{ borderBottom: "2px solid #4285F4", background: "#374151" }}>
                         <span className="font-semibold text-sm text-white">Game-Wise Breakdown</span>
                       </div>
                       <table className="w-full">
@@ -274,12 +276,12 @@ export default function Reports() {
                                 <td className="px-4 py-3 text-sm font-medium" style={{ color: "#1D1D1D" }}>{g.ticket_name}</td>
                                 <td className="px-4 py-3 text-sm text-right" style={{ color: "#1D1D1D" }}>{g.total_qty.toLocaleString()}</td>
                                 <td className="px-4 py-3 text-sm text-right" style={{ color: "#6B7280" }}>{fmtFull(g.avg_unit_price)}</td>
-                                <td className="px-4 py-3 text-sm text-right font-semibold" style={{ color: "#CF291D" }}>{fmtFull(g.total_value)}</td>
+                                <td className="px-4 py-3 text-sm text-right font-semibold" style={{ color: "#4285F4" }}>{fmtFull(g.total_value)}</td>
                                 <td className="px-4 py-3 text-sm text-right" style={{ color: "#6B7280" }}>{g.invoice_count}</td>
                                 <td className="px-4 py-3 text-sm">
                                   <div className="flex items-center gap-2">
                                     <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "#F3F4F6" }}>
-                                      <div className="h-full rounded-full" style={{ width: `${share}%`, background: "#CF291D" }} />
+                                      <div className="h-full rounded-full" style={{ width: `${share}%`, background: "#4285F4" }} />
                                     </div>
                                     <span className="text-xs w-10 text-right" style={{ color: "#9CA3AF" }}>{share.toFixed(1)}%</span>
                                   </div>
@@ -316,14 +318,14 @@ export default function Reports() {
                             <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                             <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={130} />
                             <Tooltip formatter={(v) => [`Rs. ${fmt(Number(v))}`, "Value"]} />
-                            <Bar dataKey="total_value" fill="#CF291D" name="Invoiced" radius={[0, 4, 4, 0]} />
+                            <Bar dataKey="total_value" fill="#4285F4" name="Invoiced" radius={[0, 4, 4, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
                     </div>
 
                     <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-                      <div className="px-5 py-3" style={{ borderBottom: "2px solid #CF291D", background: "#374151" }}>
+                      <div className="px-5 py-3" style={{ borderBottom: "2px solid #4285F4", background: "#374151" }}>
                         <span className="font-semibold text-sm text-white">Agent Performance Table</span>
                       </div>
                       <table className="w-full">
@@ -345,17 +347,17 @@ export default function Reports() {
                               <td className="px-4 py-3 text-sm font-medium" style={{ color: "#1D1D1D" }}>{a.name}</td>
                               <td className="px-4 py-3 text-sm text-right" style={{ color: "#1D1D1D" }}>Rs. {fmt(a.total_value)}</td>
                               <td className="px-4 py-3 text-sm text-right" style={{ color: "#6B7280" }}>{a.invoice_count}</td>
-                              <td className={`px-4 py-3 text-sm text-right font-medium`} style={{ color: a.outstanding > 0 ? "#CF291D" : "#10b981" }}>
+                              <td className={`px-4 py-3 text-sm text-right font-medium`} style={{ color: a.outstanding > 0 ? "#EA4335" : "#10b981" }}>
                                 Rs. {fmt(a.outstanding)}
                               </td>
-                              <td className="px-4 py-3 text-sm text-right font-semibold" style={{ color: a.collection_rate >= 90 ? "#10b981" : a.collection_rate >= 60 ? "#f59e0b" : "#CF291D" }}>
+                              <td className="px-4 py-3 text-sm text-right font-semibold" style={{ color: a.collection_rate >= 90 ? "#10b981" : a.collection_rate >= 60 ? "#f59e0b" : "#EA4335" }}>
                                 {a.collection_rate}%
                               </td>
                               <td className="px-4 py-3 text-sm">
                                 <div className="h-2 rounded-full overflow-hidden" style={{ background: "#F3F4F6" }}>
                                   <div className="h-full rounded-full" style={{
                                     width: `${Math.min(100, a.collection_rate)}%`,
-                                    background: a.collection_rate >= 90 ? "#10b981" : a.collection_rate >= 60 ? "#f59e0b" : "#CF291D",
+                                    background: a.collection_rate >= 90 ? "#10b981" : a.collection_rate >= 60 ? "#f59e0b" : "#EA4335",
                                   }} />
                                 </div>
                               </td>
@@ -378,7 +380,7 @@ export default function Reports() {
                       { label: "0–7 days", filter: (d: number) => d <= 7, color: "#10b981", light: "#f0fdf4", border: "#bbf7d0" },
                       { label: "8–30 days", filter: (d: number) => d > 7 && d <= 30, color: "#f59e0b", light: "#fffbeb", border: "#fde68a" },
                       { label: "31–60 days", filter: (d: number) => d > 30 && d <= 60, color: "#f97316", light: "#fff7ed", border: "#fed7aa" },
-                      { label: ">60 days", filter: (d: number) => d > 60, color: "#CF291D", light: "#FFF1F0", border: "#fecaca" },
+                      { label: ">60 days", filter: (d: number) => d > 60, color: "#EA4335", light: "#FCE8E6", border: "#fecaca" },
                     ].map(({ label, filter, color, light, border }) => {
                       const band = aging.filter((a) => filter(a.days_old));
                       const total = band.reduce((s, a) => s + a.outstanding_balance, 0);
@@ -401,7 +403,7 @@ export default function Reports() {
                   ) : (
                     <table className="w-full">
                       <thead>
-                        <tr style={{ background: "#374151", borderBottom: "2px solid #CF291D" }}>
+                        <tr style={{ background: "#374151", borderBottom: "2px solid #4285F4" }}>
                           <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Agent</th>
                           <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Invoice #</th>
                           <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Invoice Date</th>
@@ -420,10 +422,10 @@ export default function Reports() {
                           return (
                             <tr key={i} className="hover:bg-gray-50/60 transition-colors" style={{ borderBottom: "1px solid #F9F9F9" }}>
                               <td className="px-4 py-3 text-sm font-medium" style={{ color: "#1D1D1D" }}>{a.name}</td>
-                              <td className="px-4 py-3 text-sm font-mono" style={{ color: "#CF291D" }}>{a.invoice_number}</td>
+                              <td className="px-4 py-3 text-sm font-mono" style={{ color: "#EA4335" }}>{a.invoice_number}</td>
                               <td className="px-4 py-3 text-sm" style={{ color: "#6B7280" }}>{fmtDate(a.invoice_date)}</td>
-                              <td className="px-4 py-3 text-sm text-right font-bold" style={{ color: "#CF291D" }}>{fmtFull(a.outstanding_balance)}</td>
-                              <td className="px-4 py-3 text-sm text-right font-semibold" style={{ color: a.days_old > 30 ? "#CF291D" : "#6B7280" }}>{a.days_old}</td>
+                              <td className="px-4 py-3 text-sm text-right font-bold" style={{ color: "#EA4335" }}>{fmtFull(a.outstanding_balance)}</td>
+                              <td className="px-4 py-3 text-sm text-right font-semibold" style={{ color: a.days_old > 30 ? "#EA4335" : "#6B7280" }}>{a.days_old}</td>
                               <td className="px-4 py-3 text-sm">
                                 <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: band.bg, color: band.color }}>{band.label}</span>
                               </td>
@@ -431,10 +433,10 @@ export default function Reports() {
                           );
                         })}
                       </tbody>
-                      <tfoot style={{ background: "#374151", borderTop: "2px solid #CF291D" }}>
+                      <tfoot style={{ background: "#374151", borderTop: "2px solid #4285F4" }}>
                         <tr>
                           <td colSpan={3} className="px-4 py-3 text-right text-xs uppercase font-semibold" style={{ color: "#9CA3AF" }}>Total Outstanding</td>
-                          <td className="px-4 py-3 text-right font-bold text-sm" style={{ color: "#CF291D" }}>
+                          <td className="px-4 py-3 text-right font-bold text-sm" style={{ color: "#EA4335" }}>
                             Rs. {fmtFull(aging.reduce((s, a) => s + a.outstanding_balance, 0))}
                           </td>
                           <td colSpan={2}></td>
@@ -454,7 +456,7 @@ export default function Reports() {
 
 function KpiCard({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
   return (
-    <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #CF291D" }}>
+    <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", borderTop: "3px solid #4285F4" }}>
       <div className="w-7 h-7 rounded-lg flex items-center justify-center mb-2" style={{ background: "#FFF1F0" }}>
         {icon}
       </div>

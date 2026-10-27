@@ -2,9 +2,11 @@ import { useState, useRef, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen }  from "@tauri-apps/api/event";
 import {
-  RefreshCw, Home, ChevronRight, Wifi, WifiOff,
-  Calendar, Hash, Trophy, Star, Edit3, X, Zap, CheckCircle, Database,
-} from "lucide-react";
+  Refresh2, Home2, ArrowRight2, Wifi,
+  Calendar, Cup, Star1, Edit2, CloseCircle, Flash, TickCircle, Data,
+} from "iconsax-react";
+// WifiOff and Hash kept from Lucide — no direct Iconsax equivalent
+import { WifiOff as LucideWifiOff, Hash as LucideHash } from "lucide-react";
 import type { LotteryResult } from "../types";
 import { saveLotteryResult, getLatestLotteryResult, getLotteryResultByDate } from "../services/database";
 import { pushResultToCloud, pullResultsFromCloud, subscribeToCloudUpdates } from "../services/supabase";
@@ -25,7 +27,7 @@ const NLB_GAMES: GameInfo[] = [
   { slug:"ada-sampatha",      name:"Ada Sampatha",      nameLocal:"අද සම්පත",    days:"Daily",   gradient:"linear-gradient(135deg,#831843,#ec4899)", glow:"#ec4899", board:"NLB", hasLetter:true, numberCount:6, hasSuperNum:false, jackpot:"Rs. 4M"   },
   { slug:"ayubo",             name:"Ayubo",             nameLocal:"ආයුබෝ",        days:"Daily",   gradient:"linear-gradient(135deg,#064e3b,#10b981)", glow:"#10b981", board:"NLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 2M"   },
   { slug:"govisetha",         name:"Govisetha",         nameLocal:"ගොවිසෙත",     days:"Thu",     gradient:"linear-gradient(135deg,#14532d,#22c55e)", glow:"#22c55e", board:"NLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 3M",   logoName:"Govi Setha"          },
-  { slug:"mega-power",        name:"Mega Power",        nameLocal:"මෙගා පවර්",    days:"Daily",   gradient:"linear-gradient(135deg,#7f1d1d,#CF291D)",  glow:"#CF291D", board:"NLB", hasLetter:true, numberCount:5, hasSuperNum:false, jackpot:"Rs. 304M" },
+  { slug:"mega-power",        name:"Mega Power",        nameLocal:"මෙගා පවර්",    days:"Daily",   gradient:"linear-gradient(135deg,#1a56db,#4285F4)",  glow:"#4285F4", board:"NLB", hasLetter:true, numberCount:5, hasSuperNum:false, jackpot:"Rs. 304M" },
   { slug:"nlb-jaya",          name:"NLB Jaya",          nameLocal:"NLB ජය",       days:"Tue",     gradient:"linear-gradient(135deg,#1f2937,#6b7280)", glow:"#9ca3af", board:"NLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 500k" },
   { slug:"handahana",         name:"Handahana",         nameLocal:"හද හන",       days:"Tue",     gradient:"linear-gradient(135deg,#78350f,#fb923c)", glow:"#fb923c", board:"NLB", hasLetter:true, numberCount:4, hasSuperNum:false, jackpot:"Rs. 2M",   logoName:"Hada Hana"           },
   { slug:"mahajana-sampatha", name:"Mahajana Sampatha", nameLocal:"මහජන සම්පත",  days:"Tue/Sat", gradient:"linear-gradient(135deg,#1e40af,#3b82f6)", glow:"#3b82f6", board:"NLB", hasLetter:true, numberCount:6, hasSuperNum:true,  jackpot:"Rs. 10M"  },
@@ -187,7 +189,7 @@ function SuperBall({ number }: { number:string }) {
       </div>
       <span className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full"
         style={{ background:"#fef3c7", color:"#92400e" }}>
-        <Star size={9} fill="#92400e"/> Super No.
+        <Star1 size={9} variant="Bold" color="#92400e"/> Super No.
       </span>
     </div>
   );
@@ -277,7 +279,7 @@ function ManualEntryModal({ game, initialResult, onSave, onClose }: ModalProps) 
           style={{ background:game.gradient }}>
           <div>
             <div className="flex items-center gap-2 mb-0.5">
-              <Trophy size={18} className="text-white/80"/>
+              <Cup size={18} variant="Linear" color="currentColor" className="text-white/80"/>
               <span className="text-xs font-bold text-white/70 uppercase tracking-widest">
                 {initialResult && initialResult.source_url !== "sample" ? "Edit Result" : "Manual Entry"}
               </span>
@@ -288,7 +290,7 @@ function ManualEntryModal({ game, initialResult, onSave, onClose }: ModalProps) 
           <button onClick={onClose}
             className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:opacity-80"
             style={{ background:"rgba(255,255,255,0.2)" }}>
-            <X size={16} className="text-white"/>
+            <CloseCircle size={16} variant="Linear" color="currentColor" className="text-white"/>
           </button>
         </div>
 
@@ -401,7 +403,7 @@ function ManualEntryModal({ game, initialResult, onSave, onClose }: ModalProps) 
                   {entry.customPrizes.length > 1 && (
                     <button onClick={() => {
                       setEntry({...entry,customPrizes:entry.customPrizes.filter((_,j)=>j!==i)});
-                    }} style={{ color:"#CF291D" }}><X size={14}/></button>
+                    }} style={{ color:"#4285F4" }}><CloseCircle size={14} variant="Linear" color="currentColor"/></button>
                   )}
                 </div>
               ))}
@@ -414,7 +416,7 @@ function ManualEntryModal({ game, initialResult, onSave, onClose }: ModalProps) 
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
               style={{ background:game.gradient,
                 boxShadow:`0 4px 14px ${game.glow}35` }}>
-              <CheckCircle size={16}/> Save & Display Results
+              <TickCircle size={16} variant="Linear" color="currentColor"/> Save & Display Results
             </button>
             <button onClick={onClose}
               className="px-5 py-3 rounded-xl text-sm font-medium transition-all hover:bg-gray-50"
@@ -428,7 +430,7 @@ function ManualEntryModal({ game, initialResult, onSave, onClose }: ModalProps) 
       <style>{`
         .mlbl { display:block; font-size:.68rem; color:#9CA3AF; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:.3rem; }
         .mfld { border:1px solid #E8E8E8; border-radius:.6rem; padding:.4rem .65rem; font-size:.85rem; background:#FAFAFA; outline:none; transition:border-color .15s,box-shadow .15s; }
-        .mfld:focus { border-color:#CF291D; box-shadow:0 0 0 3px rgba(207,41,29,.1); }
+        .mfld:focus { border-color:#4285F4; box-shadow:0 0 0 3px rgba(66,133,244,.15); }
       `}</style>
     </div>
   );
@@ -669,7 +671,8 @@ export default function LiveResults() {
       {/* Breadcrumb */}
       <div className="flex items-center px-6 pt-4 pb-2">
         <nav className="flex items-center gap-1 text-xs" style={{ color:"#9CA3AF" }}>
-          <Home size={12}/><ChevronRight size={11}/>
+          
+          <Home2 size={12} variant="Linear" color="#9AA0A6"/><ArrowRight2 size={11} variant="Linear" color="#9AA0A6"/>
           <span className="font-semibold" style={{ color:"#1D1D1D" }}>Live Results</span>
         </nav>
       </div>
@@ -680,7 +683,7 @@ export default function LiveResults() {
         <div style={{ background:"#fff", borderRadius:16, border:"1px solid #E5E7EB",
           boxShadow:"0 2px 12px rgba(0,0,0,0.06)", overflow:"hidden" }}>
           {/* Top banner */}
-          <div style={{ background:"linear-gradient(135deg,#CF291D 0%,#991B1B 100%)",
+          <div style={{ background:"linear-gradient(135deg,#4285F4 0%,#1A73E8 100%)",
             padding:"18px 28px", display:"flex", alignItems:"center", gap:20 }}>
             {/* NLB logo */}
             <div style={{ flexShrink:0, background:"rgba(255,255,255,0.15)", borderRadius:12,
@@ -699,7 +702,7 @@ export default function LiveResults() {
               <h1 style={{ fontSize:26, fontWeight:900, color:"#FFFFFF", margin:0,
                 display:"flex", alignItems:"center", justifyContent:"center", gap:10,
                 textShadow:"0 2px 8px rgba(0,0,0,0.2)" }}>
-                <Trophy size={24} style={{ color:"#FCD34D" }}/>
+                <Cup size={24} variant="Linear" color="#FCD34D"/>
                 Live Lottery Results
               </h1>
               <div style={{ marginTop:8, display:"inline-block", padding:"4px 16px",
@@ -726,9 +729,9 @@ export default function LiveResults() {
                 style={{
                   flex:1, padding:"12px 0", fontSize:13, fontWeight:700,
                   background: board===b ? "#fff" : "transparent",
-                  color: board===b ? (b==="NLB"?"#CF291D":"#1d4ed8") : "#9CA3AF",
+                  color: board===b ? (b==="NLB"?"#4285F4":"#1d4ed8") : "#9CA3AF",
                   border:"none", cursor:"pointer",
-                  borderBottom: board===b ? `3px solid ${b==="NLB"?"#CF291D":"#1d4ed8"}` : "3px solid transparent",
+                  borderBottom: board===b ? `3px solid ${b==="NLB"?"#4285F4":"#1d4ed8"}` : "3px solid transparent",
                   borderRight: i===0 ? "1px solid #E5E7EB" : undefined,
                   transition:"all 0.15s",
                   boxShadow: board===b ? "0 2px 8px rgba(0,0,0,0.06)" : "none",
@@ -838,7 +841,7 @@ export default function LiveResults() {
         {syncing && (
           <div className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium"
             style={{ background:"#F0FFF4", border:"1px solid #BBF7D0", color:"#16a34a" }}>
-            <RefreshCw size={12} className="animate-spin"/>
+            <Refresh2 size={12} variant="Linear" color="currentColor" className="animate-spin"/>
             Auto-syncing results in background…
           </div>
         )}
@@ -848,7 +851,7 @@ export default function LiveResults() {
 
           {/* Step indicators */}
           <div className="flex items-center gap-0.5 text-[10px] font-bold" style={{ color:"#9CA3AF" }}>
-            <span className="px-1.5 py-0.5 rounded" style={{ background:"#CF291D", color:"#fff" }}>1</span>
+            <span className="px-1.5 py-0.5 rounded" style={{ background:"#4285F4", color:"#fff" }}>1</span>
             <span>Game</span>
             <span className="mx-1">→</span>
             <span className="px-1.5 py-0.5 rounded" style={{ background:"#1D1D1D", color:"#fff" }}>2</span>
@@ -865,7 +868,7 @@ export default function LiveResults() {
 
           {/* Step 2: Date picker */}
           <div className="flex items-center gap-1.5">
-            <Calendar size={13} style={{ color:"#9CA3AF" }}/>
+            <Calendar size={13} variant="Linear" color="#9CA3AF"/>
             <input
               type="date"
               value={selectedDate}
@@ -886,7 +889,7 @@ export default function LiveResults() {
 
           {/* Step 3: Draw number */}
           <div className="flex items-center gap-1.5">
-            <Hash size={13} style={{ color:"#9CA3AF" }}/>
+            <LucideHash size={13} style={{ color:"#9CA3AF" }}/>
             <input
               type="text"
               value={drawNumber}
@@ -894,7 +897,7 @@ export default function LiveResults() {
               placeholder="Draw No. (optional)"
               className="rounded-lg px-2.5 py-1.5 text-sm focus:outline-none font-mono"
               style={{ border:"1px solid #E8E8E8", background:"#FFFFFF", width:150, color:"#1D1D1D" }}
-              onFocus={e => (e.currentTarget.style.borderColor = "#CF291D")}
+              onFocus={e => (e.currentTarget.style.borderColor = "#4285F4")}
               onBlur={e  => (e.currentTarget.style.borderColor = "#E8E8E8")}
               title="e.g. 0421 — leave empty for latest"
             />
@@ -904,20 +907,20 @@ export default function LiveResults() {
 
           <button onClick={handleFetch} disabled={loading}
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-50"
-            style={{ background:loading?"#374151":"linear-gradient(135deg,#CF291D,#B50717)",
+            style={{ background:loading?"#374151":"linear-gradient(135deg,#4285F4,#1A73E8)",
               boxShadow:loading?"none":"0 4px 14px rgba(207,41,29,0.35)" }}>
-            {loading ? <><RefreshCw size={15} className="animate-spin"/> Fetching…</> : <><Zap size={15}/> Fetch Live Results</>}
+            {loading ? <><Refresh2 size={15} variant="Linear" color="currentColor" className="animate-spin"/> Fetching…</> : <><Flash size={15} variant="Linear" color="currentColor"/> Fetch Live Results</>}
           </button>
           <button onClick={()=>setShowModal(true)}
             className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
             style={{ background:"#FFFFFF", border:`2px solid ${selectedGame.glow}40`, color:selectedGame.glow,
               boxShadow:`0 2px 8px ${selectedGame.glow}15` }}>
-            <Edit3 size={14}/> Enter Manually
+            <Edit2 size={14} variant="Linear" color="currentColor"/> Enter Manually
           </button>
           {savedIndicator && (
             <div className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg"
               style={{ background:"#F0FFF4", border:"1px solid #BBF7D0", color:"#16a34a" }}>
-              <Database size={12}/> Saved locally ✓
+              <Data size={12} variant="Linear" color="currentColor"/> Saved locally ✓
               {cloudSynced && <span style={{ color:"#0ea5e9" }}>· ☁ Cloud</span>}
             </div>
           )}
@@ -926,7 +929,7 @@ export default function LiveResults() {
             if (src === "sample") return (
               <div className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg"
                 style={{ background:"#FFFBEB", border:"1px solid #FDE68A", color:"#92400e" }}>
-                <Star size={11} fill="#92400e"/> Sample data — use Enter Manually for verified results
+                <Star1 size={11} variant="Bold" color="#92400e"/> Sample data — use Enter Manually for verified results
               </div>
             );
             const isSaved = src === "Manual entry" || src === "Database (saved)";
@@ -934,7 +937,7 @@ export default function LiveResults() {
             return (
               <div className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg"
                 style={{ background:"#F0FFF4", border:"1px solid #BBF7D0", color:"#16a34a" }}>
-                {isSaved ? <><Database size={12}/> SQLite verified</> : isLive ? <><Wifi size={12}/> Live fetched</> : <><CheckCircle size={12}/> Verified</>}
+                {isSaved ? <><Data size={12} variant="Linear" color="currentColor"/> SQLite verified</> : isLive ? <><Wifi size={12} variant="Linear" color="currentColor"/> Live fetched</> : <><TickCircle size={12} variant="Linear" color="currentColor"/> Verified</>}
                 {display.draw_date && <span style={{ color:"#9CA3AF" }}>· {display.draw_date}</span>}
                 {display.fetched_at && display.fetched_at !== "unknown" && (
                   <span style={{ color:"#9CA3AF" }}>· {new Date(Number(display.fetched_at)).toLocaleTimeString("en-LK",{hour:"2-digit",minute:"2-digit"})}</span>
@@ -981,12 +984,12 @@ export default function LiveResults() {
                 <div className="flex items-center gap-4 mt-2 flex-wrap">
                   {display.draw_number && (
                     <span className="flex items-center gap-1 text-xs text-white/80">
-                      <Hash size={11}/> Draw #{display.draw_number}
+                      <LucideHash size={11}/> Draw #{display.draw_number}
                     </span>
                   )}
                   {display.draw_date && (
                     <span className="flex items-center gap-1 text-xs text-white/80">
-                      <Calendar size={11}/> {display.draw_date}
+                      <Calendar size={11} variant="Linear" color="currentColor"/> {display.draw_date}
                     </span>
                   )}
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
@@ -1014,11 +1017,11 @@ export default function LiveResults() {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:opacity-80"
                   style={{ background:"rgba(255,255,255,0.2)", color:"#FFFFFF" }}
                   title="Edit / correct this result">
-                  <Edit3 size={13}/> Edit
+                  <Edit2 size={13} variant="Linear" color="currentColor"/> Edit
                 </button>
                 <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
                   style={{ background:"rgba(255,255,255,0.15)" }}>
-                  <Trophy size={22} className="text-white"/>
+                  <Cup size={22} variant="Linear" color="currentColor" className="text-white"/>
                 </div>
               </div>
             </div>
@@ -1065,7 +1068,7 @@ export default function LiveResults() {
               <div style={{ borderTop:"1px solid #F3F4F6" }}>
                 <div className="flex items-center gap-2 px-5 py-3"
                   style={{ background:"#FAFAFA", borderBottom:"1px solid #F3F4F6" }}>
-                  <Trophy size={12} style={{ color:"#9CA3AF" }}/>
+                  <Cup size={12} variant="Linear" color="#9CA3AF"/>
                   <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color:"#9CA3AF" }}>
                     Prize Structure · {display.game_name}
                   </p>
@@ -1129,21 +1132,21 @@ export default function LiveResults() {
         {display?.error && !loading && (
           <div className="rounded-2xl p-7 text-center shadow-sm"
             style={{ background:"#FFFFFF", border:"1px solid #FECACA" }}>
-            <WifiOff size={38} className="mx-auto mb-3" style={{ color:"#FECACA" }}/>
-            <p className="font-bold text-base mb-1" style={{ color:"#CF291D" }}>Could not fetch live results</p>
+            <LucideWifiOff size={38} className="mx-auto mb-3" style={{ color:"#FECACA" }}/>
+            <p className="font-bold text-base mb-1" style={{ color:"#EA4335" }}>Could not fetch live results</p>
             <p className="text-xs mb-4 max-w-md mx-auto" style={{ color:"#9CA3AF" }}>{display.error}</p>
             <div className="text-xs p-4 rounded-xl text-left space-y-1.5 max-w-md mx-auto mb-4"
               style={{ background:"#FFF8F8", border:"1px solid #FECACA", color:"#6B7280" }}>
-              <p className="font-bold mb-1" style={{ color:"#CF291D" }}>Suggestions:</p>
+              <p className="font-bold mb-1" style={{ color:"#EA4335" }}>Suggestions:</p>
               <p>• Check internet and click <strong>Fetch Live Results</strong> again</p>
               <p>• Visit <strong>www.nlb.lk</strong> / <strong>www.dlb.lk</strong> directly</p>
               <p>• Use <strong>"Enter Manually"</strong> to type the winning numbers</p>
             </div>
             <button onClick={()=>setShowModal(true)}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white"
-              style={{ background:"linear-gradient(135deg,#CF291D,#B50717)",
-                boxShadow:"0 4px 12px rgba(207,41,29,0.3)" }}>
-              <Edit3 size={14}/> Enter Manually
+              style={{ background:"linear-gradient(135deg,#4285F4,#1A73E8)",
+                boxShadow:"0 4px 12px rgba(66,133,244,0.35)" }}>
+              <Edit2 size={14} variant="Linear" color="currentColor"/> Enter Manually
             </button>
           </div>
         )}
@@ -1156,7 +1159,7 @@ export default function LiveResults() {
             <div className="px-6 py-10 text-center">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
                 style={{ background:"#F3F4F6" }}>
-                <Calendar size={26} style={{ color:"#BFBFBF" }}/>
+                <Calendar size={26} variant="Linear" color="#BFBFBF"/>
               </div>
               <p className="font-bold text-base mb-1" style={{ color:"#1D1D1D" }}>
                 No results for {selectedDate}
@@ -1172,8 +1175,8 @@ export default function LiveResults() {
                 </button>
                 <button onClick={() => { setShowModal(true); }}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-                  style={{ background:"#CF291D" }}>
-                  <Edit3 size={13}/> Enter for This Date
+                  style={{ background:"#4285F4" }}>
+                  <Edit2 size={13} variant="Linear" color="currentColor"/> Enter for This Date
                 </button>
               </div>
             </div>
@@ -1188,7 +1191,7 @@ export default function LiveResults() {
             <div className="px-6 py-12 text-center">
               <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg"
                 style={{ background:selectedGame.gradient, boxShadow:`0 8px 32px ${selectedGame.glow}40` }}>
-                <Trophy size={34} className="text-white"/>
+                <Cup size={34} variant="Linear" color="currentColor" className="text-white"/>
               </div>
               <h2 className="font-black text-xl mb-1" style={{ color:"#1D1D1D" }}>{selectedGame.name}</h2>
               <p className="text-base font-medium mb-0.5" style={{ color:selectedGame.glow }}>{selectedGame.nameLocal}</p>
@@ -1199,7 +1202,7 @@ export default function LiveResults() {
               {/* Status message */}
               {syncing ? (
                 <div className="flex items-center justify-center gap-2 mb-5 text-sm" style={{ color:"#16a34a" }}>
-                  <RefreshCw size={14} className="animate-spin"/>
+                  <Refresh2 size={14} variant="Linear" color="currentColor" className="animate-spin"/>
                   Auto-syncing from official site…
                 </div>
               ) : (
@@ -1211,12 +1214,12 @@ export default function LiveResults() {
                 <button onClick={handleFetch} disabled={loading}
                   className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white hover:opacity-90 disabled:opacity-50"
                   style={{ background:selectedGame.gradient, boxShadow:`0 6px 20px ${selectedGame.glow}40` }}>
-                  <Zap size={16}/> Fetch Latest Results
+                  <Flash size={16} variant="Linear" color="currentColor"/> Fetch Latest Results
                 </button>
                 <button onClick={()=>setShowModal(true)}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold"
                   style={{ background:"#F9F9F9", border:`1px solid ${selectedGame.glow}30`, color:selectedGame.glow }}>
-                  <Edit3 size={14}/> Enter Manually
+                  <Edit2 size={14} variant="Linear" color="currentColor"/> Enter Manually
                 </button>
               </div>
             </div>
