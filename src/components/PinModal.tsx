@@ -22,8 +22,8 @@ function LockIcon({ status }: { status: "idle" | "checking" | "success" | "error
   const isError   = status === "error";
   const isChecking = status === "checking";
 
-  const bodyColor   = isOpen ? "#16A34A" : isLocked || isError ? "#DC2626" : isChecking ? "#2563EB" : "#CF291D";
-  const glowColor   = isOpen ? "rgba(22,163,74,0.3)" : isLocked || isError ? "rgba(220,38,38,0.3)" : "rgba(207,41,29,0.25)";
+  const bodyColor   = isOpen ? "#34A853" : isLocked || isError ? "#EA4335" : isChecking ? "#4285F4" : "#4285F4";
+  const glowColor   = isOpen ? "rgba(52,168,83,0.28)" : isLocked || isError ? "rgba(234,67,53,0.28)" : "rgba(66,133,244,0.22)";
 
   return (
     <div style={{
@@ -60,7 +60,7 @@ function LockIcon({ status }: { status: "idle" | "checking" | "success" | "error
             ? "M8 11 L8 6.5 Q8 3 12 3 Q16 3 16 6.5 L16 9"   // open — raised & angled
             : "M8 11 L8 7 Q8 3 12 3 Q16 3 16 7 L16 11"       // closed
           }
-          stroke={isOpen ? "#16A34A" : isLocked || isError ? "#DC2626" : "#CF291D"}
+          stroke={isOpen ? "#34A853" : isLocked || isError ? "#EA4335" : "#4285F4"}
           strokeWidth="2.5" strokeLinecap="round" fill="none"
           style={{ transition: "all 0.45s cubic-bezier(0.34,1.56,0.64,1)", transformOrigin: "16px 11px" }}
         />
@@ -256,9 +256,9 @@ export default function PinModal({
         {/* ── Top brand bar ── */}
         <div style={{
           height: 5,
-          background: status === "success" ? "linear-gradient(90deg,#16A34A,#22C55E)"
-                    : status === "locked"  ? "linear-gradient(90deg,#DC2626,#EF4444)"
-                    : "linear-gradient(90deg,#CF291D,#B50717)",
+          background: status === "success" ? "linear-gradient(90deg,#34A853,#22C55E)"
+                    : status === "locked"  ? "linear-gradient(90deg,#EA4335,#EF4444)"
+                    : "linear-gradient(90deg,#4285F4,#1A73E8)",
           transition: "background 0.4s",
         }} />
 
@@ -303,17 +303,17 @@ export default function PinModal({
           <div style={{ display: "flex", justifyContent: "center", gap: 14, marginBottom: 12 }}>
             {Array.from({ length: PIN_LENGTH }).map((_, i) => {
               const filled = i < digits.length;
-              const dotColor = status === "success" ? "#16A34A"
-                             : status === "error"   ? "#DC2626"
-                             : filled ? "#CF291D" : undefined;
+              const dotColor = status === "success" ? "#34A853"
+                             : status === "error"   ? "#EA4335"
+                             : filled ? "#4285F4" : undefined;
               return (
                 <div key={i} style={{
                   width: 14, height: 14, borderRadius: "50%",
-                  border: `2.5px solid ${filled ? dotColor ?? "#CF291D" : "#CBD5E1"}`,
-                  background: filled ? (dotColor ?? "#CF291D") : "transparent",
+                  border: `2.5px solid ${filled ? dotColor ?? "#4285F4" : "#CBD5E1"}`,
+                  background: filled ? (dotColor ?? "#4285F4") : "transparent",
                   transform: filled ? "scale(1.1)" : "scale(1)",
                   transition: "all 0.15s ease",
-                  boxShadow: filled ? `0 0 8px ${dotColor ?? "#CF291D"}60` : "none",
+                  boxShadow: filled ? `0 0 8px ${dotColor ?? "#4285F4"}60` : "none",
                 }} />
               );
             })}
@@ -379,18 +379,18 @@ export default function PinModal({
                   cursor: disabled ? "not-allowed" : "pointer",
                   border: "none", transition: "background 0.1s",
                   background: isConfirm
-                    ? (status === "success" ? "#16A34A" : "#CF291D")
+                    ? (status === "success" ? "#34A853" : "#4285F4")
                     : isBack ? "#F1F5F9" : "#FFFFFF",
                   color: isConfirm ? "#FFFFFF" : isBack ? "#64748B" : "#1E293B",
                   opacity: disabled ? 0.35 : 1,
                 }}
                 onMouseEnter={e => {
                   if (!disabled) e.currentTarget.style.background =
-                    isConfirm ? "#B50717" : isBack ? "#E2E8F0" : "#F8FAFC";
+                    isConfirm ? "#1A73E8" : isBack ? "#E2E8F0" : "#F8FAFC";
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.background =
-                    isConfirm ? (status === "success" ? "#16A34A" : "#CF291D") : isBack ? "#F1F5F9" : "#FFFFFF";
+                    isConfirm ? (status === "success" ? "#34A853" : "#4285F4") : isBack ? "#F1F5F9" : "#FFFFFF";
                 }}
               >
                 {isBack ? <Delete size={18} /> : k}

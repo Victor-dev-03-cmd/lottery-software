@@ -195,7 +195,7 @@ export default function App() {
       <div style={{ background: "#131313" }}
         className="flex items-center justify-center h-screen">
         <div className="text-center p-8 max-w-lg">
-          <div className="text-xl font-bold mb-3" style={{ color: "#CF291D" }}>Startup Error</div>
+          <div className="text-xl font-bold mb-3" style={{ color: "#EA4335" }}>Startup Error</div>
           {isBrowser ? (
             <div className="text-sm space-y-2" style={{ color: "#9CA3AF" }}>
               <p>Run the app with: <code className="text-white font-mono">bun tauri dev</code></p>

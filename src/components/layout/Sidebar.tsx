@@ -19,66 +19,66 @@ const NAV_GROUPS: NavGroup[] = [
   {
     heading: "OVERVIEW",
     items: [
-      { view: "dashboard", label: "Dashboard",  icon: <Category2  size={20} variant="Linear" /> },
-      { view: "alerts",    label: "Alerts",     icon: <Notification size={20} variant="Linear" /> },
+      { view: "dashboard", label: "Dashboard",  icon: <Category2  size={20} variant="Linear" color="currentColor" /> },
+      { view: "alerts",    label: "Alerts",     icon: <Notification size={20} variant="Linear" color="currentColor" /> },
     ],
   },
   {
     heading: "PURCHASING",
     items: [
-      { view: "purchases",        label: "Stock Purchases",    icon: <ShoppingCart      size={20} variant="Linear" /> },
-      { view: "supplier-returns", label: "Return to Supplier", icon: <RotateLeft        size={20} variant="Linear" /> },
-      { view: "inventory",        label: "Stock Inventory",    icon: <House             size={20} variant="Linear" /> },
+      { view: "purchases",        label: "Stock Purchases",    icon: <ShoppingCart      size={20} variant="Linear" color="currentColor" /> },
+      { view: "supplier-returns", label: "Return to Supplier", icon: <RotateLeft        size={20} variant="Linear" color="currentColor" /> },
+      { view: "inventory",        label: "Stock Inventory",    icon: <House             size={20} variant="Linear" color="currentColor" /> },
     ],
   },
   {
     heading: "SALES",
     items: [
-      { view: "new-invoice",        label: "New Invoice",       icon: <AddCircle        size={20} variant="Linear" /> },
-      { view: "draft-invoices",     label: "Draft",             icon: <Clock            size={20} variant="Linear" /> },
-      { view: "confirmed-invoices", label: "Confirm / Waiting", icon: <DocumentFilter   size={20} variant="Linear" /> },
-      { view: "invoices",           label: "Paid Invoices",     icon: <DocumentText     size={20} variant="Linear" /> },
-      { view: "cancelled-invoices", label: "Cancelled",         icon: <ClipboardClose   size={20} variant="Linear" /> },
-      { view: "invoice-model",      label: "Invoice Model",     icon: <Brush            size={20} variant="Linear" /> },
-      { view: "returns",            label: "Agent Returns",     icon: <Money3           size={20} variant="Linear" /> },
-      { view: "ledger",             label: "Payment Agent",     icon: <Book1            size={20} variant="Linear" /> },
+      { view: "new-invoice",        label: "New Invoice",       icon: <AddCircle        size={20} variant="Linear" color="currentColor" /> },
+      { view: "draft-invoices",     label: "Draft",             icon: <Clock            size={20} variant="Linear" color="currentColor" /> },
+      { view: "confirmed-invoices", label: "Confirm / Waiting", icon: <DocumentFilter   size={20} variant="Linear" color="currentColor" /> },
+      { view: "invoices",           label: "Paid Invoices",     icon: <DocumentText     size={20} variant="Linear" color="currentColor" /> },
+      { view: "cancelled-invoices", label: "Cancelled",         icon: <ClipboardClose   size={20} variant="Linear" color="currentColor" /> },
+      { view: "invoice-model",      label: "Invoice Model",     icon: <Brush            size={20} variant="Linear" color="currentColor" /> },
+      { view: "returns",            label: "Agent Returns",     icon: <Money3           size={20} variant="Linear" color="currentColor" /> },
+      { view: "ledger",             label: "Payment Agent",     icon: <Book1            size={20} variant="Linear" color="currentColor" /> },
     ],
   },
   {
     heading: "COLLECTIONS",
     items: [
-      { view: "collections", label: "Daily Collections", icon: <ClipboardText    size={20} variant="Linear" /> },
-      { view: "commission",  label: "Commission",        icon: <PercentageCircle size={20} variant="Linear" /> },
-      { view: "petty-cash",  label: "Petty Cash",        icon: <Wallet           size={20} variant="Linear" /> },
+      { view: "collections", label: "Daily Collections", icon: <ClipboardText    size={20} variant="Linear" color="currentColor" /> },
+      { view: "commission",  label: "Commission",        icon: <PercentageCircle size={20} variant="Linear" color="currentColor" /> },
+      { view: "petty-cash",  label: "Petty Cash",        icon: <Wallet           size={20} variant="Linear" color="currentColor" /> },
     ],
   },
   {
     heading: "AGENTS",
     items: [
-      { view: "agents",       label: "Agent Profiles", icon: <People    size={20} variant="Linear" /> },
-      { view: "distribution", label: "Distribution",   icon: <Hierarchy size={20} variant="Linear" /> },
+      { view: "agents",       label: "Agent Profiles", icon: <People    size={20} variant="Linear" color="currentColor" /> },
+      { view: "distribution", label: "Distribution",   icon: <Hierarchy size={20} variant="Linear" color="currentColor" /> },
     ],
   },
   {
     heading: "ANALYTICS",
     items: [
-      { view: "reports",          label: "Reports",         icon: <Chart21 size={20} variant="Linear" /> },
-      { view: "profit-analytics", label: "Profit & Margin", icon: <TrendUp size={20} variant="Linear" /> },
-      { view: "ai-analytics",     label: "AI Intelligence", icon: <Cpu     size={20} variant="Linear" /> },
-      { view: "live-results",     label: "Live Results",    icon: <Cup     size={20} variant="Linear" /> },
+      { view: "reports",          label: "Reports",         icon: <Chart21 size={20} variant="Linear" color="currentColor" /> },
+      { view: "profit-analytics", label: "Profit & Margin", icon: <TrendUp size={20} variant="Linear" color="currentColor" /> },
+      { view: "ai-analytics",     label: "AI Intelligence", icon: <Cpu     size={20} variant="Linear" color="currentColor" /> },
+      { view: "live-results",     label: "Live Results",    icon: <Cup     size={20} variant="Linear" color="currentColor" /> },
     ],
   },
   {
     heading: "OPERATIONS",
     items: [
-      { view: "payroll",      label: "Workers & Salary", icon: <UserEdit size={20} variant="Linear" /> },
-      { view: "print-export", label: "Print & Export",   icon: <Printer  size={20} variant="Linear" /> },
+      { view: "payroll",      label: "Workers & Salary", icon: <UserEdit size={20} variant="Linear" color="currentColor" /> },
+      { view: "print-export", label: "Print & Export",   icon: <Printer  size={20} variant="Linear" color="currentColor" /> },
     ],
   },
   {
     heading: "SYSTEM",
     items: [
-      { view: "settings", label: "Settings", icon: <Setting2 size={20} variant="Linear" /> },
+      { view: "settings", label: "Settings", icon: <Setting2 size={20} variant="Linear" color="currentColor" /> },
     ],
   },
 ];
@@ -180,7 +180,7 @@ export default function Sidebar({
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
             aria-label="Close navigation"
           >
-            <ArrowLeft2 size={20} variant="Linear" />
+            <ArrowLeft2 size={20} variant="Linear" color="currentColor" />
           </button>
         )}
         {/* Logo mark */}
@@ -357,10 +357,10 @@ export default function Sidebar({
           }}
         >
           {collapsed ? (
-            <ArrowRight2 size={14} variant="Linear" />
+            <ArrowRight2 size={14} variant="Linear" color="currentColor" />
           ) : (
             <span className="flex items-center gap-1.5 text-xs font-semibold px-4">
-              <ArrowLeft2 size={12} variant="Linear" /> Collapse
+              <ArrowLeft2 size={12} variant="Linear" color="currentColor" /> Collapse
             </span>
           )}
         </button>

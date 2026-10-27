@@ -349,7 +349,7 @@ function DraggableCalc({ onClose }: { onClose: () => void }) {
               onMouseEnter={e => (e.currentTarget.style.background = hoverBg)}
               onMouseLeave={e => (e.currentTarget.style.background = bg)}
             >
-              {k === "⌫" ? <Back size={15} variant="Linear" /> : (
+              {k === "⌫" ? <Back size={15} variant="Linear" color="currentColor" /> : (
                 <span className={isEq(k) || isOp(k) ? "text-lg" : ""}>{k}</span>
               )}
             </button>
@@ -606,7 +606,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
           onMouseEnter={e => { e.currentTarget.style.background = "#F1F3F4"; e.currentTarget.style.color = BRAND; }}
           onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = TB.muted; }}
         >
-          <HambergerMenu size={20} variant="Linear" />
+          <HambergerMenu size={20} variant="Linear" color="currentColor" />
         </button>
         {/* Date/Time widget */}
         <div
@@ -653,7 +653,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
           style={{ background: "#F0F0FF", border: "1px solid rgba(79,70,229,0.22)", color: "#4f46e5" }}
           onMouseEnter={e => { e.currentTarget.style.background = "rgba(79,70,229,0.10)"; }}
           onMouseLeave={e => { e.currentTarget.style.background = "#F0F0FF"; }}>
-          <Cpu size={14} variant="Linear" />
+          <Cpu size={14} variant="Linear" color="currentColor" />
           <span className="hidden xl:inline">AI</span>
         </button>
 
@@ -665,14 +665,14 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
           style={{ background: TB.chipBg, border: `1px solid ${TB.chipBdr}`, color: TB.muted }}
           onMouseEnter={e => { e.currentTarget.style.background = "rgba(66,133,244,0.10)"; e.currentTarget.style.color = BRAND; }}
           onMouseLeave={e => { e.currentTarget.style.background = TB.chipBg; e.currentTarget.style.color = TB.muted; }}>
-          <Setting2 size={14} variant="Linear" />
+          <Setting2 size={14} variant="Linear" color="currentColor" />
           <span className="hidden xl:inline">Settings</span>
         </button>
       </div>
 
       {/* CENTER — Search (responsive width) */}
       <div ref={searchRef} className="relative w-[200px] lg:w-[300px] xl:w-[400px] shrink-0">
-        <SearchNormal1 size={15} variant="Linear" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: TB.muted }}/>
+        <SearchNormal1 size={15} variant="Linear" color={TB.muted} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input
           type="text"
           placeholder="Search invoices, barcodes, agents…  (F4)"
@@ -692,7 +692,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
           <button onClick={() => { setQuery(""); setResults([]); }}
             aria-label="Clear search"
             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-            <CloseCircle size={14} variant="Linear" />
+            <CloseCircle size={14} variant="Linear" color="currentColor" />
           </button>
         )}
         {showResults && results.length > 0 && (
@@ -703,8 +703,8 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                 className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 text-left">
                 <span className="shrink-0" style={{ color: BRAND }}>
                   {r.type === "invoice"
-                    ? <DocumentText size={16} variant="Linear" />
-                    : <People size={16} variant="Linear" />}
+                    ? <DocumentText size={16} variant="Linear" color="currentColor" />
+                    : <People size={16} variant="Linear" color="currentColor" />}
                 </span>
                 <div>
                   <div className="text-sm font-medium text-gray-800">{r.label}</div>
@@ -727,7 +727,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
           style={{ background: BRAND }}
           onMouseEnter={(e) => (e.currentTarget.style.background = BRAND_H)}
           onMouseLeave={(e) => (e.currentTarget.style.background = BRAND)}>
-          <AddCircle size={16} variant="Linear" />
+          <AddCircle size={16} variant="Linear" color="currentColor" />
           <span className="hidden xl:inline">New Invoice</span>
         </button>
 
@@ -738,7 +738,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
           className="relative p-2 rounded-lg transition-all"
           style={{ color: calcOpen ? BRAND : TB.muted, background: calcOpen ? "rgba(66,133,244,0.10)" : "transparent" }}
         >
-          <Calculator size={18} variant="Linear" />
+          <Calculator size={18} variant="Linear" color="currentColor" />
         </button>
         {calcOpen && createPortal(
           <DraggableCalc onClose={() => setCalcOpen(false)} />,
@@ -756,7 +756,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
             }}
             className="relative p-2 rounded-lg transition-all"
             style={{ color: notifOpen ? BRAND : TB.muted, background: notifOpen ? "rgba(66,133,244,0.10)" : "transparent" }}>
-            <Notification size={18} variant="Linear" />
+            <Notification size={18} variant="Linear" color="currentColor" />
             {totalNotifs > 0 && !seen && (
               <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
                 {totalNotifs > 9 ? "9+" : totalNotifs}
@@ -771,7 +771,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
               <div className="flex items-center justify-between px-4 py-3"
                 style={{ borderBottom: "1px solid #F3F4F6" }}>
                 <div className="flex items-center gap-2">
-                  <Notification size={15} variant="Linear" style={{ color: BRAND }} />
+                  <Notification size={15} variant="Linear" color={BRAND} />
                   <span className="font-bold text-sm" style={{ color: "#202124" }}>Notifications</span>
                   {totalNotifs > 0 && (
                     <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
@@ -783,14 +783,14 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                 <button onClick={() => setNotifOpen(false)}
                   aria-label="Close notifications"
                   className="text-gray-400 hover:text-gray-600">
-                  <CloseCircle size={16} variant="Linear" />
+                  <CloseCircle size={16} variant="Linear" color="currentColor" />
                 </button>
               </div>
 
               {/* Alert items */}
               {totalNotifs === 0 ? (
                 <div className="px-4 py-8 text-center">
-                  <TickCircle size={28} variant="Linear" className="mx-auto mb-2" style={{ color: "#34A853" }} />
+                  <TickCircle size={28} variant="Linear" color="#34A853" className="mx-auto mb-2" />
                   <p className="text-sm font-medium" style={{ color: "#374151" }}>All clear!</p>
                   <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>No pending alerts at this time.</p>
                 </div>
@@ -806,7 +806,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                     >
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                         style={{ background: "#FFF1F0" }}>
-                        <Warning2 size={16} variant="Linear" style={{ color: "#EA4335" }} />
+                        <Warning2 size={16} variant="Linear" color="#EA4335" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold" style={{ color: "#1D1D1D" }}>
@@ -832,7 +832,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                     >
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                         style={{ background: "#FFFBEB" }}>
-                        <Box1 size={16} variant="Linear" style={{ color: "#FBBC05" }} />
+                        <Box1 size={16} variant="Linear" color="#FBBC05" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold" style={{ color: "#1D1D1D" }}>
@@ -858,7 +858,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                     >
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                         style={{ background: "#FFFBEB" }}>
-                        <RotateLeft size={16} variant="Linear" style={{ color: "#FBBC05" }} />
+                        <RotateLeft size={16} variant="Linear" color="#FBBC05" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold" style={{ color: "#1D1D1D" }}>
@@ -886,7 +886,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                   onMouseEnter={e => (e.currentTarget.style.background = BRAND_H)}
                   onMouseLeave={e => (e.currentTarget.style.background = BRAND)}
                 >
-                  <ExportCircle size={15} variant="Linear" /> View All Alerts & Reminders
+                  <ExportCircle size={15} variant="Linear" color="currentColor" /> View All Alerts & Reminders
                 </button>
               </div>
             </div>
@@ -901,7 +901,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
             background: dbReady ? "#F0FDF4" : "#FEF2F2",
             border: `1px solid ${dbReady ? "rgba(22,163,74,0.28)" : "rgba(239,68,68,0.28)"}`,
           }}>
-          <Data size={14} variant="Linear" style={{ color: dbReady ? "#34A853" : "#EA4335" }} />
+          <Data size={14} variant="Linear" color={dbReady ? "#34A853" : "#EA4335"} />
           <span className="hidden xl:inline" style={{ color: dbReady ? "#16a34a" : "#ef4444" }}>
             {dbReady ? "SQLite Online" : "Offline"}
           </span>
@@ -1157,12 +1157,12 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
               boxShadow: roleMenuOpen ? `0 0 0 3px rgba(66,133,244,0.14)` : "none",
             }}>
             {role === "admin"
-              ? <ShieldTick size={13} variant="Linear" />
-              : <UserSquare size={13} variant="Linear" />}
+              ? <ShieldTick size={13} variant="Linear" color="currentColor" />
+              : <UserSquare size={13} variant="Linear" color="currentColor" />}
             <span className="hidden xl:inline uppercase tracking-wider">
               {role === "admin" ? "Admin" : role === "cashier" ? "Cashier" : "Guest"}
             </span>
-            <ArrowDown2 size={11} variant="Linear" className={`hidden xl:block transition-transform ${roleMenuOpen ? "rotate-180" : ""}`}/>
+            <ArrowDown2 size={11} variant="Linear" color="currentColor" className={`hidden xl:block transition-transform ${roleMenuOpen ? "rotate-180" : ""}`}/>
           </button>
 
           {/* Role dropdown — glass panel */}
@@ -1185,8 +1185,8 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                   <div className="w-8 h-8 rounded-xl flex items-center justify-center"
                     style={{ background: "rgba(66,133,244,0.10)" }}>
                     {role === "admin"
-                      ? <ShieldTick size={15} variant="Linear" style={{ color: BRAND }} />
-                      : <UserSquare size={15} variant="Linear" style={{ color: "#2563eb" }} />}
+                      ? <ShieldTick size={15} variant="Linear" color={BRAND} />
+                      : <UserSquare size={15} variant="Linear" color="#2563eb" />}
                   </div>
                   <div>
                     <p className="text-sm font-black capitalize" style={{ color: "#202124" }}>{role ?? "Guest"}</p>
@@ -1207,8 +1207,8 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: "#F1F3F4" }}>
                   {role === "admin"
-                    ? <UserSquare size={13} variant="Linear" style={{ color: "#5F6368" }} />
-                    : <ShieldTick size={13} variant="Linear" style={{ color: "#5F6368" }} />}
+                    ? <UserSquare size={13} variant="Linear" color="#5F6368" />
+                    : <ShieldTick size={13} variant="Linear" color="#5F6368" />}
                 </div>
                 <span>Switch to {role === "admin" ? "Cashier" : "Admin"}</span>
               </button>
@@ -1222,7 +1222,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                 onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: "rgba(234,67,53,0.10)" }}>
-                  <Login size={13} variant="Linear" style={{ color: "#EA4335" }}/>
+                  <Login size={13} variant="Linear" color="#EA4335" />
                 </div>
                 <span>Log Out</span>
               </button>

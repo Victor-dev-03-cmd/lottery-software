@@ -74,8 +74,8 @@ export default function Settings() {
                 style={{
                   padding: "12px 18px",
                   borderTop: "none", borderLeft: "none", borderRight: "none",
-                  borderBottom: activeTab === t.key ? "2px solid #CF291D" : "2px solid transparent",
-                  color: activeTab === t.key ? "#CF291D" : "#6B7280",
+                  borderBottom: activeTab === t.key ? "2px solid #4285F4" : "2px solid transparent",
+                  color: activeTab === t.key ? "#4285F4" : "#6B7280",
                   fontWeight: activeTab === t.key ? 700 : 400,
                   background: "transparent",
                   cursor: "pointer",
@@ -138,7 +138,7 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
   return (
     <div className="space-y-5">
       <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
+        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
           <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Company Profile</p>
           <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Details printed on every invoice</p>
         </div>
@@ -165,7 +165,7 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
       </div>
 
       <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
+        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
           <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Default Invoice Settings</p>
           <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Applies to all new invoices</p>
         </div>
@@ -244,7 +244,7 @@ function GameRow({
       <td className="px-2 py-2.5">
         <div className="flex gap-1">
           <button onClick={() => onEdit(g)} className="p-1.5 rounded hover:bg-blue-50" style={{ color: "#2563EB" }} title="Edit (Enter)"><Pencil size={13} /></button>
-          <button onClick={() => onDelete(g)} className="p-1.5 rounded hover:bg-red-50" style={{ color: "#CF291D" }} title="Delete"><Trash2 size={13} /></button>
+          <button onClick={() => onDelete(g)} className="p-1.5 rounded hover:bg-red-50" style={{ color: "#EA4335" }} title="Delete"><Trash2 size={13} /></button>
         </div>
       </td>
     </tr>
@@ -311,7 +311,7 @@ function GameEditModal({
           </div>
           <div style={{ display:"flex", gap:8, justifyContent:"flex-end", paddingTop:4, borderTop:"1px solid #F3F4F6" }}>
             <button onClick={onClose} style={{ padding:"8px 18px", borderRadius:8, border:"1px solid #E5E7EB", background:"#fff", color:"#6B7280", fontSize:13, fontWeight:600, cursor:"pointer" }}>Cancel (Esc)</button>
-            <button onClick={()=>onSave(draft)} style={{ padding:"8px 18px", borderRadius:8, border:"none", background:"#CF291D", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+            <button onClick={()=>onSave(draft)} style={{ padding:"8px 18px", borderRadius:8, border:"none", background:"#4285F4", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
               <Save size={13} style={{ display:"inline", marginRight:4 }} /> Save (Enter)
             </button>
           </div>
@@ -388,7 +388,7 @@ function GamesTab() {
 
       {/* Add game */}
       <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#fff", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
+        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
           <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>➕ Add New Game</p>
           <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Type and press Enter to move between fields · Enter on last field adds the game</p>
         </div>
@@ -427,7 +427,7 @@ function GamesTab() {
           <div className="flex items-end">
             <button onClick={handleAdd}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white"
-              style={{ background: "#CF291D" }}>
+              style={{ background: "#4285F4" }}>
               <Plus size={14} /> Add
             </button>
           </div>
@@ -440,7 +440,7 @@ function GamesTab() {
         {(["all", "NLB", "DLB"] as const).map(f => (
           <button key={f} onClick={() => setFilter(f)}
             className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
-            style={{ background: filter === f ? "#CF291D" : "#F3F4F6", color: filter === f ? "#fff" : "#374151" }}>
+            style={{ background: filter === f ? "#4285F4" : "#F3F4F6", color: filter === f ? "#fff" : "#374151" }}>
             {f === "all" ? `All (${games.length})` : f === "NLB" ? `📘 NLB (${nlb.length})` : `📙 DLB (${dlb.length})`}
           </button>
         ))}
@@ -539,7 +539,7 @@ function FinancialTab({ onSaved }: { onSaved: () => void }) {
   return (
     <div className="space-y-5">
       <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
+        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
           <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Default Commission Rules</p>
           <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Applied to agents without a specific commission scheme</p>
         </div>
@@ -560,7 +560,7 @@ function FinancialTab({ onSaved }: { onSaved: () => void }) {
       </div>
 
       <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
+        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
           <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Credit Limit & Loan Thresholds</p>
           <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Block new invoices or show red alerts when agent exceeds limit</p>
         </div>
@@ -578,7 +578,7 @@ function FinancialTab({ onSaved }: { onSaved: () => void }) {
 
       {creditEnabled && agents.length > 0 && (
         <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-          <div className="px-5 py-3" style={{ borderBottom: "2px solid #CF291D", background: "#374151" }}>
+          <div className="px-5 py-3" style={{ borderBottom: "2px solid #4285F4", background: "#374151" }}>
             <span className="font-semibold text-sm text-white">Per-Agent Credit Limits</span>
           </div>
           <table className="w-full">
@@ -616,11 +616,11 @@ function FinancialTab({ onSaved }: { onSaved: () => void }) {
                         </button>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-sm text-right font-medium" style={{ color: over ? "#CF291D" : "#6B7280" }}>
+                    <td className="px-4 py-3 text-sm text-right font-medium" style={{ color: over ? "#EA4335" : "#6B7280" }}>
                       {fmt(a.outstanding_balance)}
                     </td>
                     <td className="px-4 py-3 text-sm text-center">
-                      {over && <span title="Exceeds credit limit!"><AlertTriangle size={15} style={{ color: "#CF291D", margin: "0 auto" }} /></span>}
+                      {over && <span title="Exceeds credit limit!"><AlertTriangle size={15} style={{ color: "#EA4335", margin: "0 auto" }} /></span>}
                     </td>
                   </tr>
                 );
@@ -631,7 +631,7 @@ function FinancialTab({ onSaved }: { onSaved: () => void }) {
       )}
 
       <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
+        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
           <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Winning Ticket Claims</p>
           <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Validity rules for returned NLB / DLB winning tickets</p>
         </div>
@@ -682,7 +682,7 @@ function PrintingTab({ onSaved }: { onSaved: () => void }) {
   return (
     <div className="space-y-5">
       <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
+        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
           <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Printer Selection</p>
           <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Default format when printing invoices</p>
         </div>
@@ -695,7 +695,7 @@ function PrintingTab({ onSaved }: { onSaved: () => void }) {
             return (
               <label key={val}
                 className="flex-1 flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors"
-                style={{ borderColor: active ? "#CF291D" : "#E8E8E8", background: active ? "#FFF1F0" : "#FFFFFF" }}>
+                style={{ borderColor: active ? "#4285F4" : "#E8E8E8", background: active ? "#EAF1FB" : "#FFFFFF" }}>
                 <input type="radio" name="printer" value={val} checked={active}
                   onChange={() => set("default_printer_type", val)} className="mt-0.5" />
                 <div>
@@ -709,7 +709,7 @@ function PrintingTab({ onSaved }: { onSaved: () => void }) {
       </div>
 
       <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
+        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
           <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Invoice Template Options</p>
           <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Toggle what appears on printed invoices</p>
         </div>
@@ -930,13 +930,13 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
 
       {/* PIN Protection */}
       <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
+        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
           <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>User Access & PIN Protection</p>
           <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Hash-secured PINs stored in local SQLite — leave blank to disable</p>
         </div>
         <div className="p-5 space-y-4">
           <div className="flex items-start gap-2 p-3 rounded-xl text-sm" style={{ background: "#FFF1F0", border: "1px solid #fecaca", color: "#991b1b" }}>
-            <Shield size={15} className="mt-0.5 shrink-0" style={{ color: "#CF291D" }} />
+            <Shield size={15} className="mt-0.5 shrink-0" style={{ color: "#4285F4" }} />
             PINs are stored as SHA-256 hashes. Setting a PIN will prompt on sensitive actions (delete invoice, modify credit limits, change settings).
           </div>
 
@@ -963,7 +963,7 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
               </div>
               <p className="text-xs" style={{ color: "#9CA3AF" }}>Full access: delete, edit settings, credit limits</p>
               {adminPinSet && (
-                <button onClick={() => handleClearPin("admin")} className="text-xs underline" style={{ color: "#CF291D" }}>
+                <button onClick={() => handleClearPin("admin")} className="text-xs underline" style={{ color: "#EA4335" }}>
                   Remove admin PIN
                 </button>
               )}
@@ -991,7 +991,7 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
               </div>
               <p className="text-xs" style={{ color: "#9CA3AF" }}>Limited: create invoices & collections only</p>
               {cashierPinSet && (
-                <button onClick={() => handleClearPin("cashier")} className="text-xs underline" style={{ color: "#CF291D" }}>
+                <button onClick={() => handleClearPin("cashier")} className="text-xs underline" style={{ color: "#EA4335" }}>
                   Remove cashier PIN
                 </button>
               )}
@@ -1008,7 +1008,7 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
 
       {/* Automatic Backup */}
       <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
+        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
           <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Automatic Backup</p>
           <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Schedule local SQLite backups</p>
         </div>
@@ -1033,7 +1033,7 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
 
       {/* Manual Backup & Restore */}
       <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #CF291D" }}>
+        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
           <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Manual Backup & Restore</p>
           <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Export to any folder or USB drive; restore from a previous backup</p>
         </div>
@@ -1041,14 +1041,14 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
           {/* DB status */}
           <div className="rounded-xl p-4 text-sm" style={{ background: dbExists === false ? "#FFF1F0" : "#F9FAFB", border: `1px solid ${dbExists === false ? "#fecaca" : "#E8E8E8"}` }}>
             <div className="flex items-center gap-2 mb-1.5">
-              <HardDrive size={13} style={{ color: dbExists === false ? "#CF291D" : "#9CA3AF" }} />
+              <HardDrive size={13} style={{ color: dbExists === false ? "#EA4335" : "#9CA3AF" }} />
               <span className="text-xs font-semibold uppercase" style={{ color: "#9CA3AF" }}>Database File</span>
               {dbExists === true && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "#dcfce7", color: "#15803d" }}>Found</span>}
               {dbExists === false && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "#fee2e2", color: "#b91c1c" }}>Not Found</span>}
             </div>
             <code className="break-all text-xs" style={{ color: "#6B7280" }}>{dbPath || "…"}</code>
             {dbExists === false && (
-              <p className="text-xs mt-1.5" style={{ color: "#CF291D" }}>
+              <p className="text-xs mt-1.5" style={{ color: "#EA4335" }}>
                 The database file is created automatically after the first data entry (agent or invoice).
               </p>
             )}
@@ -1058,7 +1058,7 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
           <div className="flex items-center gap-3 flex-wrap">
             <button onClick={handleBackup} disabled={backupLoading || dbExists === false}
               className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white hover:opacity-90 disabled:opacity-40 transition-colors"
-              style={{ background: "#CF291D" }}>
+              style={{ background: "#4285F4" }}>
               <Database size={15} />
               {backupLoading ? "Choosing location…" : "Backup Now"}
             </button>
@@ -1094,7 +1094,7 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
               </div>
               {backups.slice(0, 6).map((b, i) => (
                 <div key={i} className="px-4 py-2 flex items-center gap-2" style={{ borderBottom: "1px solid #F9F9F9" }}>
-                  <Database size={12} style={{ color: "#CF291D", flexShrink: 0 }} />
+                  <Database size={12} style={{ color: "#EA4335", flexShrink: 0 }} />
                   <code className="text-xs truncate flex-1" style={{ color: "#6B7280" }}>{b.split("/").pop()}</code>
                   <span className="text-xs shrink-0" style={{ color: "#9CA3AF" }}>{formatBackupDate(b)}</span>
                 </div>
@@ -1222,7 +1222,7 @@ function ToggleRow({ label, value, onChange }: { label: string; value: boolean; 
       <span className="text-sm" style={{ color: "#1D1D1D" }}>{label}</span>
       <button onClick={() => onChange(!value)} className="shrink-0">
         {value
-          ? <ToggleRight size={26} style={{ color: "#CF291D" }} />
+          ? <ToggleRight size={26} style={{ color: "#4285F4" }} />
           : <ToggleLeft size={26} style={{ color: "#9CA3AF" }} />}
       </button>
     </div>
@@ -1537,7 +1537,7 @@ function BackendConfigCard() {
           </p>
         </div>
         {status && (
-          <p className="text-xs font-medium" style={{ color: status.startsWith("✓") ? "#16a34a" : "#CF291D" }}>
+          <p className="text-xs font-medium" style={{ color: status.startsWith("✓") ? "#16a34a" : "#EA4335" }}>
             {status}
           </p>
         )}
@@ -1631,7 +1631,7 @@ function SupabaseConfigCard() {
           <div className="text-xs px-3 py-2 rounded-lg"
             style={{ background: status.startsWith("✓") ? "#F0FFF4" : "#FFF1F0",
               border: `1px solid ${status.startsWith("✓") ? "#BBF7D0" : "#FECACA"}`,
-              color:  status.startsWith("✓") ? "#16a34a" : "#CF291D" }}>
+              color:  status.startsWith("✓") ? "#16a34a" : "#EA4335" }}>
             {status}
           </div>
         )}
@@ -1676,7 +1676,7 @@ function SaveBtn({ onClick, label = "Save Changes" }: { onClick: () => void; lab
   return (
     <button onClick={onClick}
       className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold text-white hover:opacity-90"
-      style={{ background: "#CF291D" }}>
+      style={{ background: "#4285F4" }}>
       <Save size={15} /> {label}
     </button>
   );
@@ -1791,7 +1791,7 @@ function AIConfigTab() {
               style={{
                 background: isSuccess ? "#F0FFF4" : isError ? "#FEF2F2" : "#EFF6FF",
                 border: `1px solid ${isSuccess ? "#BBF7D0" : isError ? "#FECACA" : "#BFDBFE"}`,
-                color: isSuccess ? "#16a34a" : isError ? "#CF291D" : "#1e40af",
+                color: isSuccess ? "#16a34a" : isError ? "#EA4335" : "#1e40af",
               }}>
               {status}
             </div>
