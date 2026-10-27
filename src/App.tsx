@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { LanguageProvider } from "./i18n";
 import Sidebar from "./components/layout/Sidebar";
 import TopBar from "./components/layout/TopBar";
 import AgentDashboard from "./components/AgentDashboard";
@@ -220,6 +221,7 @@ export default function App() {
   const sidebarView = (view === "edit-invoice" ? "new-invoice" : view) as View;
 
   return (
+    <LanguageProvider>
     <AuthProvider>
     <AppInner
       view={view} sidebarView={sidebarView} navigate={navigate}
@@ -235,6 +237,7 @@ export default function App() {
     />
     <UpdateNotifier />
     </AuthProvider>
+    </LanguageProvider>
   );
 }
 

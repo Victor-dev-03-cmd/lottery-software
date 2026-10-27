@@ -11,6 +11,7 @@ import {
 import type { View } from "../../types";
 import { getInvoices, getAgents, getNotifications } from "../../services/database";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../i18n";
 
 // Brand blue — matches var(--color-brand) from tokens.css
 const BRAND   = "#4285F4";
@@ -365,6 +366,7 @@ function DraggableCalc({ onClose }: { onClose: () => void }) {
 export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusRef, onMenuToggle }: Props) {
   const now = useClock();
   const { role, clearRole, withAdminToken } = useAuth();
+  const { lang, setLang, t } = useLanguage();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -647,26 +649,27 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
         {/* Quick nav: AI Analytics */}
         <button
           onClick={() => onNavigate("ai-analytics")}
-          title="AI Intelligence"
-          aria-label="AI Intelligence"
+          title={t("topbar_ai")}
+          aria-label={t("topbar_ai")}
           className="flex items-center gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all"
           style={{ background: "#F0F0FF", border: "1px solid rgba(79,70,229,0.22)", color: "#4f46e5" }}
           onMouseEnter={e => { e.currentTarget.style.background = "rgba(79,70,229,0.10)"; }}
           onMouseLeave={e => { e.currentTarget.style.background = "#F0F0FF"; }}>
           <Cpu size={14} variant="Linear" color="currentColor" />
-          <span className="hidden xl:inline">AI</span>
+          <span className="hidden xl:inline">{t("topbar_ai")}</span>
         </button>
 
         {/* Quick nav: Settings */}
         <button
           onClick={() => onNavigate("settings")}
-          title="Settings"
+          title={t("topbar_settings")}
+          aria-label={t("topbar_settings")}
           className="flex items-center gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all"
           style={{ background: TB.chipBg, border: `1px solid ${TB.chipBdr}`, color: TB.muted }}
           onMouseEnter={e => { e.currentTarget.style.background = "rgba(66,133,244,0.10)"; e.currentTarget.style.color = BRAND; }}
           onMouseLeave={e => { e.currentTarget.style.background = TB.chipBg; e.currentTarget.style.color = TB.muted; }}>
           <Setting2 size={14} variant="Linear" color="currentColor" />
-          <span className="hidden xl:inline">Settings</span>
+          <span className={`hidden xl:inline ${lang === "si" ? "si" : ""}`}>{t("topbar_settings")}</span>
         </button>
       </div>
 
@@ -728,7 +731,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
           onMouseEnter={(e) => (e.currentTarget.style.background = BRAND_H)}
           onMouseLeave={(e) => (e.currentTarget.style.background = BRAND)}>
           <AddCircle size={16} variant="Linear" color="currentColor" />
-          <span className="hidden xl:inline">New Invoice</span>
+          <span className={`hidden xl:inline ${lang === "si" ? "si" : ""}`}>{t("topbar_new_invoice")}</span>
         </button>
 
         {/* Calculator — floating draggable */}
@@ -772,7 +775,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                 style={{ borderBottom: "1px solid #F3F4F6" }}>
                 <div className="flex items-center gap-2">
                   <Notification size={15} variant="Linear" color={BRAND} />
-                  <span className="font-bold text-sm" style={{ color: "#202124" }}>Notifications</span>
+                  <span className={`font-bold text-sm ${lang === "si" ? "si" : ""}`} style={{ color: "#202124" }}>{t("topbar_notifications")}</span>
                   {totalNotifs > 0 && (
                     <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
                       style={{ background: "#EA4335" }}>
@@ -791,8 +794,8 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
               {totalNotifs === 0 ? (
                 <div className="px-4 py-8 text-center">
                   <TickCircle size={28} variant="Linear" color="#34A853" className="mx-auto mb-2" />
-                  <p className="text-sm font-medium" style={{ color: "#374151" }}>All clear!</p>
-                  <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>No pending alerts at this time.</p>
+                  <p className={`text-sm font-medium ${lang === "si" ? "si" : ""}`} style={{ color: "#374151" }}>{t("topbar_all_clear")}</p>
+                  <p className={`text-xs mt-0.5 ${lang === "si" ? "si" : ""}`} style={{ color: "#9CA3AF" }}>{t("topbar_no_alerts")}</p>
                 </div>
               ) : (
                 <div>
@@ -886,7 +889,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                   onMouseEnter={e => (e.currentTarget.style.background = BRAND_H)}
                   onMouseLeave={e => (e.currentTarget.style.background = BRAND)}
                 >
-                  <ExportCircle size={15} variant="Linear" color="currentColor" /> View All Alerts & Reminders
+                  <ExportCircle size={15} variant="Linear" color="currentColor" /> <span className={lang === "si" ? "si" : ""}>{t("topbar_view_all_alerts")}</span>
                 </button>
               </div>
             </div>
@@ -895,15 +898,15 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
 
         {/* DB status — text hidden at compact width, icon+tooltip always visible */}
         <div
-          title={dbReady ? "SQLite Online" : "Database Offline"}
+          title={dbReady ? t("topbar_db_online") : t("topbar_db_offline")}
           className="flex items-center gap-1.5 px-2 xl:px-3 py-1.5 rounded-lg text-xs font-semibold"
           style={{
             background: dbReady ? "#F0FDF4" : "#FEF2F2",
             border: `1px solid ${dbReady ? "rgba(22,163,74,0.28)" : "rgba(239,68,68,0.28)"}`,
           }}>
           <Data size={14} variant="Linear" color={dbReady ? "#34A853" : "#EA4335"} />
-          <span className="hidden xl:inline" style={{ color: dbReady ? "#16a34a" : "#ef4444" }}>
-            {dbReady ? "SQLite Online" : "Offline"}
+          <span className={`hidden xl:inline ${lang === "si" ? "si" : ""}`} style={{ color: dbReady ? "#34A853" : "#EA4335" }}>
+            {dbReady ? t("topbar_db_online") : t("topbar_db_offline")}
           </span>
         </div>
 
@@ -1144,6 +1147,29 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
           )}
         </div>
 
+        {/* ── Language toggle — EN / සිං ── */}
+        <button
+          onClick={() => setLang(lang === "en" ? "si" : "en")}
+          aria-label={t("lang_toggle_label")}
+          title={t("lang_toggle_label")}
+          className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-black transition-all shrink-0"
+          style={{
+            background: lang === "si" ? "rgba(66,133,244,0.10)" : "#F8F9FA",
+            border: `1px solid ${lang === "si" ? "rgba(66,133,244,0.25)" : "#E0E3E7"}`,
+            color: lang === "si" ? BRAND : "#5F6368",
+            letterSpacing: "0.04em",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(66,133,244,0.08)"; e.currentTarget.style.color = BRAND; }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = lang === "si" ? "rgba(66,133,244,0.10)" : "#F8F9FA";
+            e.currentTarget.style.color = lang === "si" ? BRAND : "#5F6368";
+          }}
+        >
+          <span style={{ fontFamily: lang === "si" ? "'Inter Variable', system-ui" : undefined }}>EN</span>
+          <span style={{ color: "#C1C7CD", fontSize: 9 }}>|</span>
+          <span className="si" style={{ fontSize: 11 }}>සිං</span>
+        </button>
+
         {/* ── Role switcher ── */}
         <div ref={roleRef} className="relative">
           <button
@@ -1178,8 +1204,8 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
             >
               {/* Current role info */}
               <div className="px-4 py-3" style={{ borderBottom: "1px solid rgba(66,133,244,0.10)" }}>
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>
-                  Signed in as
+                <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${lang === "si" ? "si" : ""}`} style={{ color: "#9AA0A6" }}>
+                  {t("topbar_signed_in_as")}
                 </p>
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl flex items-center justify-center"
@@ -1190,8 +1216,8 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                   </div>
                   <div>
                     <p className="text-sm font-black capitalize" style={{ color: "#202124" }}>{role ?? "Guest"}</p>
-                    <p className="text-[10px] font-medium" style={{ color: "#9AA0A6" }}>
-                      {role === "admin" ? "Full access" : "Limited access"}
+                    <p className={`text-[10px] font-medium ${lang === "si" ? "si" : ""}`} style={{ color: "#9AA0A6" }}>
+                      {role === "admin" ? t("topbar_full_access") : t("topbar_limited_access")}
                     </p>
                   </div>
                 </div>
@@ -1210,7 +1236,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                     ? <UserSquare size={13} variant="Linear" color="#5F6368" />
                     : <ShieldTick size={13} variant="Linear" color="#5F6368" />}
                 </div>
-                <span>Switch to {role === "admin" ? "Cashier" : "Admin"}</span>
+                <span className={lang === "si" ? "si" : ""}>{role === "admin" ? t("topbar_switch_to_cashier") : t("topbar_switch_to_admin")}</span>
               </button>
 
               {/* Logout */}
@@ -1224,7 +1250,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                   style={{ background: "rgba(234,67,53,0.10)" }}>
                   <Login size={13} variant="Linear" color="#EA4335" />
                 </div>
-                <span>Log Out</span>
+                <span className={lang === "si" ? "si" : ""}>{t("topbar_log_out")}</span>
               </button>
             </div>
           )}

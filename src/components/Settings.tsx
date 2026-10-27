@@ -18,6 +18,7 @@ import ImportDataTab from "./ImportDataTab";
 import SoftwareUpdateTab from "./SoftwareUpdateTab";
 import type { CompanySettings, LotteryGame } from "../types";
 import { useAuth } from "../contexts/AuthContext";
+import { useLanguage } from "../i18n";
 
 type Tab = "general" | "games" | "financial" | "printing" | "security" | "mobile" | "ai" | "updates" | "import";
 
@@ -33,7 +34,21 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "import",    label: "Import Data",       icon: <span style={{ fontSize: 13 }}>📥</span> },
 ];
 
+// Sinhala tab labels (inline — tabs are few enough not to need translation keys)
+const TAB_SI: Record<Tab, string> = {
+  general:   "සාමාන්‍ය",
+  games:     "ක්‍රීඩා",
+  financial: "මූල්‍ය",
+  printing:  "මුද්‍රණය",
+  security:  "ආරක්‍ෂාව",
+  mobile:    "ජංගම App",
+  ai:        "AI සැකසුම්",
+  updates:   "Software යාවත්කාලීන",
+  import:    "දත්ත ආදානය",
+};
+
 export default function Settings() {
+  const { lang } = useLanguage();
   const [activeTab, setActiveTab] = useState<Tab>("general");
   const [saved, setSaved] = useState(false);
 
@@ -81,7 +96,7 @@ export default function Settings() {
                   cursor: "pointer",
                   marginBottom: -2,
                 }}>
-                {t.icon} {t.label}
+                {t.icon} <span className={lang === "si" ? "si" : ""}>{lang === "si" ? TAB_SI[t.key] : t.label}</span>
               </button>
             ))}
           </div>

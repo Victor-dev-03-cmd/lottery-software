@@ -14,6 +14,7 @@ import {
   getSupplierOutstanding, getSupplierAging,
 } from "../services/database";
 import { SI } from "../utils/si";
+import { useLanguage } from "../i18n";
 import { invoke } from "@tauri-apps/api/core";
 import type { AgentSummary, Invoice, DailyRevenue, AgentPerformance, View, SupplierAgingBracket } from "../types";
 
@@ -40,6 +41,7 @@ interface PeriodStats {
 interface Props { onNavigate: (view: View) => void; refreshKey: number; }
 
 export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
+  const { t, lang } = useLanguage();
   const [rows,          setRows]          = useState<AgentSummary[]>([]);
   const [recent,        setRecent]        = useState<Invoice[]>([]);
   const [daily,         setDaily]         = useState<DailyRevenue[]>([]);
@@ -296,7 +298,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
             <p className="text-[10px] font-bold uppercase tracking-widest text-white/70 mb-1">
               {kpiPeriodLabel}
             </p>
-            <p className="si text-[9px] text-white/50 mb-2">{SI.totalRevenue}</p>
+            {lang === "si" && <p className="si text-[9px] text-white/50 mb-2">{t("dash_total_revenue")}</p>}
             {loading ? (
               <div className="h-9 w-28 rounded-lg animate-pulse" style={{ background: "rgba(255,255,255,0.2)" }} />
             ) : (

@@ -7,81 +7,11 @@ import {
   Printer, Setting2, ArrowLeft2, ArrowRight2, Tag,
 } from "iconsax-react";
 import { useAuth, CASHIER_ALLOWED } from "../../contexts/AuthContext";
+import { useLanguage } from "../../i18n";
 import type { View } from "../../types";
 
-interface NavItem { view: View; label: string; icon: React.ReactNode; badge?: string }
-interface NavGroup { heading: string; items: NavItem[] }
-
-// ── Navigation groups — ordered by business workflow ─────────────────────────
-// 1 Overview  2 Purchase  3 Stock  4 Sales  5 Collect  6 Agents  7 Analytics
-// All icon sizes: 20px standard per design system
-const NAV_GROUPS: NavGroup[] = [
-  {
-    heading: "OVERVIEW",
-    items: [
-      { view: "dashboard", label: "Dashboard",  icon: <Category2  size={20} variant="Linear" color="currentColor" /> },
-      { view: "alerts",    label: "Alerts",     icon: <Notification size={20} variant="Linear" color="currentColor" /> },
-    ],
-  },
-  {
-    heading: "PURCHASING",
-    items: [
-      { view: "purchases",        label: "Stock Purchases",    icon: <ShoppingCart      size={20} variant="Linear" color="currentColor" /> },
-      { view: "supplier-returns", label: "Return to Supplier", icon: <RotateLeft        size={20} variant="Linear" color="currentColor" /> },
-      { view: "inventory",        label: "Stock Inventory",    icon: <House             size={20} variant="Linear" color="currentColor" /> },
-    ],
-  },
-  {
-    heading: "SALES",
-    items: [
-      { view: "new-invoice",        label: "New Invoice",       icon: <AddCircle        size={20} variant="Linear" color="currentColor" /> },
-      { view: "draft-invoices",     label: "Draft",             icon: <Clock            size={20} variant="Linear" color="currentColor" /> },
-      { view: "confirmed-invoices", label: "Confirm / Waiting", icon: <DocumentFilter   size={20} variant="Linear" color="currentColor" /> },
-      { view: "invoices",           label: "Paid Invoices",     icon: <DocumentText     size={20} variant="Linear" color="currentColor" /> },
-      { view: "cancelled-invoices", label: "Cancelled",         icon: <ClipboardClose   size={20} variant="Linear" color="currentColor" /> },
-      { view: "invoice-model",      label: "Invoice Model",     icon: <Brush            size={20} variant="Linear" color="currentColor" /> },
-      { view: "returns",            label: "Agent Returns",     icon: <Money3           size={20} variant="Linear" color="currentColor" /> },
-      { view: "ledger",             label: "Payment Agent",     icon: <Book1            size={20} variant="Linear" color="currentColor" /> },
-    ],
-  },
-  {
-    heading: "COLLECTIONS",
-    items: [
-      { view: "collections", label: "Daily Collections", icon: <ClipboardText    size={20} variant="Linear" color="currentColor" /> },
-      { view: "commission",  label: "Commission",        icon: <PercentageCircle size={20} variant="Linear" color="currentColor" /> },
-      { view: "petty-cash",  label: "Petty Cash",        icon: <Wallet           size={20} variant="Linear" color="currentColor" /> },
-    ],
-  },
-  {
-    heading: "AGENTS",
-    items: [
-      { view: "agents",       label: "Agent Profiles", icon: <People    size={20} variant="Linear" color="currentColor" /> },
-      { view: "distribution", label: "Distribution",   icon: <Hierarchy size={20} variant="Linear" color="currentColor" /> },
-    ],
-  },
-  {
-    heading: "ANALYTICS",
-    items: [
-      { view: "reports",          label: "Reports",         icon: <Chart21 size={20} variant="Linear" color="currentColor" /> },
-      { view: "profit-analytics", label: "Profit & Margin", icon: <TrendUp size={20} variant="Linear" color="currentColor" /> },
-      { view: "ai-analytics",     label: "AI Intelligence", icon: <Cpu     size={20} variant="Linear" color="currentColor" /> },
-      { view: "live-results",     label: "Live Results",    icon: <Cup     size={20} variant="Linear" color="currentColor" /> },
-    ],
-  },
-  {
-    heading: "OPERATIONS",
-    items: [
-      { view: "payroll",      label: "Workers & Salary", icon: <UserEdit size={20} variant="Linear" color="currentColor" /> },
-      { view: "print-export", label: "Print & Export",   icon: <Printer  size={20} variant="Linear" color="currentColor" /> },
-    ],
-  },
-  {
-    heading: "SYSTEM",
-    items: [
-      { view: "settings", label: "Settings", icon: <Setting2 size={20} variant="Linear" color="currentColor" /> },
-    ],
-  },
-];
+interface NavItem { view: View; labelKey: string; label: string; icon: React.ReactNode; badge?: string }
+interface NavGroup { headingKey: string; heading: string; items: NavItem[] }
 
 interface Props {
   active: View;
@@ -121,6 +51,76 @@ export default function Sidebar({
 }: Props) {
   const { role } = useAuth();
   const isCashier = role === "cashier";
+  const { t, lang } = useLanguage();
+
+  // ── Navigation groups (reactive to language changes) ─────────────────────
+  const NAV_GROUPS: NavGroup[] = [
+    {
+      headingKey: "nav_overview", heading: t("nav_overview"),
+      items: [
+        { view: "dashboard", labelKey: "nav_dashboard", label: t("nav_dashboard"), icon: <Category2  size={20} variant="Linear" color="currentColor" /> },
+        { view: "alerts",    labelKey: "nav_alerts",    label: t("nav_alerts"),    icon: <Notification size={20} variant="Linear" color="currentColor" /> },
+      ],
+    },
+    {
+      headingKey: "nav_purchasing", heading: t("nav_purchasing"),
+      items: [
+        { view: "purchases",        labelKey: "nav_purchases",        label: t("nav_purchases"),        icon: <ShoppingCart size={20} variant="Linear" color="currentColor" /> },
+        { view: "supplier-returns", labelKey: "nav_supplier_returns", label: t("nav_supplier_returns"), icon: <RotateLeft   size={20} variant="Linear" color="currentColor" /> },
+        { view: "inventory",        labelKey: "nav_inventory",        label: t("nav_inventory"),        icon: <House        size={20} variant="Linear" color="currentColor" /> },
+      ],
+    },
+    {
+      headingKey: "nav_sales", heading: t("nav_sales"),
+      items: [
+        { view: "new-invoice",        labelKey: "nav_new_invoice",        label: t("nav_new_invoice"),        icon: <AddCircle      size={20} variant="Linear" color="currentColor" /> },
+        { view: "draft-invoices",     labelKey: "nav_draft_invoices",     label: t("nav_draft_invoices"),     icon: <Clock          size={20} variant="Linear" color="currentColor" /> },
+        { view: "confirmed-invoices", labelKey: "nav_confirmed_invoices", label: t("nav_confirmed_invoices"), icon: <DocumentFilter size={20} variant="Linear" color="currentColor" /> },
+        { view: "invoices",           labelKey: "nav_paid_invoices",      label: t("nav_paid_invoices"),      icon: <DocumentText   size={20} variant="Linear" color="currentColor" /> },
+        { view: "cancelled-invoices", labelKey: "nav_cancelled_invoices", label: t("nav_cancelled_invoices"), icon: <ClipboardClose size={20} variant="Linear" color="currentColor" /> },
+        { view: "invoice-model",      labelKey: "nav_invoice_model",      label: t("nav_invoice_model"),      icon: <Brush          size={20} variant="Linear" color="currentColor" /> },
+        { view: "returns",            labelKey: "nav_returns",            label: t("nav_returns"),            icon: <Money3         size={20} variant="Linear" color="currentColor" /> },
+        { view: "ledger",             labelKey: "nav_ledger",             label: t("nav_ledger"),             icon: <Book1          size={20} variant="Linear" color="currentColor" /> },
+      ],
+    },
+    {
+      headingKey: "nav_section_collections", heading: t("nav_section_collections"),
+      items: [
+        { view: "collections", labelKey: "nav_daily_collections", label: t("nav_daily_collections"), icon: <ClipboardText    size={20} variant="Linear" color="currentColor" /> },
+        { view: "commission",  labelKey: "nav_commission",  label: t("nav_commission"),  icon: <PercentageCircle size={20} variant="Linear" color="currentColor" /> },
+        { view: "petty-cash",  labelKey: "nav_petty_cash",  label: t("nav_petty_cash"),  icon: <Wallet           size={20} variant="Linear" color="currentColor" /> },
+      ],
+    },
+    {
+      headingKey: "nav_agents", heading: t("nav_agents"),
+      items: [
+        { view: "agents",       labelKey: "nav_agents_list",  label: t("nav_agents_list"),  icon: <People    size={20} variant="Linear" color="currentColor" /> },
+        { view: "distribution", labelKey: "nav_distribution", label: t("nav_distribution"), icon: <Hierarchy size={20} variant="Linear" color="currentColor" /> },
+      ],
+    },
+    {
+      headingKey: "nav_analytics", heading: t("nav_analytics"),
+      items: [
+        { view: "reports",          labelKey: "nav_reports",      label: t("nav_reports"),      icon: <Chart21 size={20} variant="Linear" color="currentColor" /> },
+        { view: "profit-analytics", labelKey: "nav_profit",       label: t("nav_profit"),       icon: <TrendUp size={20} variant="Linear" color="currentColor" /> },
+        { view: "ai-analytics",     labelKey: "nav_ai",           label: t("nav_ai"),           icon: <Cpu     size={20} variant="Linear" color="currentColor" /> },
+        { view: "live-results",     labelKey: "nav_live_results", label: t("nav_live_results"), icon: <Cup     size={20} variant="Linear" color="currentColor" /> },
+      ],
+    },
+    {
+      headingKey: "nav_operations", heading: t("nav_operations"),
+      items: [
+        { view: "payroll",      labelKey: "nav_payroll",      label: t("nav_payroll"),      icon: <UserEdit size={20} variant="Linear" color="currentColor" /> },
+        { view: "print-export", labelKey: "nav_print_export", label: t("nav_print_export"), icon: <Printer  size={20} variant="Linear" color="currentColor" /> },
+      ],
+    },
+    {
+      headingKey: "nav_system", heading: t("nav_system"),
+      items: [
+        { view: "settings", labelKey: "nav_settings", label: t("nav_settings"), icon: <Setting2 size={20} variant="Linear" color="currentColor" /> },
+      ],
+    },
+  ];
 
   // Close drawer on Escape key
   useEffect(() => {
@@ -214,7 +214,7 @@ export default function Sidebar({
           <div key={group.heading} className="mb-1">
             {(!collapsed || mobileOpen) ? (
               <div
-                className="px-4 pt-2.5 pb-0.5 text-[9px] font-black uppercase tracking-[0.12em] select-none"
+                className={`px-4 pt-2.5 pb-0.5 text-[9px] font-black uppercase tracking-[0.12em] select-none ${lang === "si" ? "si" : ""}`}
                 style={{ color: G.sectionTxt }}
               >
                 {group.heading}
@@ -231,7 +231,7 @@ export default function Sidebar({
                 <button
                   key={item.view}
                   onClick={() => !restricted && handleNavigate(item.view)}
-                  title={collapsed && !mobileOpen ? item.label : restricted ? "Admin only" : undefined}
+                  title={collapsed && !mobileOpen ? item.label : restricted ? t("nav_admin_only") : undefined}
                   disabled={restricted}
                   aria-current={isActive ? "page" : undefined}
                   aria-label={item.label + (restricted ? " (Admin only)" : "")}
@@ -279,12 +279,13 @@ export default function Sidebar({
                   {/* Label — expanded or mobile */}
                   {(!collapsed || mobileOpen) && (
                     <span
-                      className="ml-2.5 font-medium text-[13px] flex-1 text-left"
+                      className={`ml-2.5 font-medium text-[13px] flex-1 text-left ${lang === "si" ? "si" : ""}`}
                       style={{
                         color: isActive ? BRAND : restricted ? G.itemMuted : G.itemTxt,
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
+                        fontSize: lang === "si" ? "0.8rem" : undefined,
                       }}
                     >
                       {item.label}
@@ -311,7 +312,7 @@ export default function Sidebar({
                         boxShadow: "0 4px 16px rgba(0,0,0,0.20)",
                       }}
                     >
-                      {item.label}{restricted ? " (Admin only)" : ""}
+                      {item.label}{restricted ? ` (${t("nav_admin_only")})` : ""}
                     </span>
                   )}
                 </button>
@@ -359,8 +360,8 @@ export default function Sidebar({
           {collapsed ? (
             <ArrowRight2 size={14} variant="Linear" color="currentColor" />
           ) : (
-            <span className="flex items-center gap-1.5 text-xs font-semibold px-4">
-              <ArrowLeft2 size={12} variant="Linear" color="currentColor" /> Collapse
+            <span className={`flex items-center gap-1.5 text-xs font-semibold px-4 ${lang === "si" ? "si" : ""}`}>
+              <ArrowLeft2 size={12} variant="Linear" color="currentColor" /> {t("nav_collapse")}
             </span>
           )}
         </button>
