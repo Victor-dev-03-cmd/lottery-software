@@ -1,0 +1,7 @@
+# Never commit secrets
+.env
+*.env
+
+# Build output
+lottery-api-server
+lottery-api
