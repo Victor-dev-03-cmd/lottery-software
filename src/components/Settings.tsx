@@ -1,16 +1,14 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
-  Save, Plus, Trash2, RefreshCw, Database, Shield, Printer,
-  DollarSign, Gamepad2, Building2, CheckCircle, AlertTriangle,
+  Save, Plus, Trash2, RefreshCw, Database, Shield,
+  Gamepad2, Building2, CheckCircle, AlertTriangle,
   ToggleLeft, ToggleRight, Eye, EyeOff, HardDrive, RotateCcw,
-  Pencil, X, Home, ChevronRight, Cloud, Lock, ShieldCheck, Smartphone,
+  Pencil, Home, ChevronRight, Cloud, Lock, ShieldCheck, Smartphone,
 } from "lucide-react";
-import { testSupabaseConnection } from "../services/supabase";
 import {
   getCompanySettings, saveCompanySettings,
   getLotteryGames, saveLotteryGame, deleteLotteryGame, toggleLotteryGame,
-  getAgentsWithCreditLimit, updateAgentCreditLimit,
   getAppSettings, saveSettings,
 } from "../services/database";
 
@@ -20,13 +18,11 @@ import type { CompanySettings, LotteryGame } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../i18n";
 
-type Tab = "general" | "games" | "financial" | "printing" | "security" | "mobile" | "ai" | "updates" | "import";
+type Tab = "general" | "games" | "security" | "mobile" | "ai" | "updates" | "import";
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "general",   label: "General",           icon: <Building2 size={15} /> },
   { key: "games",     label: "Games",             icon: <Gamepad2 size={15} /> },
-  { key: "financial", label: "Financial",         icon: <DollarSign size={15} /> },
-  { key: "printing",  label: "Printing",          icon: <Printer size={15} /> },
   { key: "security",  label: "Backup & Security", icon: <Shield size={15} /> },
   { key: "mobile",    label: "Mobile App",        icon: <Smartphone size={15} /> },
   { key: "ai",        label: "AI Configuration",  icon: <span style={{ fontSize: 13 }}>🧠</span> },
@@ -38,8 +34,6 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
 const TAB_SI: Record<Tab, string> = {
   general:   "සාමාන්‍ය",
   games:     "ක්‍රීඩා",
-  financial: "මූල්‍ය",
-  printing:  "මුද්‍රණය",
   security:  "ආරක්‍ෂාව",
   mobile:    "ජංගම App",
   ai:        "AI සැකසුම්",
@@ -106,8 +100,6 @@ export default function Settings() {
         <div>
           {activeTab === "general"   && <GeneralTab onSaved={showSaved} />}
           {activeTab === "games"     && <GamesTab />}
-          {activeTab === "financial" && <FinancialTab onSaved={showSaved} />}
-          {activeTab === "printing"  && <PrintingTab onSaved={showSaved} />}
           {activeTab === "security"  && <SecurityTab onSaved={showSaved} />}
           {activeTab === "mobile"    && <MobileAppTab />}
           {activeTab === "ai"        && <AIConfigTab />}
@@ -496,273 +488,6 @@ function GamesTab() {
     </div>
   );
 }
-
-// ── 3. FINANCIAL TAB ──────────────────────────────────────────────────────────
-
-function FinancialTab({ onSaved }: { onSaved: () => void }) {
-  const { withAdminToken } = useAuth();
-  const [settings, setSettings] = useState<Record<string, string>>({});
-  const [agents, setAgents] = useState<{ id?: number; name: string; credit_limit: number; outstanding_balance: number }[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [editingLimit, setEditingLimit] = useState<{ id: number; value: string } | null>(null);
-  const [authErr, setAuthErr] = useState("");
-
-  useEffect(() => {
-    Promise.all([getAppSettings(), getAgentsWithCreditLimit()]).then(([s, a]) => {
-      setSettings(s);
-      setAgents(a);
-      setLoading(false);
-    });
-  }, []);
-
-  async function handleSave() {
-    setAuthErr("");
-    try {
-      await withAdminToken(async () => {
-        await saveSettings({
-          default_commission_type: settings.default_commission_type ?? "percentage",
-          default_commission_rate: settings.default_commission_rate ?? "5",
-          credit_limits_enabled: settings.credit_limits_enabled ?? "false",
-          default_credit_limit: settings.default_credit_limit ?? "500000",
-          nlb_winning_validity_days: settings.nlb_winning_validity_days ?? "90",
-          dlb_winning_validity_days: settings.dlb_winning_validity_days ?? "90",
-        });
-        onSaved();
-      });
-    } catch (e) { setAuthErr(friendlyAuthError(e)); }
-  }
-
-  async function saveLimit(agentId: number, value: string) {
-    setAuthErr("");
-    try {
-      await withAdminToken(async () => {
-        const limit = parseFloat(value) || 0;
-        await updateAgentCreditLimit(agentId, limit);
-        setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, credit_limit: limit } : a));
-        setEditingLimit(null);
-      });
-    } catch (e) { setAuthErr(friendlyAuthError(e)); }
-  }
-
-  const set = (k: string, v: string) => setSettings((p) => ({ ...p, [k]: v }));
-  const fmt = (n: number) => new Intl.NumberFormat("en-LK", { minimumFractionDigits: 2 }).format(n);
-
-  if (loading) return <div className="p-4" style={{ color: "#9CA3AF" }}>Loading…</div>;
-
-  const creditEnabled = settings.credit_limits_enabled === "true";
-
-  return (
-    <div className="space-y-5">
-      <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
-          <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Default Commission Rules</p>
-          <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Applied to agents without a specific commission scheme</p>
-        </div>
-        <div className="p-5 grid grid-cols-2 gap-4">
-          <Field label="Commission Type">
-            <select className="inp" value={settings.default_commission_type ?? "percentage"}
-              onChange={(e) => set("default_commission_type", e.target.value)}>
-              <option value="percentage">Percentage of Invoice Total</option>
-              <option value="per_ticket">Fixed per Ticket (Rs.)</option>
-              <option value="fixed">Fixed per Invoice (Rs.)</option>
-            </select>
-          </Field>
-          <Field label={`Rate (${settings.default_commission_type === "percentage" ? "%" : "Rs."})`}>
-            <input type="number" step="0.01" className="inp" value={settings.default_commission_rate ?? "5"}
-              onChange={(e) => set("default_commission_rate", e.target.value)} />
-          </Field>
-        </div>
-      </div>
-
-      <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
-          <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Credit Limit & Loan Thresholds</p>
-          <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Block new invoices or show red alerts when agent exceeds limit</p>
-        </div>
-        <div className="p-5 space-y-3">
-          <ToggleRow label="Enable credit limits" value={creditEnabled}
-            onChange={(v) => set("credit_limits_enabled", v ? "true" : "false")} />
-          {creditEnabled && (
-            <Field label="Default credit limit (Rs.) — applies to agents without a custom limit">
-              <input type="number" step="1000" className="inp w-48" value={settings.default_credit_limit ?? "500000"}
-                onChange={(e) => set("default_credit_limit", e.target.value)} />
-            </Field>
-          )}
-        </div>
-      </div>
-
-      {creditEnabled && agents.length > 0 && (
-        <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-          <div className="px-5 py-3" style={{ borderBottom: "2px solid #4285F4", background: "#374151" }}>
-            <span className="font-semibold text-sm text-white">Per-Agent Credit Limits</span>
-          </div>
-          <table className="w-full">
-            <thead>
-              <tr>
-                <th className="px-4 py-3 text-left" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Agent</th>
-                <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Credit Limit (Rs.)</th>
-                <th className="px-4 py-3 text-right" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Outstanding</th>
-                <th className="px-4 py-3 text-center" style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", width: "6rem" }}>Alert</th>
-              </tr>
-            </thead>
-            <tbody>
-              {agents.map((a) => {
-                const over = creditEnabled && a.credit_limit > 0 && a.outstanding_balance > a.credit_limit;
-                return (
-                  <tr key={a.id} className="hover:bg-gray-50/60 transition-colors" style={{ borderBottom: "1px solid #F9F9F9", background: over ? "#FFF1F0" : undefined }}>
-                    <td className="px-4 py-3 text-sm font-medium" style={{ color: "#1D1D1D" }}>{a.name}</td>
-                    <td className="px-4 py-3 text-sm text-right">
-                      {editingLimit?.id === a.id ? (
-                        <div className="flex items-center justify-end gap-1">
-                          <input type="number" step="1000" className="inp py-0.5 w-28 text-right"
-                            value={editingLimit!.value}
-                            onChange={(e) => setEditingLimit((p) => p ? { ...p, value: e.target.value } : p)}
-                            autoFocus />
-                          <button onClick={() => saveLimit(a.id ?? 0, editingLimit!.value)}
-                            className="p-1" style={{ color: "#10b981" }}><Save size={13} /></button>
-                          <button onClick={() => setEditingLimit(null)}
-                            className="p-1" style={{ color: "#9CA3AF" }}><X size={13} /></button>
-                        </div>
-                      ) : (
-                        <button onClick={() => setEditingLimit({ id: a.id ?? 0, value: String(a.credit_limit) })}
-                          className="flex items-center gap-1 ml-auto hover:opacity-70" style={{ color: "#1D1D1D" }}>
-                          {a.credit_limit > 0 ? fmt(a.credit_limit) : <span style={{ color: "#9CA3AF" }}>Set limit</span>}
-                          <Pencil size={11} />
-                        </button>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-right font-medium" style={{ color: over ? "#EA4335" : "#6B7280" }}>
-                      {fmt(a.outstanding_balance)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-center">
-                      {over && <span title="Exceeds credit limit!"><AlertTriangle size={15} style={{ color: "#EA4335", margin: "0 auto" }} /></span>}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
-          <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Winning Ticket Claims</p>
-          <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Validity rules for returned NLB / DLB winning tickets</p>
-        </div>
-        <div className="p-5 grid grid-cols-2 gap-4">
-          <Field label="NLB Winning Ticket Validity (days)">
-            <input type="number" min="1" className="inp" value={settings.nlb_winning_validity_days ?? "90"}
-              onChange={(e) => set("nlb_winning_validity_days", e.target.value)} />
-          </Field>
-          <Field label="DLB Winning Ticket Validity (days)">
-            <input type="number" min="1" className="inp" value={settings.dlb_winning_validity_days ?? "90"}
-              onChange={(e) => set("dlb_winning_validity_days", e.target.value)} />
-          </Field>
-        </div>
-      </div>
-
-      {authErr && (
-        <div className="px-2 pb-1 text-xs font-semibold" style={{ color: "#DC2626" }}>{authErr}</div>
-      )}
-      <SaveBtn onClick={handleSave} />
-    </div>
-  );
-}
-
-// ── 4. PRINTING TAB ───────────────────────────────────────────────────────────
-
-function PrintingTab({ onSaved }: { onSaved: () => void }) {
-  const [settings, setSettings] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => { getAppSettings().then((s) => { setSettings(s); setLoading(false); }); }, []);
-
-  async function handleSave() {
-    await saveSettings({
-      default_printer_type: settings.default_printer_type ?? "a4",
-      show_company_logo: settings.show_company_logo ?? "false",
-      show_terms: settings.show_terms ?? "false",
-      terms_text: settings.terms_text ?? "",
-      bank_details: settings.bank_details ?? "",
-      show_bank_details: settings.show_bank_details ?? "false",
-      auto_print_on_save: settings.auto_print_on_save ?? "false",
-    });
-    onSaved();
-  }
-
-  const set = (k: string, v: string) => setSettings((p) => ({ ...p, [k]: v }));
-  if (loading) return <div className="p-4" style={{ color: "#9CA3AF" }}>Loading…</div>;
-
-  return (
-    <div className="space-y-5">
-      <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
-          <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Printer Selection</p>
-          <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Default format when printing invoices</p>
-        </div>
-        <div className="p-5 flex gap-4">
-          {[
-            { val: "a4", label: "A4 / Laser Printer", desc: "Full-page Ajith Rohana invoice (210mm)" },
-            { val: "thermal", label: "Thermal / POS Receipt", desc: "Compact 80mm thermal printer" },
-          ].map(({ val, label, desc }) => {
-            const active = settings.default_printer_type === val;
-            return (
-              <label key={val}
-                className="flex-1 flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors"
-                style={{ borderColor: active ? "#4285F4" : "#E8E8E8", background: active ? "#EAF1FB" : "#FFFFFF" }}>
-                <input type="radio" name="printer" value={val} checked={active}
-                  onChange={() => set("default_printer_type", val)} className="mt-0.5" />
-                <div>
-                  <div className="font-medium text-sm" style={{ color: "#1D1D1D" }}>{label}</div>
-                  <div className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>{desc}</div>
-                </div>
-              </label>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
-          <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Invoice Template Options</p>
-          <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Toggle what appears on printed invoices</p>
-        </div>
-        <div className="p-5 space-y-3">
-          <ToggleRow label="Show company logo on invoice"
-            value={settings.show_company_logo === "true"}
-            onChange={(v) => set("show_company_logo", v ? "true" : "false")} />
-          <ToggleRow label="Show Terms & Conditions footer"
-            value={settings.show_terms === "true"}
-            onChange={(v) => set("show_terms", v ? "true" : "false")} />
-          {settings.show_terms === "true" && (
-            <Field label="Terms & Conditions text" col2>
-              <textarea rows={3} className="inp resize-y" value={settings.terms_text ?? ""}
-                onChange={(e) => set("terms_text", e.target.value)}
-                placeholder="All lottery tickets are sold as-is…" />
-            </Field>
-          )}
-          <ToggleRow label="Show bank account details for direct deposits"
-            value={settings.show_bank_details === "true"}
-            onChange={(v) => set("show_bank_details", v ? "true" : "false")} />
-          {settings.show_bank_details === "true" && (
-            <Field label="Bank Account Details" col2>
-              <textarea rows={3} className="inp resize-y" value={settings.bank_details ?? ""}
-                onChange={(e) => set("bank_details", e.target.value)}
-                placeholder="Bank: People's Bank&#10;Branch: Colombo&#10;Account: 000-1-001-0-0000000" />
-            </Field>
-          )}
-          <ToggleRow label="Auto-open print dialog after saving a new invoice"
-            value={settings.auto_print_on_save === "true"}
-            onChange={(v) => set("auto_print_on_save", v ? "true" : "false")} />
-        </div>
-      </div>
-
-      <SaveBtn onClick={handleSave} />
-    </div>
-  );
-}
-
 // ── Auth error helper ─────────────────────────────────────────────────────────
 function friendlyAuthError(e: unknown): string {
   const msg = String(e);
@@ -1171,11 +896,8 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
         </div>
       </div>
 
-      {/* ── Go API Backend (new — Supabase card below is unchanged) ── */}
+      {/* ── Go API Backend ── */}
       <BackendConfigCard />
-
-      {/* ── Supabase Cloud Sync (preserved, unchanged) ── */}
-      <SupabaseConfigCard />
     </div>
   );
 }
@@ -1256,7 +978,6 @@ function scaleSvg(svg: string): string {
     .replace(/\s+height="\d+"/, "");
 }
 
-// ── Supabase Config Card ──────────────────────────────────────────────────────
 
 // ── Mobile Relay Pairing (Flutter / Cloud WebSocket) ─────────────────────────
 
@@ -1466,7 +1187,6 @@ function MobileServerCard() {
 }
 
 // ── Go API Backend Config Card ─────────────────────────────────────────────────
-// Additive — does not modify SupabaseConfigCard below.
 
 function BackendConfigCard() {
   const { withAdminToken } = useAuth();
@@ -1573,119 +1293,6 @@ function BackendConfigCard() {
   );
 }
 
-function SupabaseConfigCard() {
-  const { withAdminToken } = useAuth();
-  const [url, setUrl]       = useState("");
-  const [key, setKey]       = useState("");
-  const [status, setStatus] = useState("");
-  const [testing, setTesting] = useState(false);
-  const [saved, setSaved]   = useState(false);
-
-  // Load existing config from Rust
-  useEffect(() => {
-    invoke<{ supabase_url: string; supabase_anon_key: string }>("get_app_config")
-      .then(cfg => { if (cfg.supabase_url) setUrl(cfg.supabase_url); if (cfg.supabase_anon_key) setKey(cfg.supabase_anon_key); })
-      .catch(() => {});
-  }, []);
-
-  async function handleSave() {
-    setSaved(false);
-    setStatus("");
-    try {
-      await withAdminToken(async (token) => {
-        await invoke("save_supabase_config_secure", {
-          token,
-          supabaseUrl: url.trim(),
-          supabaseAnonKey: key.trim(),
-        });
-      });
-      setSaved(true); setTimeout(() => setSaved(false), 3000);
-    } catch (err) {
-      setStatus(`✗ ${friendlyAuthError(err)}`);
-    }
-  }
-
-  async function handleTest() {
-    setTesting(true); setStatus("");
-    const msg = await testSupabaseConnection();
-    setStatus(msg); setTesting(false);
-  }
-
-  return (
-    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-      <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #0ea5e9" }}>
-        <div className="flex items-center gap-2">
-          <Cloud size={16} style={{ color: "#0ea5e9" }} />
-          <div>
-            <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Supabase Cloud Sync</p>
-            <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Optional — keeps results synced across devices. App works fully offline without this.</p>
-          </div>
-        </div>
-      </div>
-      <div className="p-5 space-y-3">
-        <div>
-          <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Supabase Project URL</label>
-          <input value={url} onChange={e => setUrl(e.target.value)}
-            placeholder="https://xxxx.supabase.co"
-            className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none font-mono"
-            style={{ border: "1px solid #E8E8E8", background: "#FAFAFA" }}
-            onFocus={e => (e.currentTarget.style.borderColor = "#0ea5e9")}
-            onBlur={e  => (e.currentTarget.style.borderColor = "#E8E8E8")} />
-        </div>
-        <div>
-          <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>Anon Key</label>
-          <input value={key} onChange={e => setKey(e.target.value)}
-            placeholder="eyJhbGci..."
-            type="password"
-            className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none font-mono"
-            style={{ border: "1px solid #E8E8E8", background: "#FAFAFA" }}
-            onFocus={e => (e.currentTarget.style.borderColor = "#0ea5e9")}
-            onBlur={e  => (e.currentTarget.style.borderColor = "#E8E8E8")} />
-        </div>
-        {status && (
-          <div className="text-xs px-3 py-2 rounded-lg"
-            style={{ background: status.startsWith("✓") ? "#F0FFF4" : "#FFF1F0",
-              border: `1px solid ${status.startsWith("✓") ? "#BBF7D0" : "#FECACA"}`,
-              color:  status.startsWith("✓") ? "#16a34a" : "#EA4335" }}>
-            {status}
-          </div>
-        )}
-        <div className="flex gap-2 pt-1">
-          <button onClick={handleSave}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white"
-            style={{ background: "#0ea5e9" }}>
-            <Save size={13} /> {saved ? "Saved ✓" : "Save Config"}
-          </button>
-          <button onClick={handleTest} disabled={testing || !url}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
-            style={{ background: "#F3F4F6", color: "#374151", border: "1px solid #E8E8E8" }}>
-            <RefreshCw size={13} className={testing ? "animate-spin" : ""} />
-            {testing ? "Testing…" : "Test Connection"}
-          </button>
-          <button
-            onClick={async () => {
-              setStatus("Flushing sync queue…");
-              try {
-                await withAdminToken(async (token) => {
-                  const stats = await invoke<{ flushed: number; failed: number; remaining: number }>(
-                    "drain_sync_queue", { token }
-                  );
-                  setStatus(`✓ Synced ${stats.flushed} records. ${stats.failed} failed. ${stats.remaining} pending.`);
-                });
-              } catch (err) {
-                setStatus(`✗ ${String(err)}`);
-              }
-            }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-            style={{ background: "#FFFFFF", border: "1px solid #E8E8E8", color: "#1D1D1D" }}
-          >
-            ☁ Flush Sync Queue
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function SaveBtn({ onClick, label = "Save Changes" }: { onClick: () => void; label?: string }) {
   return (
