@@ -676,9 +676,10 @@ export default function Purchases() {
                     </thead>
                     <tbody>
                       {formItems.map((it, idx) => {
-                        // Warn only for suspiciously short barcodes (<8 digits).
-                        // DLB barcodes are legitimately 14-16 digits — never warn on those.
-                        const barcodeWarn = it.barcode_start && it.barcode_start.length < 8;
+                        // Warn only for suspiciously short barcodes (<6 digits).
+                        // NLB barcodes are ~11 digits; DLB barcodes are 14-16 digits.
+                        // Any value ≥6 digits is considered plausible; isNumericBarcode() also requires 6+.
+                        const barcodeWarn = it.barcode_start && it.barcode_start.length < 6;
                         const qtyOk = it.qty > 0;
                         return (
                           <tr key={idx} style={{ borderTop:"1px solid #F3F4F6", background: idx % 2 === 0 ? "#fff" : "#FAFAFA" }}>
@@ -750,7 +751,7 @@ export default function Purchases() {
                                 style={{ border:`2px solid ${barcodeWarn&&it.barcode_start?"#F59E0B":"#2563EB"}`, background:"#EFF6FF", color:"#1d4ed8", letterSpacing:"0.04em", minHeight:32 }}
                                 onFocus={e => e.target.select()}/>
                               {barcodeWarn && it.barcode_start && (
-                                <div style={{ fontSize:9, color:"#D97706", marginTop:2 }}>⚠ {it.barcode_start.length} digits (too short)</div>
+                                <div style={{ fontSize:9, color:"#D97706", marginTop:2 }}>⚠ {it.barcode_start.length} digit{it.barcode_start.length !== 1 ? "s" : ""} — barcode looks too short</div>
                               )}
                             </td>
 
