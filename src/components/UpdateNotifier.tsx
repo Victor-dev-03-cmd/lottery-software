@@ -71,7 +71,7 @@ export default function UpdateNotifier() {
       overflow: "hidden", animation: "slideUp 0.3s ease",
     }}>
       {/* Top accent */}
-      <div style={{ height: 3, background: "linear-gradient(90deg,#4285F4,#B50717)" }} />
+      <div style={{ height: 3, background: "linear-gradient(90deg,#4285F4,#1A73E8)" }} />
 
       <div style={{ padding: "14px 16px" }}>
         {state === "available" && (

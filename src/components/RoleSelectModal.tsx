@@ -73,7 +73,7 @@ export default function RoleSelectModal({ onSelected }: Props) {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ background: "linear-gradient(135deg,#4285F4,#B50717)", boxShadow: "0 8px 32px rgba(66,133,244,0.4)" }}>
+            style={{ background: "linear-gradient(135deg,#4285F4,#1A73E8)", boxShadow: "0 8px 32px rgba(66,133,244,0.4)" }}>
             <ShieldTick size={30} variant="Linear" color="currentColor" className="text-white"/>
           </div>
           <h1 className="text-2xl font-black text-white mb-1">Select Access Role</h1>
@@ -89,7 +89,7 @@ export default function RoleSelectModal({ onSelected }: Props) {
               style={{ background: "linear-gradient(135deg,#1D1D1D,#374151)", border: "1px solid #4B5563",
                 boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}>
               <div className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg,#4285F4,#B50717)" }}>
+                style={{ background: "linear-gradient(135deg,#4285F4,#1A73E8)" }}>
                 <ShieldTick size={22} variant="Linear" color="currentColor" className="text-white"/>
               </div>
               <div className="text-center">
@@ -131,7 +131,7 @@ export default function RoleSelectModal({ onSelected }: Props) {
             style={{ background: "linear-gradient(135deg,#1D1D1D,#374151)", border: "1px solid #4B5563" }}>
             <div className="flex items-center gap-3 mb-5">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ background: picking === "admin" ? "linear-gradient(135deg,#4285F4,#B50717)" : "linear-gradient(135deg,#1e40af,#3b82f6)" }}>
+                style={{ background: picking === "admin" ? "linear-gradient(135deg,#4285F4,#1A73E8)" : "linear-gradient(135deg,#1e40af,#3b82f6)" }}>
                 {picking === "admin" ? <ShieldTick size={18} variant="Linear" color="currentColor" className="text-white"/> : <UserSquare size={18} variant="Linear" color="currentColor" className="text-white"/>}
               </div>
               <div>
@@ -168,7 +168,7 @@ export default function RoleSelectModal({ onSelected }: Props) {
             <div className="flex gap-2">
               <button onClick={handlePinSubmit} disabled={loading || pin.length === 0}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50"
-                style={{ background: "linear-gradient(135deg,#4285F4,#B50717)" }}>
+                style={{ background: "linear-gradient(135deg,#4285F4,#1A73E8)" }}>
                 <Login size={15} variant="Linear" color="currentColor"/> {loading ? "Verifying…" : "Enter"}
               </button>
               <button onClick={() => { setPicking(null); setPin(""); setError(""); }}
