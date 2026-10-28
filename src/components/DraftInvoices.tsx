@@ -6,8 +6,9 @@ import {
   confirmInvoice,
   cancelInvoice,
   getCompanySettings,
-  getInvoiceWithItems,
+  getInvoiceWithItems, getInvoiceTemplate, DEFAULT_INVOICE_TEMPLATE,
 } from "../services/database";
+import type { InvoiceTemplate } from "../services/database";
 import type { Invoice, CompanySettings } from "../types";
 import InvoiceA4Preview, { STATUS_COLORS } from "./shared/InvoiceA4Preview";
 import { EmptyInvoice } from "./illustrations";
@@ -124,19 +125,22 @@ export default function DraftInvoices({ onNavigate }: Props) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [company, setCompany] = useState<CompanySettings | null>(null);
+  const [template, setTemplate] = useState<InvoiceTemplate>(DEFAULT_INVOICE_TEMPLATE);
   const [loading, setLoading] = useState(true);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   const [pendingConfirmId, setPendingConfirmId] = useState<number | null>(null);
 
   async function load() {
     setLoading(true);
-    const [data, co] = await Promise.all([
+    const [data, co, tpl] = await Promise.all([
       getInvoices("draft"),
       getCompanySettings(),
+      getInvoiceTemplate(),
     ]);
     setInvoices(data);
     setFiltered(data);
     setCompany(co);
+    setTemplate(tpl);
     setLoading(false);
   }
 
@@ -460,6 +464,14 @@ export default function DraftInvoices({ onNavigate }: Props) {
                   invoice={selectedInvoice}
                   company={company}
                   status="draft"
+                  primaryColor={template.primaryColor}
+                  logoSrc={template.logoData || "/ajith_rohana_logo.png"}
+                  showBarcodes={template.showBarcodes}
+                  showDiscount={template.showDiscount}
+                  showRoute={template.showRoute}
+                  showSalesRep={template.showSalesRep}
+                  showCommission={template.showCommission}
+                  footerText={template.footerText}
                 />
               </div>
             </div>

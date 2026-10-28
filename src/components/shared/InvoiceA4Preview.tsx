@@ -65,6 +65,12 @@ export default function InvoiceA4Preview({
   logoSrc,
   postPayments = 0,
   settledReturns = 0,
+  showBarcodes   = true,
+  showDiscount   = true,
+  showRoute      = true,
+  showSalesRep   = true,
+  showCommission = true,
+  footerText     = "",
 }: {
   invoice: Invoice;
   company: CompanySettings | null;
@@ -73,9 +79,16 @@ export default function InvoiceA4Preview({
   logoSrc?: string;
   postPayments?: number;
   settledReturns?: number;
+  showBarcodes?:   boolean;
+  showDiscount?:   boolean;
+  showRoute?:      boolean;
+  showSalesRep?:   boolean;
+  showCommission?: boolean;
+  footerText?:     string;
 }) {
   const sc = STATUS_COLORS[status] ?? STATUS_COLORS.draft;
   const totalTickets = (invoice.items ?? []).reduce((s, it) => s + Number(it.qty), 0);
+  const hasDiscount = showDiscount && (invoice.items ?? []).some(it => (it.discount_pct ?? 0) > 0);
   const isDraft     = status === "draft";
   const isCancelled = status === "cancelled";
   const watermark   = isDraft ? "DRAFT" : isCancelled ? "CANCELLED" : null;
@@ -88,14 +101,13 @@ export default function InvoiceA4Preview({
       width: "210mm",
       minHeight: "297mm",
       background: "#FFFFFF",
-      fontFamily: "'Outfit', 'Segoe UI', system-ui, sans-serif",
+      fontFamily: "'Inter Variable', 'Inter', 'Segoe UI', system-ui, sans-serif",
       fontSize: "10pt",
       color: "#111827",
       position: "relative",
       boxSizing: "border-box",
     }}>
-      {/* Outfit font */}
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');`}</style>
+      {/* Inter Variable is bundled locally — no CDN required */}
 
       {/* Diagonal watermark */}
       {watermark && (
@@ -110,8 +122,8 @@ export default function InvoiceA4Preview({
         </div>
       )}
 
-      {/* ── Red top accent bar ── */}
-      <div style={{ height: "5px", background: `linear-gradient(90deg, ${ACCENT} 0%, #B50717 100%)` }} />
+      {/* ── Brand top accent bar ── */}
+      <div style={{ height: "5px", background: `linear-gradient(90deg, ${ACCENT} 0%, ${ACCENT} 60%, ${ACCENT}99 100%)` }} />
 
       <div style={{ padding: "16px 22px 20px", position: "relative", zIndex: 1 }}>
 
@@ -191,19 +203,19 @@ export default function InvoiceA4Preview({
             </div>
           </div>
 
-          {/* Delivery / Sales Info */}
-          {(invoice.delivery_route || invoice.sales_rep || invoice.prepared_by) && (
+          {/* Delivery / Sales Info — controlled by showRoute / showSalesRep */}
+          {((showRoute && invoice.delivery_route) || (showSalesRep && invoice.sales_rep) || invoice.prepared_by) && (
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: "8pt", fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "5px" }}>
                 Delivery Info
               </div>
-              {invoice.delivery_route && (
+              {showRoute && invoice.delivery_route && (
                 <div style={{ fontSize: "8.5pt", color: "#4B5563", marginBottom: "2px" }}>
                   <span style={{ color: "#9CA3AF" }}>Route: </span>
                   <strong>{invoice.delivery_route}</strong>
                 </div>
               )}
-              {invoice.sales_rep && (
+              {showSalesRep && invoice.sales_rep && (
                 <div style={{ fontSize: "8.5pt", color: "#4B5563", marginBottom: "2px" }}>
                   <span style={{ color: "#9CA3AF" }}>Sales Rep: </span>
                   <strong>{invoice.sales_rep}</strong>
@@ -223,16 +235,24 @@ export default function InvoiceA4Preview({
         <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px" }}>
           <thead>
             <tr style={{ background: ACCENT }}>
-              {["NO", "DESCRIPTION", "BARCODE RANGE", "Q-TY", "UNIT PRICE", "SUBTOTAL"].map((h, i) => (
-                <th key={h} style={{
+              {[
+                { label: "NO",           show: true,         right: false, center: true  },
+                { label: "DESCRIPTION",  show: true,         right: false, center: false },
+                { label: "BARCODE RANGE",show: showBarcodes, right: false, center: false },
+                { label: "DISC %",       show: hasDiscount,  right: true,  center: false },
+                { label: "Q-TY",         show: true,         right: true,  center: false },
+                { label: "UNIT PRICE",   show: true,         right: true,  center: false },
+                { label: "SUBTOTAL",     show: true,         right: true,  center: false },
+              ].filter(c => c.show).map(c => (
+                <th key={c.label} style={{
                   padding: "8px 10px",
                   color: "#FFFFFF",
                   fontWeight: 700,
                   fontSize: "8pt",
                   letterSpacing: "0.06em",
-                  textAlign: i >= 3 ? "right" : i === 0 ? "center" : "left",
+                  textAlign: c.center ? "center" : c.right ? "right" : "left",
                 }}>
-                  {h}
+                  {c.label}
                 </th>
               ))}
             </tr>
@@ -240,7 +260,7 @@ export default function InvoiceA4Preview({
           <tbody>
             {(invoice.items ?? []).length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ padding: "20px", textAlign: "center", color: "#9CA3AF", fontSize: "9pt" }}>
+                <td colSpan={7} style={{ padding: "20px", textAlign: "center", color: "#9CA3AF", fontSize: "9pt" }}>
                   No line items
                 </td>
               </tr>
@@ -249,11 +269,18 @@ export default function InvoiceA4Preview({
                 <tr key={i} style={{ background: i % 2 === 0 ? "#FAFAFA" : "#FFFFFF", borderBottom: "1px solid #F3F4F6" }}>
                   <td style={{ padding: "7px 10px", textAlign: "center", fontSize: "9pt", fontWeight: 600, color: "#6B7280" }}>{i + 1}</td>
                   <td style={{ padding: "7px 10px", fontSize: "9pt", fontWeight: 600, color: "#111827" }}>{item.ticket_name}</td>
-                  <td style={{ padding: "7px 10px", fontSize: "7.5pt", fontFamily: "monospace", color: "#6B7280" }}>
-                    {item.barcode_start && item.barcode_end
-                      ? <>{item.barcode_start}<br/>{item.barcode_end}</>
-                      : "—"}
-                  </td>
+                  {showBarcodes && (
+                    <td style={{ padding: "7px 10px", fontSize: "7.5pt", fontFamily: "monospace", color: "#6B7280" }}>
+                      {item.barcode_start && item.barcode_end
+                        ? <>{item.barcode_start}<br/>{item.barcode_end}</>
+                        : "—"}
+                    </td>
+                  )}
+                  {hasDiscount && (
+                    <td style={{ padding: "7px 10px", textAlign: "right", fontSize: "9pt", color: item.discount_pct ? ACCENT : "#9CA3AF" }}>
+                      {item.discount_pct ? `${item.discount_pct}%` : "—"}
+                    </td>
+                  )}
                   <td style={{ padding: "7px 10px", textAlign: "right", fontSize: "9pt", color: "#374151" }}>
                     {item.qty.toLocaleString()} {item.qty_unit}
                   </td>
@@ -268,7 +295,7 @@ export default function InvoiceA4Preview({
             )}
             {/* Ticket count row */}
             <tr style={{ background: "#F3F4F6" }}>
-              <td colSpan={3} />
+              <td colSpan={showBarcodes ? (hasDiscount ? 4 : 3) : (hasDiscount ? 3 : 2)} />
               <td colSpan={2} style={{ padding: "6px 10px", textAlign: "right", fontSize: "8pt", color: "#6B7280", fontWeight: 600 }}>
                 {totalTickets.toLocaleString()} Tickets Total
               </td>
@@ -326,6 +353,13 @@ export default function InvoiceA4Preview({
           </table>
         </div>
 
+        {/* ── Commission note (when enabled and outstanding) ── */}
+        {showCommission && (invoice.outstanding_balance ?? 0) > 0 && (
+          <div style={{ marginTop: "12px", padding: "6px 10px", background: "#F9FAFB", borderRadius: "5px", borderLeft: `3px solid ${ACCENT}`, fontSize: "8pt", color: "#6B7280" }}>
+            Commission applicable as per registered scheme for outstanding balance.
+          </div>
+        )}
+
         {/* ── Signature line ── */}
         <div style={{
           display: "flex", justifyContent: "space-between", marginTop: "28px",
@@ -341,6 +375,16 @@ export default function InvoiceA4Preview({
             <span style={{ display: "inline-block", width: "90px", borderBottom: "1px solid #374151", marginLeft: "6px" }} />
           </div>
         </div>
+
+        {/* ── Footer text (from template) ── */}
+        {footerText && (
+          <div style={{
+            marginTop: "14px", paddingTop: "10px", borderTop: "1px dashed #E5E7EB",
+            textAlign: "center", fontSize: "8pt", color: "#9CA3AF", lineHeight: 1.5,
+          }}>
+            {footerText}
+          </div>
+        )}
       </div>
 
       {/* ── Bottom status ribbon ── */}

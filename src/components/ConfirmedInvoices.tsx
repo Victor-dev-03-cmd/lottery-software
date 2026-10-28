@@ -6,9 +6,10 @@ import {
   cancelInvoice,
   markInvoicePaid,
   getCompanySettings,
-  getInvoiceWithItems,
+  getInvoiceWithItems, getInvoiceTemplate, DEFAULT_INVOICE_TEMPLATE,
   reconcilePaidInvoices,
 } from "../services/database";
+import type { InvoiceTemplate } from "../services/database";
 import type { Invoice, InvoiceStatus, CompanySettings } from "../types";
 import InvoiceA4Preview, { STATUS_COLORS } from "./shared/InvoiceA4Preview";
 import { EmptyInvoice } from "./illustrations";
@@ -30,18 +31,21 @@ export default function ConfirmedInvoices({ onNavigate }: Props) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [tab, setTab] = useState<TabFilter>("all");
   const [company, setCompany] = useState<CompanySettings | null>(null);
+  const [template, setTemplate] = useState<InvoiceTemplate>(DEFAULT_INVOICE_TEMPLATE);
   const [loading, setLoading] = useState(true);
   const [previewInvoice, setPreviewInvoice] = useState<Invoice | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
   async function load() {
     setLoading(true);
-    const [data, co] = await Promise.all([
+    const [data, co, tpl] = await Promise.all([
       getInvoices(["confirmed"]),
       getCompanySettings(),
+      getInvoiceTemplate(),
     ]);
     setInvoices(data);
     setCompany(co);
+    setTemplate(tpl);
     setLoading(false);
   }
 
@@ -261,6 +265,14 @@ export default function ConfirmedInvoices({ onNavigate }: Props) {
                     invoice={previewInvoice}
                     company={company}
                     status={(previewInvoice.invoice_status ?? "confirmed") as InvoiceStatus}
+                    primaryColor={template.primaryColor}
+                    logoSrc={template.logoData || "/ajith_rohana_logo.png"}
+                    showBarcodes={template.showBarcodes}
+                    showDiscount={template.showDiscount}
+                    showRoute={template.showRoute}
+                    showSalesRep={template.showSalesRep}
+                    showCommission={template.showCommission}
+                    footerText={template.footerText}
                   />
                 </div>
               )}

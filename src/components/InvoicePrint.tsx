@@ -1,6 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Printer, ArrowLeft, Thermometer, FileText, MessageCircle } from "lucide-react";
-import { getInvoiceWithItems, getCompanySettings, getInvoicePaymentSummary } from "../services/database";
+import {
+  getInvoiceWithItems, getCompanySettings, getInvoicePaymentSummary,
+  getInvoiceTemplate, DEFAULT_INVOICE_TEMPLATE,
+} from "../services/database";
+import type { InvoiceTemplate } from "../services/database";
 import type { Invoice, CompanySettings, InvoiceStatus } from "../types";
 import InvoiceA4Preview from "./shared/InvoiceA4Preview";
 
@@ -17,27 +21,56 @@ function fmtDate(d: string) {
 }
 
 export default function InvoicePrint({ invoiceId, onBack }: Props) {
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [invoice,  setInvoice]  = useState<Invoice | null>(null);
   const [company,  setCompany]  = useState<CompanySettings | null>(null);
   const [paySum,   setPaySum]   = useState({ post_payments: 0, settled_returns: 0 });
+  const [template, setTemplate] = useState<InvoiceTemplate>(DEFAULT_INVOICE_TEMPLATE);
   const [loading,  setLoading]  = useState(true);
   const [printMode, setPrintMode] = useState<PrintMode>("a4");
+  const [pdfBusy, setPdfBusy]   = useState(false);
+  const previewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function load() {
       try {
-        const [inv, co, ps] = await Promise.all([
+        const [inv, co, ps, tpl] = await Promise.all([
           getInvoiceWithItems(invoiceId),
           getCompanySettings(),
           getInvoicePaymentSummary(invoiceId),
+          getInvoiceTemplate(),
         ]);
         setInvoice(inv);
         setCompany(co);
         setPaySum(ps);
+        setTemplate(tpl);
       } finally { setLoading(false); }
     }
     load();
   }, [invoiceId]);
+
+  async function handleDownloadPdf() {
+    if (!previewRef.current || !invoice) return;
+    setPdfBusy(true);
+    try {
+      // Dynamic import keeps html2pdf.js out of the main bundle until needed
+      const html2pdf = (await import("html2pdf.js")).default;
+      await html2pdf()
+        .set({
+          margin:   [8, 8, 8, 8],
+          filename: `invoice-${invoice.invoice_number}.pdf`,
+          image:    { type: "jpeg", quality: 0.97 },
+          html2canvas: { scale: 2, useCORS: true, logging: false },
+          jsPDF:    { unit: "mm", format: "a4", orientation: "portrait" },
+        })
+        .from(previewRef.current)
+        .save();
+    } catch (e) {
+      console.error("PDF generation failed:", e);
+      alert("PDF download failed. Try Print / Save PDF from the browser dialog instead.");
+    } finally {
+      setPdfBusy(false);
+    }
+  }
 
   const fmt = (n: number) =>
     new Intl.NumberFormat("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
@@ -61,15 +94,23 @@ export default function InvoicePrint({ invoiceId, onBack }: Props) {
         <div style={{ display: "flex", borderRadius: 8, border: "1px solid #E5E7EB", overflow: "hidden" }}>
           {([["a4", "A4", <FileText size={13}/>], ["thermal", "Thermal 80mm", <Thermometer size={13}/>]] as const).map(([mode, label, icon]) => (
             <button key={mode} onClick={() => setPrintMode(mode as PrintMode)}
-              style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", background: printMode === mode ? "#CF291D" : "#fff", color: printMode === mode ? "#fff" : "#6B7280" }}>
+              style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", background: printMode === mode ? "#4285F4" : "#fff", color: printMode === mode ? "#fff" : "#6B7280" }}>
               {icon} {label}
             </button>
           ))}
         </div>
 
+        {/* Download PDF — genuine A4 PDF using html2pdf.js */}
+        {printMode === "a4" && (
+          <button onClick={handleDownloadPdf} disabled={pdfBusy}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 18px", border: "none", borderRadius: 8, background: pdfBusy ? "#9CA3AF" : "#4285F4", color: "#fff", fontSize: 13, fontWeight: 700, cursor: pdfBusy ? "wait" : "pointer" }}>
+            {pdfBusy ? "Generating…" : "⬇ Download PDF"}
+          </button>
+        )}
+
         <button onClick={() => window.print()}
-          style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 18px", border: "none", borderRadius: 8, background: "#2563EB", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-          <Printer size={15} /> {printMode === "thermal" ? "Print Receipt" : "Print / Save PDF"}
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", border: "1px solid #E5E7EB", borderRadius: 8, background: "#fff", color: "#374151", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          <Printer size={15} /> Print
         </button>
 
         {/* WhatsApp share */}
@@ -95,9 +136,9 @@ export default function InvoicePrint({ invoiceId, onBack }: Props) {
 
         {/* Live balance indicator */}
         <div style={{ marginLeft: "auto", padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700,
-          background: liveBalance > 0 ? "#FEF2F2" : "#DCFCE7",
-          color: liveBalance > 0 ? "#CF291D" : "#16A34A",
-          border: `1px solid ${liveBalance > 0 ? "#FECACA" : "#BBF7D0"}` }}>
+          background: liveBalance > 0 ? "#FCE8E6" : "#E6F4EA",
+          color: liveBalance > 0 ? "#EA4335" : "#34A853",
+          border: `1px solid ${liveBalance > 0 ? "#F5C6C2" : "#CEEAD6"}` }}>
           {liveBalance > 0 ? `⚠ Balance: Rs. ${fmt(liveBalance)}` : "✓ Fully Paid"}
         </div>
       </div>
@@ -105,13 +146,21 @@ export default function InvoicePrint({ invoiceId, onBack }: Props) {
       {/* ── Print area ── */}
       <div style={{ display: "flex", justifyContent: "center", padding: "28px 24px" }}>
         {printMode === "a4" ? (
-          <div style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.14)", pointerEvents: "none" }}>
+          <div ref={previewRef} style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.14)" }}>
             <InvoiceA4Preview
               invoice={{ ...invoice, outstanding_balance: liveBalance }}
               company={company}
               status={(invoice.invoice_status ?? "paid") as InvoiceStatus}
+              primaryColor={template.primaryColor}
+              logoSrc={template.logoData || "/ajith_rohana_logo.png"}
               postPayments={paySum.post_payments}
               settledReturns={paySum.settled_returns}
+              showBarcodes={template.showBarcodes}
+              showDiscount={template.showDiscount}
+              showRoute={template.showRoute}
+              showSalesRep={template.showSalesRep}
+              showCommission={template.showCommission}
+              footerText={template.footerText}
             />
           </div>
         ) : (

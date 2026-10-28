@@ -404,6 +404,12 @@ export default function InvoiceModel() {
                 status="confirmed"
                 primaryColor={template.primaryColor}
                 logoSrc={template.logoData || "/ajith_rohana_logo.png"}
+                showBarcodes={template.showBarcodes}
+                showDiscount={template.showDiscount}
+                showRoute={template.showRoute}
+                showSalesRep={template.showSalesRep}
+                showCommission={template.showCommission}
+                footerText={template.footerText}
               />
             )}
           </div>

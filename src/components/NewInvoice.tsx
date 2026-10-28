@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { AddCircle, Trash, Save2, Printer, Calculator, Home2, ArrowRight2, Eye, EyeSlash, Buildings2, GalleryAdd } from "iconsax-react";
+import { AddCircle, Trash, Save2, Printer, Calculator, Home2, ArrowRight2, Eye, EyeSlash, GalleryAdd } from "iconsax-react";
 import TicketLogoPicker, { resolveLogoUrl } from "./TicketLogoPicker";
-import { getCompanySettings } from "../services/database";
+import { getCompanySettings, getInvoiceTemplate, DEFAULT_INVOICE_TEMPLATE } from "../services/database";
+import type { InvoiceTemplate } from "../services/database";
 import type { CompanySettings } from "../types";
+import InvoiceA4Preview from "./shared/InvoiceA4Preview";
 import {
   getAgents,
   getLotteryGames,
@@ -45,6 +47,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [company, setCompany] = useState<CompanySettings | null>(null);
+  const [template, setTemplate] = useState<InvoiceTemplate>(DEFAULT_INVOICE_TEMPLATE);
 
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [agentId, setAgentId] = useState<number | "">("");
@@ -61,16 +64,18 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
 
   useEffect(() => {
     async function init() {
-      const [a, g, num, co, batches] = await Promise.all([
+      const [a, g, num, co, batches, tpl] = await Promise.all([
         getAgents(),
         getLotteryGames(),
         getNextInvoiceNumber(),
         getCompanySettings(),
         getInventoryBatches(),
+        getInvoiceTemplate(),
       ]);
       setAgents(a);
       setGames(g);
       setCompany(co);
+      setTemplate(tpl);
       // Build stockMap: sum remaining_qty per game across all batches
       const sm: Record<string, number> = {};
       for (const b of batches) {
@@ -1125,207 +1130,45 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
               <span className="text-[11px]" style={{ color: "#9CA3AF" }}>Updates as you type</span>
             </div>
 
-            {/* A4 Document */}
-            <div
-              className="rounded-2xl overflow-hidden shadow-xl"
-              style={{
-                background: "#FFFFFF",
-                border: "1px solid #E8E8E8",
-                fontFamily: "'Segoe UI', system-ui, sans-serif",
-              }}
-            >
-              {/* Letterhead */}
-              <div style={{ background: "linear-gradient(135deg,#1D1D1D,#374151)", padding: "20px 24px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 8, background: "#4285F4",
-                        display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Buildings2 size={20} variant="Linear" color="#FFFFFF"/>
-                      </div>
-                      <div>
-                        <p style={{ fontSize: 16, fontWeight: 800, color: "#FFFFFF", margin: 0 }}>
-                          {company?.name ?? "Ajith Rohana Enterprise"}
-                        </p>
-                        <p style={{ fontSize: 10, color: "rgba(255,255,255,0.55)", margin: 0 }}>
-                          NLB: {company?.nlb_reg} &nbsp;·&nbsp; DLB: {company?.dlb_reg}
-                        </p>
-                      </div>
-                    </div>
-                    <p style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", margin: 0 }}>{company?.address}</p>
-                    <p style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", margin: 0 }}>{company?.phone}</p>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ background: "rgba(66,133,244,0.22)", border: "1px solid rgba(66,133,244,0.40)",
-                      borderRadius: 8, padding: "8px 14px" }}>
-                      <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase",
-                        letterSpacing: "0.1em", color: "#4285F4", margin: "0 0 2px" }}>Invoice</p>
-                      <p style={{ fontSize: 18, fontWeight: 900, color: "#FFFFFF", margin: 0 }}>
-                        #{invoiceNumber || "—"}
-                      </p>
-                      <p style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", margin: "2px 0 0" }}>
-                        {invoiceDate}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              {/* Bill To */}
-              <div style={{ padding: "16px 24px", borderBottom: "1px solid #F3F4F6",
-                background: "#FAFAFA" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 24 }}>
-                  <div>
-                    <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase",
-                      letterSpacing: "0.08em", color: "#9CA3AF", margin: "0 0 4px" }}>Bill To</p>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: "#1D1D1D", margin: 0 }}>
-                      {selectedAgent?.name ?? <span style={{ color: "#BFBFBF" }}>Select an agent</span>}
-                    </p>
-                    {selectedAgent && (
-                      <p style={{ fontSize: 11, color: "#6B7280", margin: "2px 0 0" }}>
-                        NLB: {selectedAgent.nlb_reg} · DLB: {selectedAgent.dlb_reg}
-                      </p>
-                    )}
-                    {selectedAgent?.phone && (
-                      <p style={{ fontSize: 11, color: "#6B7280", margin: "1px 0 0" }}>{selectedAgent.phone}</p>
-                    )}
-                  </div>
-                  {(deliveryRoute || salesRep) && (
-                    <div style={{ textAlign: "right" }}>
-                      {deliveryRoute && (
-                        <p style={{ fontSize: 11, color: "#6B7280", margin: "0 0 2px" }}>
-                          Route: <strong>{deliveryRoute}</strong>
-                        </p>
-                      )}
-                      {salesRep && (
-                        <p style={{ fontSize: 11, color: "#6B7280", margin: 0 }}>
-                          Rep: <strong>{salesRep}</strong>
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Line items table */}
-              <div style={{ padding: "0 24px" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                  <thead>
-                    <tr style={{ borderBottom: "2px solid #1D1D1D" }}>
-                      {["#", "Ticket / Game", "Barcode Range", "Qty", "Unit Price", "Value"].map(h => (
-                        <th key={h} style={{ padding: "10px 6px", textAlign: h === "#" || h === "Ticket / Game" ? "left" : "right",
-                          fontSize: 9, fontWeight: 700, textTransform: "uppercase",
-                          letterSpacing: "0.06em", color: "#6B7280" }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.filter(it => it.ticket_name).length === 0 ? (
-                      <tr>
-                        <td colSpan={6} style={{ padding: "20px 6px", textAlign: "center",
-                          color: "#BFBFBF", fontSize: 12 }}>
-                          Add ticket lines to see them here
-                        </td>
-                      </tr>
-                    ) : (
-                      items.filter(it => it.ticket_name).map((it, i) => (
-                        <tr key={i} style={{ borderBottom: "1px solid #F5F5F5" }}>
-                          <td style={{ padding: "8px 6px", color: "#9CA3AF", fontSize: 11 }}>{i + 1}</td>
-                          <td style={{ padding: "8px 6px", fontWeight: 600, color: "#1D1D1D" }}>{it.ticket_name}</td>
-                          <td style={{ padding: "8px 6px", color: "#6B7280", fontSize: 10, fontFamily: "monospace" }}>
-                            {it.barcode_start && it.barcode_end ? `${it.barcode_start} → ${it.barcode_end}` : "—"}
-                          </td>
-                          <td style={{ padding: "8px 6px", textAlign: "right", color: "#1D1D1D" }}>
-                            {it.qty.toLocaleString()}
-                          </td>
-                          <td style={{ padding: "8px 6px", textAlign: "right", color: "#6B7280" }}>
-                            {fmt(it.unit_price)}
-                          </td>
-                          <td style={{ padding: "8px 6px", textAlign: "right", fontWeight: 600, color: "#1D1D1D" }}>
-                            {fmt(it.net_value ?? it.value)}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Totals */}
-              <div style={{ padding: "12px 24px 6px", borderTop: "1px solid #F3F4F6" }}>
-                {[
-                  { label: "Subtotal", val: invoiceTotal, bold: false },
-                  ...(discountTotal > 0 ? [{ label: "Discount", val: -discountTotal, bold: false }] : []),
-                  { label: "Previous Outstanding", val: prevOutstanding, bold: false },
-                  { label: "Total Payable", val: totalPayable, bold: true, separator: true },
-                  { label: "Cash Received", val: cashReceived, bold: false, green: true },
-                  ...(dlbWinning > 0 ? [{ label: "DLB Winnings", val: dlbWinning, bold: false, green: true }] : []),
-                  ...(nlbWinning > 0 ? [{ label: "NLB Winnings", val: nlbWinning, bold: false, green: true }] : []),
-                ].map((row, i) => (
-                  <div key={i} style={{
-                    display: "flex", justifyContent: "space-between",
-                    padding: "4px 0",
-                    borderTop: (row as any).separator ? "1.5px solid #E8E8E8" : undefined,
-                    marginTop: (row as any).separator ? 6 : undefined,
-                  }}>
-                    <span style={{ fontSize: 12, color: row.bold ? "#1D1D1D" : "#6B7280",
-                      fontWeight: row.bold ? 700 : 400 }}>{row.label}</span>
-                    <span style={{ fontSize: 12, fontWeight: row.bold ? 800 : 500,
-                      color: (row as any).green ? "#16a34a" : row.val < 0 ? "#EA4335" : row.bold ? "#1D1D1D" : "#374151" }}>
-                      {row.val < 0 ? "−" : ""}Rs. {fmt(Math.abs(row.val))}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Overpaid warning */}
-              {overpaidAmount > 0 && (
-                <div style={{ margin:"0 24px 8px", padding:"10px 14px", borderRadius:8,
-                  background:"#FEF9C3", border:"1px solid #FDE68A",
-                  display:"flex", alignItems:"center", gap:8 }}>
-                  <span style={{ fontSize:16 }}>⚠️</span>
-                  <div>
-                    <span style={{ fontSize:12, fontWeight:700, color:"#92400E" }}>
-                      Amount entered exceeds invoice total by Rs. {fmt(overpaidAmount)}
-                    </span>
-                    <div style={{ fontSize:11, color:"#78350F", marginTop:2 }}>
-                      Check Cash / DLB Winning / NLB Winning fields — reduce the amount by Rs. {fmt(overpaidAmount)}.
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Outstanding balance highlight */}
-              <div style={{ margin: "8px 24px 20px", padding: "14px 16px", borderRadius: 10,
-                background: outstandingBalance > 0 ? "#FEF2F2" : "#F0FDF4",
-                border: `2px solid ${outstandingBalance > 0 ? "#EA4335" : "#16a34a"}` }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase",
-                    letterSpacing: "0.06em", color: outstandingBalance > 0 ? "#EA4335" : "#16a34a" }}>
-                    Outstanding Balance
-                  </span>
-                  <span style={{ fontSize: 22, fontWeight: 900,
-                    color: outstandingBalance > 0 ? "#EA4335" : "#16a34a" }}>
-                    Rs. {fmt(outstandingBalance)}
-                  </span>
-                </div>
-                {outstandingBalance === 0 && (
-                  <p style={{ fontSize: 11, color: "#16a34a", margin: "4px 0 0", fontWeight: 600 }}>
-                    ✓ Fully Settled
-                  </p>
-                )}
-              </div>
-
-              {/* Footer */}
-              <div style={{ padding: "12px 24px", borderTop: "1px solid #F3F4F6",
-                background: "#FAFAFA", display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 10, color: "#9CA3AF" }}>
-                  Prepared by: {preparedBy}
-                </span>
-                <span style={{ fontSize: 10, color: "#9CA3AF" }}>
-                  {company?.name ?? "Ajith Rohana Enterprise"}
-                </span>
-              </div>
+            {/* A4 Document — rendered via shared InvoiceA4Preview using live form state */}
+            <div style={{ transform: "scale(0.62)", transformOrigin: "top left", width: "210mm", pointerEvents: "none",
+                          marginBottom: `calc((210mm * 0.62 - 100%) * -1 + 8px)` }}>
+              <InvoiceA4Preview
+                invoice={{
+                  invoice_number: invoiceNumber || "DRAFT",
+                  agent_id: Number(agentId) || 0,
+                  agent_name: selectedAgent?.name,
+                  agent_address: selectedAgent?.address,
+                  agent_phone: selectedAgent?.phone,
+                  agent_nlb_reg: selectedAgent?.nlb_reg,
+                  agent_dlb_reg: selectedAgent?.dlb_reg,
+                  invoice_date: invoiceDate,
+                  prepared_by: preparedBy,
+                  invoice_total: invoiceTotal,
+                  prev_outstanding: prevOutstanding,
+                  total_payable: totalPayable,
+                  cash_received: cashReceived,
+                  dlb_winning: dlbWinning,
+                  nlb_winning: nlbWinning,
+                  outstanding_balance: outstandingBalance,
+                  invoice_status: "draft",
+                  delivery_route: deliveryRoute,
+                  sales_rep: salesRep,
+                  discount_total: discountTotal,
+                  items: items.filter(it => it.ticket_name),
+                }}
+                company={company}
+                status="draft"
+                primaryColor={template.primaryColor}
+                logoSrc={template.logoData || "/ajith_rohana_logo.png"}
+                showBarcodes={template.showBarcodes}
+                showDiscount={template.showDiscount}
+                showRoute={template.showRoute}
+                showSalesRep={template.showSalesRep}
+                showCommission={template.showCommission}
+                footerText={template.footerText}
+              />
             </div>
           </div>
         )}
