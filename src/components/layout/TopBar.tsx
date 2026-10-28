@@ -397,7 +397,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
 
   async function checkConnection() {
     setSyncStatus("checking");
-    addLog("Checking Supabase connection…", "info");
+    addLog("Checking cloud connection…", "info");
     try {
       const result = await invoke<string>("test_supabase_connection");
       if (result.includes("✓") || result.toLowerCase().includes("success") || result.toLowerCase().includes("connected") || result.toLowerCase().includes("ok")) {
@@ -429,7 +429,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
       setSyncStatus("ok");
       setTimeout(() => setSyncStatus("idle"), 3000);
     } catch (e) {
-      addLog(`✗ ${String(e).includes("not configured") ? "Supabase not configured — check Settings" : String(e)}`, "error");
+      addLog(`✗ ${String(e).includes("not configured") ? "Cloud sync not configured — check Settings" : String(e)}`, "error");
       setSyncStatus("error");
       setTimeout(() => setSyncStatus("idle"), 4000);
     }
@@ -914,7 +914,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
         <div ref={syncRef} style={{ position: "relative" }}>
           <button
             onClick={() => setSyncOpen(v => !v)}
-            title="Supabase Cloud Sync"
+            title="PostgreSQL Cloud Sync"
             style={{
               display: "flex",
               alignItems: "center",
@@ -984,7 +984,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2.5">
                     <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>
                   </svg>
-                  <span style={{ fontWeight: 700, fontSize: "14px", color: "#111827" }}>Supabase Cloud Sync</span>
+                  <span style={{ fontWeight: 700, fontSize: "14px", color: "#111827" }}>PostgreSQL Cloud Sync</span>
                 </div>
                 <button onClick={() => setSyncOpen(false)}
                   style={{ border: "none", background: "none", cursor: "pointer", color: "#9CA3AF", fontSize: "16px", padding: "0 2px", lineHeight: 1 }}>
@@ -1032,7 +1032,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                     </div>
                   ) : (
                     <div style={{ fontSize: "11px", color: "#6B7280", marginTop: "2px" }}>
-                      Sync local database to Supabase
+                      Sync local database to PostgreSQL
                     </div>
                   )}
                 </div>
