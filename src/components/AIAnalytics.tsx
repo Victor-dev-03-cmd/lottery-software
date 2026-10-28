@@ -310,7 +310,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <nav style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#9CA3AF" }}>
             <Home2 size={12} variant="Linear" color="#9AA0A6"/><ArrowRight2 size={11} variant="Linear" color="#9AA0A6"/>
-            <span style={{ fontWeight: 600, color: "#1D1D1D" }}>AI Analytics</span>
+            <span style={{ fontWeight: 600, color: "#1D1D1D" }}>AI Intelligence</span>
           </nav>
           <button onClick={loadData} disabled={loading}
             style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px",
