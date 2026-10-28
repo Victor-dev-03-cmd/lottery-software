@@ -15,6 +15,7 @@ import { getDrawNumber, getDrawInfo } from "../utils/drawNumbers";
 import TicketLogoPicker, { resolveLogoUrl } from "./TicketLogoPicker";
 
 import { useLanguage } from "../i18n";
+import { EmptyInventory } from "./illustrations";
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const fmt = (n: number) =>
@@ -955,10 +956,10 @@ export default function Purchases() {
           {loading ? (
             <div className="p-10 text-center text-sm" style={{ color:"#9AA0A6" }}>Loading…</div>
           ) : purchases.length === 0 ? (
-            <div className="p-12 text-center">
-              <Box1 size={14} variant="Linear" color="currentColor" className="mx-auto mb-3" style={{ color:"#E0E3E7" }}/>
-              <p className="text-sm font-medium mb-1" style={{ color:"#9AA0A6" }}>No purchases recorded yet</p>
-              <p className="text-xs" style={{ color:"#BFBFBF" }}>Click "New Purchase" to record stock bought from Nimalsiri Enterprises</p>
+            <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-in">
+              <EmptyInventory size={90} className="mb-5 opacity-90" />
+              <h3 className="text-sm font-semibold mb-1.5" style={{ color:"#202124" }}>No Purchases Yet</h3>
+              <p className="text-xs max-w-xs leading-relaxed" style={{ color:"#9AA0A6" }}>Your stock purchases from Nimalsiri will appear here.</p>
             </div>
           ) : (
             <div>

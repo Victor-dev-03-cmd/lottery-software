@@ -11,6 +11,7 @@ import {
 } from "../services/database";
 import type { Invoice, InvoiceStatus, CompanySettings } from "../types";
 import InvoiceA4Preview, { STATUS_COLORS } from "./shared/InvoiceA4Preview";
+import { EmptyInvoice } from "./illustrations";
 
 interface Props { onNavigate: (view: import("../types").View, id?: number) => void; }
 type TabFilter = "all" | "confirmed";
@@ -137,7 +138,11 @@ export default function ConfirmedInvoices({ onNavigate }: Props) {
           {loading ? (
             <div style={{ padding: "32px", textAlign: "center", color: "#9CA3AF", fontSize: "13px" }}>Loading…</div>
           ) : displayed.length === 0 ? (
-            <div style={{ padding: "32px", textAlign: "center", color: "#9CA3AF", fontSize: "13px" }}>No invoices found</div>
+            <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-in">
+              <EmptyInvoice size={90} className="mb-5 opacity-90" />
+              <h3 className="text-sm font-semibold mb-1.5" style={{ color: "#202124" }}>No Confirmed Invoices</h3>
+              <p className="text-xs max-w-xs leading-relaxed" style={{ color: "#9AA0A6" }}>Confirmed and waiting invoices will appear here.</p>
+            </div>
           ) : displayed.map((inv) => {
             const st = (inv.invoice_status ?? "confirmed") as InvoiceStatus;
             const sc = STATUS_COLORS[st] ?? STATUS_COLORS.confirmed;
@@ -274,8 +279,9 @@ export default function ConfirmedInvoices({ onNavigate }: Props) {
               </tr>
             ) : displayed.length === 0 ? (
               <tr>
-                <td colSpan={8} style={{ padding: "32px", textAlign: "center", color: "#9CA3AF" }}>
-                  No invoices found
+                <td colSpan={8} style={{ padding: "48px 32px", textAlign: "center" }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "#202124", marginBottom: 4 }}>No Confirmed Invoices</p>
+                  <p style={{ fontSize: 12, color: "#9AA0A6" }}>Confirmed and waiting invoices will appear here.</p>
                 </td>
               </tr>
             ) : (

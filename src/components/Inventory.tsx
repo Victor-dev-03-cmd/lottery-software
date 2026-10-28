@@ -572,11 +572,11 @@ export default function Inventory() {
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 animate-fade-in">
               <EmptyInventory size={100} className="mb-4 opacity-90" />
-              <p className="text-sm font-medium" style={{ color: "#5F6368" }}>
-                {batches.length === 0 ? "No stock batches yet" : "No results"}
-              </p>
-              <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>
-                {batches.length === 0 ? "Add a purchase invoice to begin tracking inventory" : "Try adjusting the filter"}
+              <h3 className="text-sm font-semibold mb-1.5" style={{ color: "#202124" }}>
+                {batches.length === 0 ? "No Stock Batches" : "No Results"}
+              </h3>
+              <p className="text-xs max-w-xs leading-relaxed" style={{ color: "#9AA0A6" }}>
+                {batches.length === 0 ? "Add a purchase from Nimalsiri to start tracking inventory." : "Try a different search term."}
               </p>
             </div>
           ) : (
@@ -859,7 +859,7 @@ function InventoryGridView({
                       </>
                     ) : (
                       <div style={{ fontSize:11, color:"#9AA0A6", textAlign:"center", marginTop:4 }}>
-                        No stock purchased yet
+                        No stock yet
                       </div>
                     )}
                   </button>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { People, TrendUp, Box1, RotateLeft, Refresh2, Home2, ArrowRight2, Card } from "iconsax-react";
 
 import { getDb } from "../services/database";
+import { EmptyAgents } from "./illustrations";
 
 interface AgentDistribution {
   agent_id: number;
@@ -152,9 +153,10 @@ export default function DistributionSummary() {
           {loading ? (
             <div className="p-10 text-center text-sm" style={{ color: "#9CA3AF" }}>Loading…</div>
           ) : filtered.length === 0 ? (
-            <div className="p-10 text-center">
-              <People size={18} variant="Linear" color="currentColor" className="mx-auto mb-2" style={{ color: "#E8E8E8" }}/>
-              <p className="text-sm" style={{ color: "#9CA3AF" }}>No agents found</p>
+            <div className="flex flex-col items-center justify-center py-14 text-center animate-fade-in">
+              <EmptyAgents size={80} className="mb-4 opacity-90" />
+              <h3 className="text-sm font-semibold mb-1.5" style={{ color: "#202124" }}>No Distribution Data</h3>
+              <p className="text-xs max-w-xs leading-relaxed" style={{ color: "#9AA0A6" }}>Agent distribution data will appear here.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">

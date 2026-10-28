@@ -10,6 +10,7 @@ import {
 } from "../services/database";
 import type { Invoice, CompanySettings } from "../types";
 import InvoiceA4Preview, { STATUS_COLORS } from "./shared/InvoiceA4Preview";
+import { EmptyInvoice } from "./illustrations";
 
 function fmtDate(d: string) {
   try { const [y, m, dd] = d.split("-"); return `${dd}/${m}/${y}`; } catch { return d; }
@@ -264,9 +265,10 @@ export default function DraftInvoices({ onNavigate }: Props) {
               Loading…
             </div>
           ) : filtered.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px 16px", color: "#9CA3AF" }}>
-              <Edit2 size={32} variant="Linear" color="currentColor" style={{ margin: "0 auto 10px", opacity: 0.4 }} />
-              <div style={{ fontSize: "13px" }}>No draft invoices</div>
+            <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-in">
+              <EmptyInvoice size={90} className="mb-5 opacity-90" />
+              <h3 className="text-sm font-semibold mb-1.5" style={{ color: "#202124" }}>No Draft Invoices</h3>
+              <p className="text-xs max-w-xs leading-relaxed" style={{ color: "#9AA0A6" }}>Invoices you haven't confirmed yet will appear here.</p>
             </div>
           ) : (
             filtered.map((inv) => {

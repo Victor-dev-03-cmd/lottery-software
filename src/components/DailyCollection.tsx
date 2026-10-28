@@ -376,7 +376,10 @@ export default function DailyCollectionView() {
           {loading ? (
             <div className="p-8 text-center text-sm" style={{ color: "#9AA0A6" }}>Loading…</div>
           ) : collections.length === 0 ? (
-            <div className="p-8 text-center text-sm" style={{ color: "#9AA0A6" }}>No entries for this date. Click "+ Add Entry" to start.</div>
+            <div className="py-12 text-center animate-fade-in">
+              <p className="text-sm font-semibold mb-1.5" style={{ color: "#5F6368" }}>No Collections for This Date</p>
+              <p className="text-xs" style={{ color: "#9AA0A6" }}>Click "+ Add Entry" to record today's collections.</p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">

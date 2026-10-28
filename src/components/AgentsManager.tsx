@@ -307,8 +307,8 @@ export default function AgentsManager() {
           ) : agents.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-14 animate-fade-in">
               <EmptyAgents size={100} className="mb-4 opacity-90" />
-              <p className="text-sm font-medium" style={{ color: "#5F6368" }}>No agents yet</p>
-              <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>Click "Add Agent" to get started</p>
+              <h3 className="text-sm font-semibold mb-1.5" style={{ color: "#202124" }}>No Agents Yet</h3>
+              <p className="text-xs max-w-xs leading-relaxed" style={{ color: "#9AA0A6" }}>Add your first agent to start distributing lottery tickets.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">

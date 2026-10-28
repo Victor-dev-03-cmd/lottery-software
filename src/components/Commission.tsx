@@ -241,7 +241,10 @@ export default function Commission() {
             {loading ? (
               <div className="p-8 text-center text-sm" style={{ color: "#9AA0A6" }}>{t("loading")}</div>
             ) : schemes.length === 0 ? (
-              <div className="p-8 text-center text-sm" style={{ color: "#9AA0A6" }}>No schemes. Add one above.</div>
+              <div className="py-10 text-center animate-fade-in">
+                <p className="text-sm font-medium mb-1" style={{ color: "#5F6368" }}>No commission schemes</p>
+                <p className="text-xs" style={{ color: "#9AA0A6" }}>Add a scheme above to set commission rates.</p>
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -306,7 +309,10 @@ export default function Commission() {
             {loading ? (
               <div className="p-8 text-center text-sm" style={{ color: "#9AA0A6" }}>{t("loading")}</div>
             ) : report.length === 0 ? (
-              <div className="p-8 text-center text-sm" style={{ color: "#9AA0A6" }}>No invoices to report.</div>
+              <div className="py-10 text-center animate-fade-in">
+                <p className="text-sm font-medium mb-1" style={{ color: "#5F6368" }}>No invoices found</p>
+                <p className="text-xs" style={{ color: "#9AA0A6" }}>Select an agent and period to generate a commission report.</p>
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">

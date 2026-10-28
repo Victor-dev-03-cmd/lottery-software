@@ -537,7 +537,10 @@ export default function Ledger() {
                 {loading ? (
                   <div className="p-8 text-center text-sm" style={{ color: "#9AA0A6" }}>Loading…</div>
                 ) : payments.length === 0 ? (
-                  <div className="p-8 text-center text-sm" style={{ color: "#9AA0A6" }}>No payment records yet.</div>
+                  <div className="py-12 text-center animate-fade-in">
+                    <p className="text-sm font-semibold mb-1.5" style={{ color: "#202124" }}>No Payment Records</p>
+                    <p className="text-xs" style={{ color: "#9AA0A6" }}>Payment entries will appear here.</p>
+                  </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
@@ -605,7 +608,10 @@ export default function Ledger() {
                 {loading ? (
                   <div className="p-8 text-center text-sm" style={{ color: "#9AA0A6" }}>Loading…</div>
                 ) : ledger.length === 0 ? (
-                  <div className="p-8 text-center text-sm" style={{ color: "#9AA0A6" }}>No invoices found.</div>
+                  <div className="py-12 text-center animate-fade-in">
+                    <p className="text-sm font-semibold mb-1.5" style={{ color: "#202124" }}>No Invoices</p>
+                    <p className="text-xs" style={{ color: "#9AA0A6" }}>Invoices for this agent will appear here.</p>
+                  </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">

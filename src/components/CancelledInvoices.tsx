@@ -171,8 +171,9 @@ export default function CancelledInvoices() {
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#9CA3AF" }}>
-                  No cancelled invoices
+                <td colSpan={7} style={{ padding: "48px 32px", textAlign: "center" }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "#202124", marginBottom: 4 }}>No Cancelled Invoices</p>
+                  <p style={{ fontSize: 12, color: "#9AA0A6" }}>Cancelled invoices will appear here.</p>
                 </td>
               </tr>
             ) : (

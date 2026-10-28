@@ -376,10 +376,12 @@ export default function Alerts() {
                 </div>
 
                 {agentAlerts.length === 0 ? (
-                  <div className="p-10 text-center">
-                    <CheckCircle size={28} className="mx-auto mb-2" style={{ color: "#16a34a" }}/>
-                    <p className="font-semibold text-sm" style={{ color: "#16a34a" }}>All accounts settled</p>
-                    <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>No outstanding balances across all agents</p>
+                  <div className="py-12 text-center animate-fade-in">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: "#E6F4EA" }}>
+                      <CheckCircle size={24} style={{ color: "#34A853" }}/>
+                    </div>
+                    <h3 className="text-sm font-semibold mb-1.5" style={{ color: "#202124" }}>All Clear</h3>
+                    <p className="text-xs max-w-xs mx-auto leading-relaxed" style={{ color: "#9AA0A6" }}>No outstanding balances across all agents.</p>
                   </div>
                 ) : (
                   <div>

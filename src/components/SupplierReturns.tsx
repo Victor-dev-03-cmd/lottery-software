@@ -10,6 +10,7 @@ import type { PurchaseInvoice, LotteryGame } from "../types";
 import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, cleanBarcode } from "../utils/barcode";
 
 import { useLanguage } from "../i18n";
+import { EmptyInventory } from "./illustrations";
 // ── Local types ───────────────────────────────────────────────────────────────
 
 interface SupplierReturn {
@@ -383,17 +384,10 @@ export default function SupplierReturns() {
           {loading ? (
             <div className="p-10 text-center text-sm" style={{ color: "#9CA3AF" }}>Loading…</div>
           ) : returns.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
-                style={{ background: "#F3F4F6" }}
-              >
-                <RotateLeft size={14} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
-              </div>
-              <p className="text-sm font-medium" style={{ color: "#6B7280" }}>No supplier returns yet</p>
-              <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>
-                Click "Record Return" to register a new return
-              </p>
+            <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-in">
+              <EmptyInventory size={90} className="mb-5 opacity-90" />
+              <h3 className="text-sm font-semibold mb-1.5" style={{ color: "#202124" }}>No Supplier Returns</h3>
+              <p className="text-xs max-w-xs leading-relaxed" style={{ color: "#9AA0A6" }}>Returns to Nimalsiri will appear here.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">

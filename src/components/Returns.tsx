@@ -12,6 +12,7 @@ import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, lastTicketBarcod
 import TicketLogoPicker, { resolveLogoUrl } from "./TicketLogoPicker";
 
 import { useLanguage } from "../i18n";
+import { EmptyInvoice } from "./illustrations";
 interface ScannedItem {
   barcode_start: string;
   barcode_end: string;
@@ -862,15 +863,10 @@ export default function Returns() {
             <div className="p-8 text-center text-sm" style={{ color: "#9CA3AF" }}>Loading…</div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16">
-              <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
-                style={{ background: "#F3F4F6" }}
-              >
-                <RotateLeft size={14} variant="Linear" color="currentColor" style={{ color: "#BFBFBF" }} />
-              </div>
-              <p className="text-sm font-medium" style={{ color: "#6B7280" }}>No returns found</p>
-              <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>
-                {filter === "all" ? "Record a return to get started" : "Try a different filter"}
+              <EmptyInvoice size={90} className="mb-5 opacity-90" />
+              <h3 className="text-sm font-semibold mb-1.5" style={{ color: "#202124" }}>No Agent Returns</h3>
+              <p className="text-xs max-w-xs leading-relaxed" style={{ color: "#9AA0A6" }}>
+                {filter === "all" ? "Ticket returns from agents will appear here." : "Try a different filter."}
               </p>
             </div>
           ) : (

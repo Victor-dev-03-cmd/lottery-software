@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { AddCircle, Trash, CloseCircle, Save2, Refresh2, People, Home2, ArrowRight2, TickCircle, DollarCircle, Moneys, Card, UserTick, Camera, Calendar, Buildings2, ShieldSlash } from "iconsax-react";
+import { AddCircle, Trash, CloseCircle, Save2, Refresh2, Home2, ArrowRight2, TickCircle, DollarCircle, Moneys, Card, UserTick, Camera, Calendar, Buildings2, ShieldSlash } from "iconsax-react";
 import {
   getWorkers, saveWorker, deleteWorker,
   getWorkerSalaries, saveWorkerSalary, markSalaryPaid,
@@ -9,6 +9,7 @@ import {
 import type { Worker, WorkerRole, WorkerSalary, SalaryType } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../i18n";
+import { EmptyAgents } from "./illustrations";
 // SI imported for bilingual string access (used inline in JSX)
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -410,12 +411,10 @@ export default function Payroll() {
             {workers.length === 0 ? (
               <div className="rounded-2xl flex flex-col items-center justify-center py-16 gap-4"
                 style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-                <div className="rounded-2xl p-5" style={{ background: "#F5F5F5" }}>
-                  <People size={40} variant="Linear" color="currentColor" style={{ color: "#D1D5DB" }} />
-                </div>
+                <EmptyAgents size={90} className="opacity-90" />
                 <div className="text-center">
-                  <p className="font-semibold text-base" style={{ color: "#1D1D1D" }}>No workers yet</p>
-                  <p className="text-sm mt-1" style={{ color: "#9CA3AF" }}>Add your first worker to get started</p>
+                  <h3 className="text-sm font-semibold mb-1.5" style={{ color: "#202124" }}>No Workers Yet</h3>
+                  <p className="text-xs max-w-xs leading-relaxed" style={{ color: "#9AA0A6" }}>Add your first worker to manage payroll.</p>
                 </div>
                 <button onClick={openAdd}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90"
@@ -686,13 +685,11 @@ export default function Payroll() {
               </div>
 
               {salaries.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 gap-3">
-                  <Moneys size={32} variant="Linear" color="#D1D5DB" />
-                  <p className="text-sm font-medium" style={{ color: "#6B7280" }}>
-                    No salary records for {payrollMonth}
-                  </p>
-                  <p className="text-xs" style={{ color: "#9CA3AF" }}>
-                    Click "Generate Salary" to create salary records for active workers.
+                <div className="flex flex-col items-center justify-center py-12 gap-3 animate-fade-in">
+                  <Moneys size={32} variant="Linear" color="#C5D8FB" />
+                  <h3 className="text-sm font-semibold" style={{ color: "#202124" }}>No Salary Records</h3>
+                  <p className="text-xs text-center max-w-xs" style={{ color: "#9AA0A6" }}>
+                    No salary records found for {payrollMonth}. Click "Generate Salary" to create records for active workers.
                   </p>
                 </div>
               ) : (
