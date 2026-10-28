@@ -399,13 +399,18 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
     setSyncStatus("checking");
     addLog("Checking cloud connection…", "info");
     try {
-      const result = await invoke<string>("test_supabase_connection");
+      // Route to Go API test when configured; otherwise Supabase.
+      const cfg = await invoke<{ api_server_url: string; api_device_key: string }>("get_app_config")
+        .catch(() => ({ api_server_url: "", api_device_key: "" }));
+      const result = (cfg.api_server_url && cfg.api_device_key)
+        ? await invoke<string>("test_api_connection")
+        : await invoke<string>("test_supabase_connection");
       if (result.includes("✓") || result.toLowerCase().includes("success") || result.toLowerCase().includes("connected") || result.toLowerCase().includes("ok")) {
         setConnStatus("connected");
         addLog(`✓ ${result}`, "ok");
       } else {
         setConnStatus("disconnected");
-        addLog(`✗ ${result}`, "error");
+        addLog(`✗ ${result}`, "warn");
       }
     } catch (e) {
       setConnStatus("disconnected");

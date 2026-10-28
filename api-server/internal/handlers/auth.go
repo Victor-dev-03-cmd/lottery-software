@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"sync"
@@ -246,10 +247,8 @@ func RotateKey(svc *auth.Service) http.HandlerFunc {
 	}
 }
 
-// checkBootstrapToken validates the one-time bootstrap token stored in app_config.
-func checkBootstrapToken(ctx interface{ Value(any) any }, svc *auth.Service, token string) (bool, error) {
-	// Implementation: bootstrap token is stored server-side and printed to console on startup.
-	// For Phase 1, the token is a fixed value set via BOOTSTRAP_TOKEN env var on first startup.
-	// See main.go startup logic.
-	return true, nil // placeholder — see main.go for actual token check
+// checkBootstrapToken validates the provided token against the value stored in
+// app_config by main.go at startup. Uses constant-time comparison.
+func checkBootstrapToken(ctx context.Context, svc *auth.Service, token string) (bool, error) {
+	return svc.CheckBootstrapToken(ctx, token)
 }

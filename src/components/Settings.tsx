@@ -1196,18 +1196,21 @@ function BackendConfigCard() {
   const [testing,   setTesting]   = useState(false);
   const [saved,     setSaved]     = useState(false);
 
+  // Separate API-reachable / DB-connected state from the last test
+  const [apiOk, setApiOk]   = useState<boolean | null>(null);
+  const [dbOk,  setDbOk]    = useState<boolean | null>(null);
+
   useEffect(() => {
     invoke<{ api_server_url: string; api_device_key: string }>("get_app_config")
       .then(cfg => {
         if (cfg.api_server_url) setApiUrl(cfg.api_server_url);
-        // Device key is not shown after save — display placeholder only
         if (cfg.api_device_key) setDeviceKey("••••••••••••••••");
       })
       .catch(() => {});
   }, []);
 
   async function handleSave() {
-    setSaved(false); setStatus("");
+    setSaved(false); setStatus(""); setApiOk(null); setDbOk(null);
     try {
       await withAdminToken(async (token) => {
         await invoke("save_api_config", {
@@ -1223,10 +1226,22 @@ function BackendConfigCard() {
   }
 
   async function handleTest() {
-    setTesting(true); setStatus("");
-    const msg = await invoke<string>("test_api_connection").catch(e => `Error: ${String(e)}`);
-    setStatus(msg); setTesting(false);
+    setTesting(true); setStatus(""); setApiOk(null); setDbOk(null);
+    const msg = await invoke<string>("test_api_connection").catch(e => `Connection failed: ${String(e)}`);
+    // Parse the response to set separate API and DB status dots
+    const api = !msg.startsWith("Connection failed") && !msg.startsWith("Not configured");
+    const db  = msg.includes("Database connected");
+    setApiOk(api);
+    setDbOk(db);
+    setStatus(msg);
+    setTesting(false);
   }
+
+  const dotStyle = (ok: boolean | null) => ({
+    width: 8, height: 8, borderRadius: "50%",
+    background: ok === null ? "#D1D5DB" : ok ? "#16A34A" : "#EA4335",
+    display: "inline-block", marginRight: 5,
+  });
 
   return (
     <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
@@ -1240,9 +1255,16 @@ function BackendConfigCard() {
             </p>
           </div>
         </div>
-        {saved && <span className="text-xs font-semibold text-green-600">✓ Saved</span>}
+        {saved && <span className="text-xs font-semibold" style={{ color: "#16A34A" }}>✓ Saved</span>}
       </div>
       <div className="p-5 space-y-3">
+        {/* Status dots — only shown after a test */}
+        {(apiOk !== null || dbOk !== null) && (
+          <div className="flex gap-4 text-xs" style={{ color: "#374151" }}>
+            <span><span style={dotStyle(apiOk)} />API Server</span>
+            <span><span style={dotStyle(dbOk)} />PostgreSQL Database</span>
+          </div>
+        )}
         <div>
           <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>
             API Server URL
@@ -1251,9 +1273,13 @@ function BackendConfigCard() {
             value={apiUrl}
             onChange={e => setApiUrl(e.target.value)}
             placeholder="https://api.yourdomain.com"
-            className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+            className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none font-mono"
             style={{ border: "1px solid #E8E8E8", background: "#FAFAFA" }}
           />
+          <p className="text-[10px] mt-1" style={{ color: "#9CA3AF" }}>
+            Format: <code>https://api.yourdomain.com</code> — no trailing slash. The server must expose
+            port 443 (HTTPS) or whichever port it runs on. LAN installs may use <code>http://192.168.x.x:8090</code>.
+          </p>
         </div>
         <div>
           <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#9CA3AF" }}>
@@ -1262,30 +1288,38 @@ function BackendConfigCard() {
           <input
             value={deviceKey}
             onChange={e => setDeviceKey(e.target.value)}
-            placeholder="Issued at device registration"
+            placeholder="64-character hex key issued at bootstrap"
             type="password"
             className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none font-mono"
             style={{ border: "1px solid #E8E8E8", background: "#FAFAFA" }}
           />
           <p className="text-[10px] mt-1" style={{ color: "#9CA3AF" }}>
-            Leave blank to keep existing key. Key is never shown after save.
+            Issued once when you POST to <code>/api/v1/auth/bootstrap</code> on first server startup.
+            Copy the <code>device_key</code> from that response and paste it here.
+            Leave blank to keep the existing saved key.
           </p>
         </div>
         {status && (
-          <p className="text-xs font-medium" style={{ color: status.startsWith("✓") ? "#16a34a" : "#EA4335" }}>
+          <div className="text-xs px-3 py-2 rounded-lg font-medium"
+            style={{
+              background: status.startsWith("✓") ? "#F0FFF4" : status.startsWith("⚠") ? "#FFFBEB" : "#FFF1F0",
+              border: `1px solid ${status.startsWith("✓") ? "#BBF7D0" : status.startsWith("⚠") ? "#FDE68A" : "#FECACA"}`,
+              color:  status.startsWith("✓") ? "#16a34a" : status.startsWith("⚠") ? "#92400e" : "#EA4335",
+            }}>
             {status}
-          </p>
+          </div>
         )}
         <div className="flex gap-2">
           <button onClick={handleTest} disabled={testing || !apiUrl}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
             style={{ background: "#F3F4F6", color: "#374151", border: "1px solid #E8E8E8" }}>
+            <RefreshCw size={13} className={testing ? "animate-spin" : ""} />
             {testing ? "Testing…" : "Test Connection"}
           </button>
           <button onClick={handleSave}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white"
             style={{ background: "#2563EB" }}>
-            Save
+            <Save size={13} /> Save
           </button>
         </div>
       </div>

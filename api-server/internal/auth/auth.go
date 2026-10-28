@@ -140,6 +140,44 @@ func (s *Service) ValidateDeviceKey(ctx context.Context, rawKey string) (int64, 
 	return id, nil
 }
 
+// ── Bootstrap token ───────────────────────────────────────────────────────────
+
+// StoreBootstrapToken upserts the one-time bootstrap token into app_config.
+// Called once at server startup; safe to call on every restart (idempotent).
+func (s *Service) StoreBootstrapToken(ctx context.Context, token string) error {
+	_, err := s.pool.Exec(ctx,
+		`INSERT INTO app_config (key, value) VALUES ('bootstrap_token', $1)
+         ON CONFLICT (key) DO NOTHING`, // never overwrite — token is one-time
+		token,
+	)
+	return err
+}
+
+// CheckBootstrapToken performs a constant-time comparison against the stored
+// token. Returns (false, nil) if the token does not match — never reveals why.
+func (s *Service) CheckBootstrapToken(ctx context.Context, provided string) (bool, error) {
+	var stored string
+	err := s.pool.QueryRow(ctx,
+		`SELECT value FROM app_config WHERE key = 'bootstrap_token'`,
+	).Scan(&stored)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	// Constant-time compare to prevent timing attacks.
+	a, b := []byte(provided), []byte(stored)
+	if len(a) != len(b) {
+		return false, nil
+	}
+	var diff byte
+	for i := range a {
+		diff |= a[i] ^ b[i]
+	}
+	return diff == 0, nil
+}
+
 // ── Bootstrap ──────────────────────────────────────────────────────────────────
 
 // IsBootstrapped returns true if a device has already been registered.

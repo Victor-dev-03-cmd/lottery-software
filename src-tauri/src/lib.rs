@@ -2472,7 +2472,20 @@ async fn test_api_connection(app: tauri::AppHandle) -> String {
         Err(e) => return format!("Client error: {}", e),
     };
     match client.get(&url).send().await {
-        Ok(r) if r.status().is_success() => "✓ Connected to API server successfully.".to_string(),
+        Ok(r) if r.status().is_success() => {
+            // Parse the health JSON — server returns { status, db_ok, ... }
+            match r.json::<serde_json::Value>().await {
+                Ok(body) => {
+                    let db_ok = body.get("db_ok").and_then(|v| v.as_bool()).unwrap_or(false);
+                    if db_ok {
+                        "✓ API server reachable · Database connected".to_string()
+                    } else {
+                        "⚠ API server reachable but database not connected — check DATABASE_URL on the server".to_string()
+                    }
+                }
+                Err(_) => "✓ API server reachable (legacy health response)".to_string(),
+            }
+        }
         Ok(r) => format!("HTTP {}: Check your API server URL.", r.status()),
         Err(e) => format!("Connection failed: {}", e),
     }
