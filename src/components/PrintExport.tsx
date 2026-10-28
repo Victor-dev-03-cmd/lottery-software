@@ -304,8 +304,8 @@ export default function PrintExport({ onNavigate }: Props) {
   const BRAND = "#4285F4";
   const hasData =
     (report === "paid-invoices" && piData && piData.length > 0) ||
-    (report === "daily"         && dailyData) ||
-    (report === "monthly"       && monthData && (monthData.invoice_count > 0));
+    (report === "daily"         && dailyData != null && dailyData.invoice_count > 0) ||
+    (report === "monthly"       && monthData != null && monthData.invoice_count > 0);
 
   const reportLabel =
     report === "paid-invoices" ? "Paid Invoices" :
