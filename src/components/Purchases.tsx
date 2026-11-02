@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AddCircle, Trash, CloseCircle, Save2, Refresh2, ShoppingCart, Home2, ArrowRight2, Box1, Card, ArrowDown2, ArrowUp, ShieldSlash, GalleryAdd } from "iconsax-react";
 import {
   getPurchaseInvoices, savePurchaseInvoice, deletePurchaseInvoice,
@@ -10,7 +10,7 @@ import type {
   PurchaseInvoice, PurchaseInvoiceItem, PurchasePayment, PurchasePaymentType,
 } from "../types";
 import { useAuth } from "../contexts/AuthContext";
-import { cleanBarcode, calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, lastTicketBarcode } from "../utils/barcode";
+import { lastTicketBarcode } from "../utils/barcode";
 import { getDrawNumber, getDrawInfo } from "../utils/drawNumbers";
 import TicketLogoPicker, { resolveLogoUrl } from "./TicketLogoPicker";
 
@@ -169,18 +169,6 @@ function BatchDetailView({ gameName, barcodeStart, totalQty }: {
   );
 }
 
-// ── Mobile ticket payload (emitted by Rust /api/v1/scan) ─────────────────────
-
-interface MobileTicketPayload {
-  game_name:     string;
-  draw_number:   string;
-  draw_date:     string;  // per-ticket draw date from QR
-  barcode_start: string;
-  barcode_end:   string;  // empty on initial QR scan; set after end-barcode scan
-  board:         string;
-  raw_qr:        string;
-}
-
 // ── Empty state helpers ───────────────────────────────────────────────────────
 
 const EMPTY_ITEM = (): PurchaseInvoiceItem => ({
@@ -228,120 +216,6 @@ export default function Purchases() {
   const [authError, setAuthError]     = useState<string | null>(null);
   // Logo picker state: which row is currently picking a ticket logo
   const [pickerRow, setPickerRow]     = useState<number | null>(null);
-  // Barcode correction: scanner reads one barcode before the actual start
-  const [barcodeOffset, setBarcodeOffset] = useState(false);
-
-  // ── Refs for stable closure access inside the event listener ───────────────
-  const showFormRef    = useRef(showForm);
-  const gameCostMapRef = useRef(gameCostMap);
-  useEffect(() => { showFormRef.current    = showForm;    }, [showForm]);
-  useEffect(() => { gameCostMapRef.current = gameCostMap; }, [gameCostMap]);
-
-  // ── Deduplication guard against double-fire / rapid repeat scans ────────────
-  // Key includes barcode_end so an end-barcode update (same start, non-empty end)
-  // is never dropped as a duplicate of the original QR scan.
-  const lastScanKeyRef  = useRef<string>("");
-  const lastScanTimeRef = useRef<number>(0);
-  const DEBOUNCE_MS     = 2500;
-
-  // ── Mobile scan notification banner ─────────────────────────────────────────
-  const [mobileFlash, setMobileFlash] = useState<string | null>(null);
-
-  // ── Single Tauri event listener — handles both open and closed form ──────────
-  // Root-cause fix: the previous queue/drain pattern had a race condition where
-  // setFormItems([EMPTY_ITEM()]) and setShowForm(true) were batched together,
-  // so the drain useEffect ran with formItems still empty.
-  // New approach: when the form is closed, pass the filled item DIRECTLY into
-  // setFormItems alongside EMPTY_ITEM() in one atomic call — no queue needed.
-  useEffect(() => {
-    let unlisten: (() => void) | undefined;
-    import("@tauri-apps/api/event").then(({ listen }) => {
-      listen<MobileTicketPayload>("mobile:ticket", async (event) => {
-        const ticket = event.payload;
-
-        // ── Deduplication: drop if same key arrives within DEBOUNCE_MS ──────
-        // barcode_end is included in the key so an end-barcode update event
-        // (same ticket, non-empty barcode_end) is NOT treated as a duplicate
-        // of the original QR scan event (which has empty barcode_end).
-        const key = `${ticket.game_name}|${ticket.draw_number}|${ticket.barcode_start}|${ticket.barcode_end ?? ""}`;
-        const now = Date.now();
-        if (key === lastScanKeyRef.current && now - lastScanTimeRef.current < DEBOUNCE_MS) {
-          return; // duplicate event — silently discard
-        }
-        lastScanKeyRef.current  = key;
-        lastScanTimeRef.current = now;
-
-        // ── End-barcode update: non-empty barcode_end → update existing row ──
-        // When the mobile user scans the last ticket, we receive a second event
-        // with the same barcode_start but a non-empty barcode_end. Instead of
-        // creating a new row, find the most-recently filled row whose barcode_start
-        // matches and whose barcode_end is still empty, then patch it in-place.
-        if (ticket.barcode_end) {
-          setFormItems(prev => {
-            const items = [...prev];
-            let rowIdx = -1;
-            for (let i = items.length - 1; i >= 0; i--) {
-              if (items[i].barcode_start === ticket.barcode_start && !items[i].barcode_end) {
-                rowIdx = i;
-                break;
-              }
-            }
-            if (rowIdx >= 0) {
-              items[rowIdx] = { ...items[rowIdx], barcode_end: ticket.barcode_end };
-            }
-            return items;
-          });
-          setMobileFlash(`📱 End barcode received · ${ticket.barcode_end}`);
-          setTimeout(() => setMobileFlash(null), 3000);
-          return; // do not fall through to new-row creation
-        }
-
-        // Show flash notification for new QR scan
-        setMobileFlash(`📱 ${ticket.game_name} · Draw ${ticket.draw_number} received`);
-        setTimeout(() => setMobileFlash(null), 3500);
-
-        // Build the item row from the scanned ticket
-        const item: PurchaseInvoiceItem = {
-          game_name:     ticket.game_name,
-          draw_number:   ticket.draw_number,
-          draw_date:     ticket.draw_date,
-          barcode_start: ticket.barcode_start,
-          barcode_end:   "",
-          qty:           0,
-          unit_price:    gameCostMapRef.current[ticket.game_name] ?? 0,
-          value:         0,
-        };
-
-        if (!showFormRef.current) {
-          // ── Form closed: open it and pre-fill atomically ──────────────────
-          // IMPORTANT: setFormItems([item, EMPTY_ITEM()]) is called BEFORE
-          // setShowForm(true). React batches these into one render, so when the
-          // form appears it already has the filled row — no drain effect needed.
-          const num = await getNextPurchaseNumber();
-          setEdit(EMPTY_PURCHASE(num));
-          setFormItems([item, EMPTY_ITEM()]);
-          setShowForm(true);
-        } else {
-          // ── Form already open: fill the last empty row, append a new one ─
-          setFormItems(prev => {
-            const items = [...prev];
-            const emptyIndices = items.map((it, i) => it.game_name === "" ? i : -1).filter(i => i >= 0);
-            const lastEmptyIdx = emptyIndices.length > 0
-              ? emptyIndices[emptyIndices.length - 1]
-              : -1;
-            if (lastEmptyIdx >= 0) {
-              items[lastEmptyIdx] = item;
-            } else {
-              items.push(item);
-            }
-            items.push(EMPTY_ITEM()); // next row ready for the next scan
-            return items;
-          });
-        }
-      }).then(fn => { unlisten = fn; });
-    }).catch(() => {});
-    return () => { unlisten?.(); };
-  }, []); // empty deps — refs keep showForm / gameCostMap current without re-registering
 
   useEffect(() => {
     load();
@@ -448,47 +322,12 @@ export default function Purchases() {
         const auto = getDrawNumber(val as string, date);
         if (auto) next.draw_number = auto;
       }
-      // Re-calculate draw number when it was auto-set and date changes
-      if (field === "draw_number" as any) { /* user typed manually — keep as-is */ }
-
-      // Barcode cleaning + auto-calc
-      if (field === "barcode_start") {
-        let cleaned = cleanBarcode(String(val));
-        // Apply scanner offset correction (+1 to start if scanner reads one before actual start)
-        if (barcodeOffset && cleaned && !isNaN(Number(cleaned))) {
-          cleaned = String(Number(cleaned) + 1);
-        }
-        next.barcode_start = cleaned;
-        // Auto-calculate end from start + qty
-        if (next.qty > 0 && isNumericBarcode(cleaned)) {
-          next.barcode_end = calcEndBarcode(cleaned, next.qty);
-        }
-        // Auto-calculate qty from start + end
-        if (next.barcode_end && isNumericBarcode(next.barcode_end)) {
-          next.qty = calcQtyFromBarcodes(cleaned, next.barcode_end);
-        }
-      }
-
-      if (field === "barcode_end") {
-        const cleaned = cleanBarcode(String(val));
-        next.barcode_end = cleaned;
-        // Auto-calculate qty from start + end (exclusive convention: qty = end - start)
-        if (next.barcode_start && isNumericBarcode(next.barcode_start) && isNumericBarcode(cleaned)) {
-          const calculatedQty = calcQtyFromBarcodes(next.barcode_start, cleaned);
-          if (calculatedQty > 0) next.qty = calculatedQty;
-        }
-      }
 
       if (field === "qty") {
-        const q = Number(val);
-        next.qty = q;
-        // Auto-calculate end from start + qty
-        if (next.barcode_start && isNumericBarcode(next.barcode_start) && q > 0) {
-          next.barcode_end = calcEndBarcode(next.barcode_start, q);
-        }
+        next.qty = Number(val);
       }
 
-      // Recalculate value
+      // Recalculate value: total = qty × unit_price
       next.value = Number(next.qty) * Number(next.unit_price);
       return next;
     });
@@ -541,17 +380,7 @@ export default function Purchases() {
         </div>
       )}
 
-      {/* Mobile scan notification banner */}
-      {mobileFlash && (
-        <div className="mx-6 mt-2 flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold"
-          style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", color: "#15803D",
-            animation: "fadeIn 0.2s ease" }}>
-          <span>{mobileFlash}</span>
-          <span style={{ marginLeft:"auto", color:"#86EFAC" }}>→ form updated</span>
-        </div>
-      )}
-
-      <div className="px-6 pb-8 space-y-5">
+<div className="px-6 pb-8 space-y-5">
 
         {/* Page header */}
         <div>
@@ -641,34 +470,18 @@ export default function Purchases() {
               {/* Line items */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-4">
-                    <label className="text-[11px] font-semibold uppercase tracking-wide" style={{ color:"#9AA0A6" }}>Stock Items</label>
-                    {/* Scanner offset toggle */}
-                    <label className="flex items-center gap-2 cursor-pointer" title="Enable if your barcode scanner reads one ticket before the actual starting barcode">
-                      <div onClick={() => setBarcodeOffset(v => !v)}
-                        style={{ width:28, height:16, borderRadius:8, background: barcodeOffset?"#4285F4":"#D1D5DB", position:"relative", cursor:"pointer", transition:"background 0.2s" }}>
-                        <div style={{ width:12, height:12, borderRadius:"50%", background:"#fff", position:"absolute", top:2, left: barcodeOffset?14:2, transition:"left 0.2s" }}/>
-                      </div>
-                      <span style={{ fontSize:10, color:"#5F6368" }}>Scanner +1 fix</span>
-                    </label>
-                  </div>
+                  <label className="text-[11px] font-semibold uppercase tracking-wide" style={{ color:"#9AA0A6" }}>Stock Items</label>
                   <button onClick={() => setFormItems([...formItems, EMPTY_ITEM()])}
                     className="text-xs font-semibold hover:underline" style={{ color:"#4285F4" }}>
-                    + Add Row (Enter)
+                    + Add Row
                   </button>
                 </div>
-
-                {barcodeOffset && (
-                  <div style={{ padding:"6px 12px", background:"#FEF9C3", borderRadius:8, fontSize:11, color:"#92400E", marginBottom:8, border:"1px solid #FDE68A" }}>
-                    ⚡ Scanner +1 correction ON — start barcode automatically incremented by 1
-                  </div>
-                )}
 
                 <div className="rounded-xl overflow-hidden" style={{ border:"1px solid #E0E3E7" }}>
                   <table className="w-full">
                     <thead>
                       <tr style={{ background:"#202124" }}>
-                        {["🎫 Ticket (click to pick)","Draw No.","▶ First Ticket Barcode","▷ Next Batch Starts","Qty","Unit Price","Total (Rs.)",""].map((h,i) => (
+                        {["🎫 Ticket (click to pick)","Draw No.","Qty","Unit Price (Rs.)","Total (Rs.)",""].map((h,i) => (
                           <th key={i} className="px-3 py-2 text-left"
                             style={{ fontSize:10, color:"#9AA0A6", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em" }}>{h}</th>
                         ))}
@@ -676,10 +489,6 @@ export default function Purchases() {
                     </thead>
                     <tbody>
                       {formItems.map((it, idx) => {
-                        // Warn only for suspiciously short barcodes (<6 digits).
-                        // NLB barcodes are ~11 digits; DLB barcodes are 14-16 digits.
-                        // Any value ≥6 digits is considered plausible; isNumericBarcode() also requires 6+.
-                        const barcodeWarn = it.barcode_start && it.barcode_start.length < 6;
                         const qtyOk = it.qty > 0;
                         return (
                           <tr key={idx} style={{ borderTop:"1px solid #F3F4F6", background: idx % 2 === 0 ? "#fff" : "#FAFAFA" }}>
@@ -724,14 +533,7 @@ export default function Purchases() {
                                       style={{ border:`1px solid ${it.draw_number?"#2563EB":"#E0E3E7"}`,
                                         background: it.draw_number?"#EFF6FF":"#FAFAFA",
                                         color:"#1D4ED8", fontWeight:700 }}/>
-                                    {/* Per-row draw date from QR scan */}
-                                    {it.draw_date ? (
-                                      <div style={{ fontSize:9, color:"#059669", textAlign:"center",
-                                        background:"#F0FDF4", borderRadius:4, padding:"1px 4px",
-                                        border:"1px solid #BBF7D0", fontWeight:600 }}>
-                                        {it.draw_date}
-                                      </div>
-                                    ) : info?.drawNo && !it.draw_number ? (
+                                    {info?.drawNo && !it.draw_number ? (
                                       <div style={{ fontSize:9, color:"#5F6368", textAlign:"center", lineHeight:1.2 }}>
                                         Auto: <strong style={{ color:"#2563EB" }}>#{info.drawNo}</strong>
                                       </div>
@@ -739,36 +541,6 @@ export default function Purchases() {
                                   </div>
                                 );
                               })()}
-                            </td>
-
-                            {/* Barcode Start — first physical ticket */}
-                            <td className="px-2 py-2" style={{ minWidth:185 }}>
-                              <input value={it.barcode_start}
-                                onChange={e => updateItem(idx, "barcode_start", e.target.value)}
-                                onKeyDown={e => { if (e.key==="Enter") { e.preventDefault(); (e.currentTarget.parentElement?.parentElement?.nextElementSibling?.querySelector("input") as HTMLElement)?.focus(); }}}
-                                placeholder="First ticket barcode"
-                                className="w-full rounded-lg px-2.5 py-2 text-xs focus:outline-none font-mono"
-                                style={{ border:`2px solid ${barcodeWarn&&it.barcode_start?"#F59E0B":"#2563EB"}`, background:"#EFF6FF", color:"#1d4ed8", letterSpacing:"0.04em", minHeight:32 }}
-                                onFocus={e => e.target.select()}/>
-                              {barcodeWarn && it.barcode_start && (
-                                <div style={{ fontSize:9, color:"#D97706", marginTop:2 }}>⚠ {it.barcode_start.length} digit{it.barcode_start.length !== 1 ? "s" : ""} — barcode looks too short</div>
-                              )}
-                            </td>
-
-                            {/* Barcode End — EXCLUSIVE: first ticket of NEXT batch */}
-                            <td className="px-2 py-2" style={{ minWidth:185 }}>
-                              <input value={it.barcode_end}
-                                onChange={e => updateItem(idx, "barcode_end", e.target.value)}
-                                onKeyDown={e => { if (e.key==="Enter") { e.preventDefault(); (e.currentTarget.parentElement?.parentElement?.nextElementSibling?.querySelector("input") as HTMLElement)?.focus(); }}}
-                                placeholder="Next batch start"
-                                className="w-full rounded-lg px-2.5 py-2 text-xs focus:outline-none font-mono"
-                                style={{ border:"2px solid #7C3AED", background:"#F5F3FF", color:"#6d28d9", letterSpacing:"0.04em", minHeight:32 }}
-                                onFocus={e => e.target.select()}/>
-                              {it.barcode_end && it.barcode_start && (
-                                <div style={{ fontSize:9, color:"#5F6368", marginTop:2 }}>
-                                  Last: <span style={{ fontFamily:"monospace", fontWeight:700, color:"#7C3AED" }}>{lastTicketBarcode(it.barcode_end)}</span>
-                                </div>
-                              )}
                             </td>
 
                             {/* Qty */}
@@ -818,7 +590,7 @@ export default function Purchases() {
                     </tbody>
                     <tfoot>
                       <tr style={{ background:"#F9FAFB", borderTop:"2px solid #4285F4" }}>
-                        <td colSpan={6} className="px-3 py-2 text-right text-xs font-bold" style={{ color:"#5F6368" }}>
+                        <td colSpan={4} className="px-3 py-2 text-right text-xs font-bold" style={{ color:"#5F6368" }}>
                           {formItems.reduce((s,it)=>s+it.qty,0).toLocaleString()} tickets · {formItems.filter(it=>it.game_name).length} lines
                         </td>
                         <td className="px-3 py-2 text-right text-sm font-black" style={{ color:"#4285F4" }}>
@@ -830,51 +602,11 @@ export default function Purchases() {
                   </table>
                 </div>
 
-                {/* ── Live barcode verification panel ── */}
-                {formItems.some(it => it.barcode_start && it.barcode_end && it.qty > 0) && (
-                  <div style={{ marginTop:8, padding:"10px 14px", background:"#F0FFF4", border:"1px solid #BBF7D0", borderRadius:8 }}>
-                    <p style={{ fontSize:10, fontWeight:700, color:"#15803D", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:6 }}>
-                      ✅ Barcode Verification
-                    </p>
-                    {formItems.filter(it => it.barcode_start && it.barcode_end && it.qty > 0).map((it, i) => {
-                      const calcQty = calcQtyFromBarcodes(it.barcode_start, it.barcode_end);
-                      const match = calcQty === it.qty;
-                      const lastTicket = lastTicketBarcode(it.barcode_end);
-                      return (
-                        <div key={i} style={{
-                          display:"flex", alignItems:"center", gap:10, marginBottom:4,
-                          padding:"5px 8px", borderRadius:6,
-                          background: match ? "rgba(22,163,74,0.06)" : "#FCE8E6",
-                          border: `1px solid ${match ? "#CEEAD6" : "#FECACA"}`,
-                        }}>
-                          <span style={{ fontSize:12 }}>{match ? "✅" : "❌"}</span>
-                          <span style={{ fontSize:11, fontWeight:700, color:"#111827", minWidth:120 }}>{it.game_name || "—"}</span>
-                          <span style={{ fontSize:11, fontFamily:"monospace", color:"#5F6368" }}>{it.barcode_start}</span>
-                          <span style={{ fontSize:11, color:"#5F6368" }}>→</span>
-                          <span style={{ fontSize:11, fontFamily:"monospace", color:"#5F6368" }}>{it.barcode_end}</span>
-                          <span style={{ fontSize:11, color:"#5F6368" }}>·</span>
-                          <span style={{ fontSize:11, color:"#5F6368" }}>Last ticket: <strong style={{ fontFamily:"monospace", color:"#111827" }}>{lastTicket}</strong></span>
-                          <span style={{ fontSize:11, color:"#5F6368" }}>·</span>
-                          <span style={{ fontSize:11, fontWeight:700, color: match?"#34A853":"#DC2626" }}>
-                            {it.barcode_end} − {it.barcode_start} = {calcQty} {match ? "✓" : `≠ ${it.qty} ✗`}
-                          </span>
-                        </div>
-                      );
-                    })}
-                    <p style={{ fontSize:10, color:"#5F6368", marginTop:4 }}>
-                      Convention: End barcode is the <strong>first barcode of the next batch</strong> (not included). QTY = End − Start.
-                    </p>
-                  </div>
-                )}
-
-                <div className="flex gap-2 mt-2">
+                <div className="mt-2">
                   <button onClick={() => setFormItems([...formItems, EMPTY_ITEM()])}
-                    style={{ padding:"5px 14px", border:"1px dashed #EA4335", borderRadius:8, background:"#FCE8E6", color:"#EA4335", fontSize:12, fontWeight:600, cursor:"pointer" }}>
-                    + Add Another Ticket
+                    style={{ padding:"5px 14px", border:"1px dashed #4285F4", borderRadius:8, background:"#EFF6FF", color:"#4285F4", fontSize:12, fontWeight:600, cursor:"pointer" }}>
+                    + Add Another Game
                   </button>
-                  <span style={{ fontSize:11, color:"#9AA0A6", alignSelf:"center" }}>
-                    Press Enter in the last field to add a row automatically
-                  </span>
                 </div>
               </div>
 
