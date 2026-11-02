@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { createPortal } from "react-dom";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -46,6 +46,54 @@ function useClock() {
 
 const DAY   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const MONTH = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+// ── ClockDisplay — memoized leaf so 1-second ticks never re-render TopBar ────
+// All clock state lives here; the parent TopBar renders zero times per second.
+const BRAND_CLOCK = "#4285F4";
+const ClockDisplay = memo(function ClockDisplay({ borderColor, textMuted, textMain }: {
+  borderColor: string;
+  textMuted: string;
+  textMain: string;
+}) {
+  const now    = useClock();
+  const hours  = now.getHours();
+  const mins   = String(now.getMinutes()).padStart(2, "0");
+  const secs   = String(now.getSeconds()).padStart(2, "0");
+  const ampm   = hours >= 12 ? "PM" : "AM";
+  const h12    = String(hours % 12 || 12).padStart(2, "0");
+  const timeStr = `${h12}:${mins}:${secs} ${ampm}`;
+  return (
+    <div
+      className="flex items-center gap-2.5 rounded-xl px-3 py-1.5"
+      style={{ background: "#F9FAFB", border: `1px solid ${borderColor}`, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
+    >
+      {/* Calendar day */}
+      <div className="flex flex-col items-center leading-none shrink-0">
+        <span
+          className="text-[9px] font-black uppercase rounded-sm px-1.5 w-full text-center leading-snug text-white"
+          style={{ background: BRAND_CLOCK }}
+        >
+          {MONTH[now.getMonth()].toUpperCase()}
+        </span>
+        <span className="text-xl font-black leading-none" style={{ color: textMain }}>
+          {String(now.getDate()).padStart(2, "0")}
+        </span>
+      </div>
+      {/* Divider */}
+      <div className="w-px h-7" style={{ background: borderColor }} />
+      {/* Day + Time */}
+      <div className="flex flex-col leading-none">
+        <span className="text-[10px] uppercase font-semibold tracking-wide" style={{ color: textMuted }}>
+          {DAY[now.getDay()]} · {now.getFullYear()}
+        </span>
+        <span className="text-xs xl:text-sm font-black font-mono tracking-tight mt-0.5" style={{ color: BRAND_CLOCK }}>
+          <span className="xl:hidden">{`${h12}:${mins} ${ampm}`}</span>
+          <span className="hidden xl:inline">{timeStr}</span>
+        </span>
+      </div>
+    </div>
+  );
+});
 
 // ── Calculator logic ───────────────────────────────────────────────────────────
 // ── Calculator state machine ────────────────────────────────────────────────
@@ -364,7 +412,7 @@ function DraggableCalc({ onClose }: { onClose: () => void }) {
 // ── Main TopBar ────────────────────────────────────────────────────────────────
 
 export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusRef, onMenuToggle }: Props) {
-  const now = useClock();
+  // now / clock variables live in ClockDisplay — not here
   const { role, clearRole, withAdminToken } = useAuth();
   const { lang, setLang, t } = useLanguage();
   const [query, setQuery] = useState("");
@@ -575,14 +623,6 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
 
   const totalNotifs = notifications.pendingCount + notifications.lowStockCount + notifications.returnCount;
 
-  // Date/time strings
-  const hours   = now.getHours();
-  const mins    = String(now.getMinutes()).padStart(2, "0");
-  const secs    = String(now.getSeconds()).padStart(2, "0");
-  const ampm    = hours >= 12 ? "PM" : "AM";
-  const h12     = String(hours % 12 || 12).padStart(2, "0");
-  const timeStr = `${h12}:${mins}:${secs} ${ampm}`;
-
   // ── TopBar clean professional tokens ─────────────────────────────────────
   const TB = {
     text:    "#111827",
@@ -615,41 +655,8 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
         >
           <HambergerMenu size={20} variant="Linear" color="currentColor" />
         </button>
-        {/* Date/Time widget */}
-        <div
-          className="flex items-center gap-2.5 rounded-xl px-3 py-1.5"
-          style={{
-            background: "#F9FAFB",
-            border: `1px solid ${TB.border}`,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-          }}
-        >
-          {/* Calendar day */}
-          <div className="flex flex-col items-center leading-none shrink-0">
-            <span
-              className="text-[9px] font-black uppercase rounded-sm px-1.5 w-full text-center leading-snug text-white"
-              style={{ background: BRAND }}
-            >
-              {MONTH[now.getMonth()].toUpperCase()}
-            </span>
-            <span className="text-xl font-black leading-none" style={{ color: TB.text }}>
-              {String(now.getDate()).padStart(2, "0")}
-            </span>
-          </div>
-          {/* Divider */}
-          <div className="w-px h-7" style={{ background: TB.border }} />
-          {/* Day + Time */}
-          <div className="flex flex-col leading-none">
-            <span className="text-[10px] uppercase font-semibold tracking-wide" style={{ color: TB.muted }}>
-              {DAY[now.getDay()]} · {now.getFullYear()}
-            </span>
-            <span className="text-xs xl:text-sm font-black font-mono tracking-tight mt-0.5" style={{ color: BRAND }}>
-              {/* On compact screens show HH:MM only; full HH:MM:SS on larger screens */}
-              <span className="xl:hidden">{`${h12}:${mins} ${ampm}`}</span>
-              <span className="hidden xl:inline">{timeStr}</span>
-            </span>
-          </div>
-        </div>
+        {/* Date/Time widget — memoized; 1-second ticks do not re-render TopBar */}
+        <ClockDisplay borderColor={TB.border} textMuted={TB.muted} textMain={TB.text} />
 
         {/* Quick nav: AI Analytics */}
         <button

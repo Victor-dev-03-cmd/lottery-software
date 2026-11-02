@@ -462,6 +462,12 @@ export default function LiveResults() {
   const confirmedRef = useRef(false);   // true = result was confirmed live
   const confirmedSlugRef = useRef(""); // which slug is locked
 
+  // ── Selected-game ref: lets mount-only closures always see the current game ──
+  // Without this, the subscribeToCloudUpdates callback (in the [] effect) would
+  // capture the initial selectedGame value and never see subsequent changes.
+  const selectedGameRef = useRef(selectedGame);
+  useEffect(() => { selectedGameRef.current = selectedGame; }, [selectedGame]);
+
   const games = board === "NLB" ? nlbGames : dlbGames;
 
   // ── Game lists: use hardcoded NLB_GAMES / DLB_GAMES as the single source of truth.
@@ -473,27 +479,45 @@ export default function LiveResults() {
     setDlbGames(dedupeBySlug(DLB_GAMES));
   }, []);
 
-  // ── Background sync: start worker on mount + listen for pushed results ───────
+  // ── Mount-only: Supabase pull, cloud subscription, sync status listeners ──────
+  // These do NOT depend on the selected game and must not re-run on game changes.
+  //   • pullResultsFromCloud   — downloads all games' results into SQLite once on open
+  //   • subscribeToCloudUpdates— 5-min poll; persists for the component's lifetime
+  //   • sync-started/finished  — track background_sync_loop state for the spinner
   useEffect(() => {
-    invoke("start_background_sync").catch(() => {});
-    invoke("start_api_server").catch(() => {});
-
-    // ── Supabase: pull cloud → local SQLite on mount (non-blocking) ────────────
+    // Pull all cloud results into local SQLite once when LiveResults opens.
+    // Not repeated on game changes — the data covers all games, not just the selected one.
     pullResultsFromCloud(async (r, slug) => {
       try { await saveLotteryResult(r, slug); } catch { /* non-fatal */ }
     }).then(n => { if (n > 0) setCloudSynced(true); }).catch(() => {});
 
-    // ── Supabase realtime: push any cloud edits into local SQLite live ─────────
+    // Subscribe to cloud updates: saves any cloud-pushed result to SQLite.
+    // Uses selectedGameRef so callbacks always see the latest selected game
+    // without this effect needing to re-run on game changes.
     const unsubCloud = subscribeToCloudUpdates(async (r, slug) => {
       try { await saveLotteryResult(r, slug); } catch { /* non-fatal */ }
-      if (slug !== selectedGame.slug) return;
-      // Only update display if we don't have a confirmed live result locked for this slug
+      if (slug !== selectedGameRef.current.slug) return;
       if (confirmedRef.current && confirmedSlugRef.current === slug) return;
       if (r && !r.error && (r.winning_numbers?.length > 0 || r.winning_letter)) {
         setResult(r);
       }
     });
 
+    const unlistenStart  = listen("sync-started",  () => setSyncing(true));
+    const unlistenFinish = listen("sync-finished", () => setSyncing(false));
+
+    return () => {
+      unsubCloud();
+      unlistenStart.then(f => f());
+      unlistenFinish.then(f => f());
+    };
+  // Empty deps — runs once on mount, cleans up on unmount. Never re-runs on game change.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Per-game: background result-fetched listener ─────────────────────────────
+  // Re-registers only when selectedGame.slug changes so it can filter by slug.
+  // Separated from the mount effect to keep game-specific logic isolated.
+  useEffect(() => {
     // ── Rust background worker: result fetched → save local + push to cloud ────
     const unlistenResult = listen<LotteryResult>("result-fetched", async (event) => {
       const r = event.payload;
@@ -510,17 +534,8 @@ export default function LiveResults() {
       }
     });
 
-    const unlistenStart  = listen("sync-started",  () => setSyncing(true));
-    const unlistenFinish = listen("sync-finished", () => setSyncing(false));
-
-    return () => {
-      unsubCloud();
-      unlistenResult.then(f => f());
-      unlistenStart.then(f => f());
-      unlistenFinish.then(f => f());
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedGame.slug]);
+    return () => { unlistenResult.then(f => f()); };
+  }, [selectedGame.slug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── SQLite-first: load result by date on game or date change ─────────────────
   useEffect(() => {

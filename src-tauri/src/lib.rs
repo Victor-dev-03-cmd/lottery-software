@@ -3,12 +3,14 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::time::Duration;
 use std::sync::{OnceLock, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 
 // ── Active games (8 NLB + 8 DLB) ─────────────────────────────────────────────
 static ALL_GAME_SLUGS: &[(&str, &str)] = &[
-    // NLB — 8 active games
+    // NLB — 9 active games (must match NLB_GAMES in LiveResults.tsx)
     ("ada-sampatha",              "NLB"),
+    ("ayubo",                     "NLB"),
     ("govisetha",                 "NLB"),
     ("mega-power",                "NLB"),
     ("nlb-jaya",                  "NLB"),
@@ -358,8 +360,9 @@ static NLB_GAME_PROFILES: &[(&str, bool, usize, bool, usize)] = &[
     ("sasiri-nlb",           true, 6, false, 1),
     ("suba-dawasak",         true, 6, false, 1),
     // Format B — Letter + 2-digit balls
-    ("dhana-nidhanaya",      true, 4, false, 2), // confirmed Draw 2331: I 19 24 64 65
-    ("mega-power",           true, 5, false, 2), // confirmed Draw 2648: F 06 28 33 35 48
+    ("ayubo",               true, 4, false, 2), // Letter + 4 two-digit balls (matches LiveResults numberCount:4)
+    ("dhana-nidhanaya",     true, 4, false, 2), // confirmed Draw 2331: I 19 24 64 65
+    ("mega-power",          true, 5, false, 2), // confirmed Draw 2648: F 06 28 33 35 48
 ];
 
 // All DLB games: letter + 4 two-digit ball numbers (Draw 3100: B 08 57 68 70)
@@ -447,7 +450,8 @@ fn validate_balls(slug: &str, board: &str, letter: &str, nums: &[String]) -> boo
 // (internal_slug, url_slug, display_name)
 // URL base: https://www.nlb.lk/lotteries/{url_slug}  ← confirmed from browser screenshot
 static NLB_URL_PATHS: &[(&str, &str, &str)] = &[
-    ("suba-dawasak",         "suba-dawasak",         "Suba Dawasak"),
+    ("ayubo",                "ayubo",                 "Ayubo"),
+    ("suba-dawasak",         "suba-dawasak",          "Suba Dawasak"),
     ("govisetha",            "govisetha",             "Govisetha"),
     ("mahajana-sampatha",    "mahajana-sampatha",     "Mahajana Sampatha"),
     ("dhana-nidhanaya",      "dhana-nidhanaya",       "Dhana Nidhanaya"),
@@ -496,29 +500,6 @@ async fn fetch_nlb_result(game_slug: &str) -> LotteryResult {
         }
     };
 
-    // ── Layer 0: Headless Chrome (handles JS-rendered pages) ──────────────────
-    // Uses system Chrome if installed; silently skipped if unavailable.
-    if let Some(html) = headless_nlb(url_path).await {
-        let doc = scraper::Html::parse_document(&html);
-        if let Some(p) = scrape_nlb_table(&doc, game_slug, expected_count, max_digits) {
-            if validate_balls(game_slug, "NLB", &p.2, &p.3) {
-                result.source_url = format!("https://www.nlb.lk/results/{} (headless)", url_path);
-                result.draw_number = p.0; result.draw_date = p.1;
-                result.winning_letter = p.2; result.winning_numbers = p.3;
-                return result;
-            }
-        }
-        // Class-based fallback on headless HTML
-        for pat in &["span.ball","[class*='Ball']","[class*='winning']","[class*='number']"] {
-            let texts = extract_all_texts(&doc, pat);
-            let (l, n) = parse_nlb_balls_strict(&texts.join(" "), max_digits, expected_count);
-            if n.len() == expected_count {
-                result.source_url = format!("https://www.nlb.lk/results/{} (headless)", url_path);
-                result.winning_letter = l; result.winning_numbers = n;
-                return result;
-            }
-        }
-    }
 
     // ── Layer 1: Official JSON API endpoint attempts (game-specific) ─────────
     let json_candidates = [
@@ -687,6 +668,30 @@ async fn fetch_nlb_result(game_slug: &str) -> LotteryResult {
         }
     }
 
+
+    // ── Layer 3 (last resort): Headless Chrome — only if HTTP layers failed ──────────────────
+    // Uses system Chrome if installed; skipped silently if Chrome is unavailable.
+    if let Some(html) = headless_nlb(url_path).await {
+        let doc = scraper::Html::parse_document(&html);
+        if let Some(p) = scrape_nlb_table(&doc, game_slug, expected_count, max_digits) {
+            if validate_balls(game_slug, "NLB", &p.2, &p.3) {
+                result.source_url = format!("https://www.nlb.lk/results/{} (Chrome-fallback)", url_path);
+                result.draw_number = p.0; result.draw_date = p.1;
+                result.winning_letter = p.2; result.winning_numbers = p.3;
+                return result;
+            }
+        }
+        // Class-based fallback on headless HTML
+        for pat in &["span.ball","[class*='Ball']","[class*='winning']","[class*='number']"] {
+            let texts = extract_all_texts(&doc, pat);
+            let (l, n) = parse_nlb_balls_strict(&texts.join(" "), max_digits, expected_count);
+            if n.len() == expected_count {
+                result.source_url = format!("https://www.nlb.lk/results/{} (Chrome-fallback)", url_path);
+                result.winning_letter = l; result.winning_numbers = n;
+                return result;
+            }
+        }
+    }
     result.error = format!(
         "Live results unavailable for {}. Visit www.nlb.lk/results/{} and use 'Enter Manually'.",
         nlb_display_name(game_slug), url_path
@@ -821,29 +826,6 @@ async fn fetch_dlb_result(game_slug: &str) -> LotteryResult {
     // XHR client with SPA-like headers
     let xhr = build_xhr_client().unwrap_or_else(|_| client.clone());
 
-    // ── Strategy 0: Headless Chrome — handles the DLB SPA perfectly ──────────
-    // Chrome loads the JS, renders the result table, and we read the DOM.
-    if let Some(html) = headless_dlb(url_path).await {
-        let doc = scraper::Html::parse_document(&html);
-        if let Some(p) = scrape_nlb_table(&doc, game_slug, expected_count, max_digits) {
-            if validate_balls(game_slug, "DLB", &p.2, &p.3) {
-                result.source_url = format!("https://www.dlb.lk/result/{}/en (headless)", url_path);
-                result.draw_number = p.0; result.draw_date = p.1;
-                result.winning_letter = p.2; result.winning_numbers = p.3;
-                return result;
-            }
-        }
-        // CSS scan on headless-rendered HTML
-        for pat in &["td.letter","span.letter","[class*='letter']","span.ball","td.ball","[class*='ball']"] {
-            let texts = extract_all_texts(&doc, pat);
-            let (l, n) = parse_nlb_balls_strict(&texts.join(" "), max_digits, expected_count);
-            if n.len() == expected_count {
-                result.source_url = format!("https://www.dlb.lk/result/{}/en (headless)", url_path);
-                result.winning_letter = l; result.winning_numbers = n;
-                return result;
-            }
-        }
-    }
 
     // ── Strategy 1: JSON/XHR API endpoints ───────────────────────────────────
     let api_urls = [
@@ -950,6 +932,30 @@ async fn fetch_dlb_result(game_slug: &str) -> LotteryResult {
         }
     }
 
+
+    // ── Strategy 5 (last resort): Headless Chrome — only if HTTP strategies all failed ──────────
+    // Chrome loads the JS, renders the result table, and we read the DOM.
+    if let Some(html) = headless_dlb(url_path).await {
+        let doc = scraper::Html::parse_document(&html);
+        if let Some(p) = scrape_nlb_table(&doc, game_slug, expected_count, max_digits) {
+            if validate_balls(game_slug, "DLB", &p.2, &p.3) {
+                result.source_url = format!("https://www.dlb.lk/result/{}/en (Chrome-fallback)", url_path);
+                result.draw_number = p.0; result.draw_date = p.1;
+                result.winning_letter = p.2; result.winning_numbers = p.3;
+                return result;
+            }
+        }
+        // CSS scan on headless-rendered HTML
+        for pat in &["td.letter","span.letter","[class*='letter']","span.ball","td.ball","[class*='ball']"] {
+            let texts = extract_all_texts(&doc, pat);
+            let (l, n) = parse_nlb_balls_strict(&texts.join(" "), max_digits, expected_count);
+            if n.len() == expected_count {
+                result.source_url = format!("https://www.dlb.lk/result/{}/en (Chrome-fallback)", url_path);
+                result.winning_letter = l; result.winning_numbers = n;
+                return result;
+            }
+        }
+    }
     result.error = format!(
         "DLB '{}' is JavaScript-rendered. Visit www.dlb.lk/result/{}/en and use 'Enter Manually'.",
         dlb_display_name(game_slug), url_path
@@ -1639,9 +1645,15 @@ async fn background_sync_loop(app: tauri::AppHandle) {
     }
 }
 
-/// Start the background sync worker (fire-and-forget).
+/// Start the background sync worker (fire-and-forget, idempotent).
+/// Multiple callers are safe: only one background_sync_loop task ever runs.
 #[tauri::command]
 async fn start_background_sync(app: tauri::AppHandle) {
+    let flag = SYNC_STARTED.get_or_init(|| AtomicBool::new(false));
+    // swap returns the old value; if it was already true, another task is running
+    if flag.swap(true, Ordering::SeqCst) {
+        return;
+    }
     tauri::async_runtime::spawn(background_sync_loop(app));
 }
 
@@ -1772,8 +1784,13 @@ async fn get_api_key(app: tauri::AppHandle) -> String {
 }
 
 /// Start the local REST API server on 0.0.0.0:7423 — accessible from mobile on same WiFi.
+/// Idempotent: if the server is already bound, subsequent calls return immediately.
 #[tauri::command]
 async fn start_api_server(app: tauri::AppHandle) {
+    let flag = API_STARTED.get_or_init(|| AtomicBool::new(false));
+    if flag.swap(true, Ordering::SeqCst) {
+        return;
+    }
     let app_handle = app.clone(); // kept for event emission; get_api_key consumes app
     let db_path = find_db(&app)
         .map(|p| p.to_string_lossy().to_string())
@@ -2080,6 +2097,11 @@ async fn start_api_server(app: tauri::AppHandle) {
         if let Ok(listener) = tokio::net::TcpListener::bind("0.0.0.0:7423").await {
             let _ = axum::serve(listener, app).await;
         }
+        // Bind failed (port busy) or server stopped unexpectedly.
+        // Reset the flag so start_api_server can be retried (e.g. after port becomes free).
+        if let Some(f) = API_STARTED.get() {
+            f.store(false, Ordering::SeqCst);
+        }
     });
 }
 
@@ -2096,7 +2118,11 @@ async fn refresh_single_game(app: tauri::AppHandle, slug: String, board: String)
 // ── Admin Session (Rust-side, cannot be bypassed from JS) ─────────────────────
 
 /// In-process session store. Token lives only in Rust heap — never exposed to JS.
-static ADMIN_SESSION: OnceLock<Mutex<Option<String>>> = OnceLock::new();
+static ADMIN_SESSION:  OnceLock<Mutex<Option<String>>> = OnceLock::new();
+// ── Background-task idempotency guards ────────────────────────────────────────
+// Prevent duplicate tokio tasks if the Tauri command is invoked more than once.
+static SYNC_STARTED: OnceLock<AtomicBool> = OnceLock::new();
+static API_STARTED:  OnceLock<AtomicBool> = OnceLock::new();
 
 fn session_store() -> &'static Mutex<Option<String>> {
     ADMIN_SESSION.get_or_init(|| Mutex::new(None))
@@ -3136,16 +3162,32 @@ fn start_discovery_beacon() {
 
     // ── UDP broadcast beacon ────────────────────────────────────────────────
     // Mobile app listens on 7422 for "LOTTERY_SERVER:<ip>:<port>"
+    // Socket is created once and reused; recreated only if a send fails.
     let ip2 = ip.clone();
     tauri::async_runtime::spawn(async move {
         use tokio::net::UdpSocket;
         use tokio::time::{sleep, Duration};
         let payload = format!("LOTTERY_SERVER:{}:{}", ip2, port);
+
+        // Create once; reuse across loop iterations to avoid per-tick OS socket churn.
+        let mut sock: Option<UdpSocket> = UdpSocket::bind("0.0.0.0:0").await.ok().and_then(|s| {
+            s.set_broadcast(true).ok()?; Some(s)
+        });
+
         loop {
-            if let Ok(sock) = UdpSocket::bind("0.0.0.0:0").await {
-                let _ = sock.set_broadcast(true);
-                // Broadcast to subnet and explicit 255.255.255.255
-                let _ = sock.send_to(payload.as_bytes(), "255.255.255.255:7422").await;
+            match &sock {
+                Some(s) => {
+                    if s.send_to(payload.as_bytes(), "255.255.255.255:7422").await.is_err() {
+                        // Socket unusable — recreate on the next iteration
+                        sock = None;
+                    }
+                }
+                None => {
+                    // Attempt to recreate the socket
+                    sock = UdpSocket::bind("0.0.0.0:0").await.ok().and_then(|s| {
+                        s.set_broadcast(true).ok()?; Some(s)
+                    });
+                }
             }
             sleep(Duration::from_secs(5)).await;
         }
