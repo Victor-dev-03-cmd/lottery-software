@@ -1,0 +1,48 @@
+name: "Windows Build Check"
+
+# Validates that the Tauri application compiles on the Windows MSVC toolchain.
+# Does NOT create a release, push a tag, upload artifacts, or run the updater.
+on:
+  push:
+    branches:
+      - integration/security-and-perf
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  windows-compile-check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Rust stable (MSVC toolchain)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust build cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        run: bun install
+
+      - name: Build frontend
+        run: bun run build
+
+      - name: Cargo check (Rust compilation — no binary output)
+        working-directory: src-tauri
+        run: cargo check --target x86_64-pc-windows-msvc
+
+      - name: Report
+        if: always()
+        run: |
+          echo "Windows MSVC compilation check complete."
+          echo "No release was created, no tag was pushed, no artifact was uploaded."

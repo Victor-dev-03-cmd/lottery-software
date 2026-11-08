@@ -33,6 +33,10 @@ const (
 	maxAttempts  = 5
 	lockDuration = 15 * time.Minute
 	staleTTL     = 30 * time.Minute // evict non-locked entries idle longer than this
+	// maxEntries caps the in-memory map to bound worst-case memory.
+	// At ~250 bytes/entry, 10 000 entries ≈ 2.5 MB. Requests from novel IPs
+	// when the cap is reached are rejected until the next cleanup pass frees space.
+	maxEntries = 10_000
 )
 
 func (rl *rateLimiter) check(ip string) bool {
@@ -59,6 +63,11 @@ func (rl *rateLimiter) check(ip string) bool {
 	now := time.Now()
 	a := rl.attempts[ip]
 	if a == nil {
+		// Hard cap: deny novel IPs when map is full rather than growing unboundedly.
+		// The next cleanup pass will free space for legitimate callers.
+		if len(rl.attempts) >= maxEntries {
+			return false
+		}
 		rl.attempts[ip] = &attempt{count: 1, lastSeen: now}
 		return true
 	}

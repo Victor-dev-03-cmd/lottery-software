@@ -259,3 +259,58 @@ func TestAttemptStructHasLastSeen(t *testing.T) {
 		t.Errorf("attempt struct size %d < 56: lastSeen field may be missing", sz)
 	}
 }
+
+// TestRateLimiterHardCapDeniesNovelIP verifies that once the map reaches
+// maxEntries, a brand-new IP is denied rather than growing the map further.
+func TestRateLimiterHardCapDeniesNovelIP(t *testing.T) {
+	rl := &rateLimiter{attempts: make(map[string]*attempt)}
+
+	// Fill exactly maxEntries slots.
+	for i := 0; i < maxEntries; i++ {
+		rl.mu.Lock()
+		rl.attempts[fmt.Sprintf("10.%d.%d.%d", i>>16, (i>>8)&0xff, i&0xff)] = &attempt{
+			count:    1,
+			lastSeen: time.Now(),
+		}
+		rl.mu.Unlock()
+	}
+
+	// A novel IP must be denied because the cap is reached.
+	if rl.check("172.16.99.99") {
+		t.Error("novel IP should be denied when map is at maxEntries")
+	}
+
+	rl.mu.Lock()
+	sz := len(rl.attempts)
+	rl.mu.Unlock()
+	if sz > maxEntries {
+		t.Errorf("map grew beyond maxEntries (%d): got %d", maxEntries, sz)
+	}
+}
+
+// TestRateLimiterHardCapAllowsKnownIP verifies that a known IP (already in the
+// map) is still checked normally even when the cap is reached.
+func TestRateLimiterHardCapAllowsKnownIP(t *testing.T) {
+	rl := &rateLimiter{attempts: make(map[string]*attempt)}
+	const knownIP = "10.0.0.1"
+
+	// Seed the known IP with 1 attempt.
+	rl.mu.Lock()
+	rl.attempts[knownIP] = &attempt{count: 1, lastSeen: time.Now()}
+	rl.mu.Unlock()
+
+	// Fill remaining slots to the cap.
+	for i := 1; i < maxEntries; i++ {
+		rl.mu.Lock()
+		rl.attempts[fmt.Sprintf("10.%d.%d.%d", i>>16, (i>>8)&0xff, i&0xff)] = &attempt{
+			count:    1,
+			lastSeen: time.Now(),
+		}
+		rl.mu.Unlock()
+	}
+
+	// The known IP should still be checkable (entry already exists).
+	if !rl.check(knownIP) {
+		t.Error("known IP must still be checked even at the cap — it already has an entry")
+	}
+}
