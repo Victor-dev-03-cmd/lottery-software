@@ -47,7 +47,7 @@ interface PinGuardCtx {
   requireAdminPin: (title?: string, subtitle?: string) => Promise<boolean>;
 }
 export const PinGuardContext = createContext<PinGuardCtx>({
-  requireAdminPin: async () => true,
+  requireAdminPin: async () => false,
 });
 
 // ── App startup state ─────────────────────────────────────────────────────────
@@ -108,11 +108,8 @@ export default function App() {
         setDbReady(true);
         // 4. Start offline-first background sync (non-blocking)
         startSyncWorker();
-        // 5. Start mobile companion API server (non-blocking) — binds to 0.0.0.0:7423
-        invoke("start_api_server").catch(() => {});
-        invoke("start_background_sync").catch(() => {});
-        // 6. Start UDP beacon + mDNS for zero-config mobile auto-discovery
-        invoke("start_discovery_beacon").catch(() => {});
+        // Desktop-only mode: skip the unused LAN/mobile API and discovery beacon.
+        // Heavy lottery results fetching is deferred until Live Results is opened.
 
         // 4. Ensure min splash time for branding
         const elapsed = Date.now() - splashStart;
