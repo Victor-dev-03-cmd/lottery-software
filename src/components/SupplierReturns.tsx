@@ -10,6 +10,7 @@ import type { PurchaseInvoice, LotteryGame } from "../types";
 import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, cleanBarcode } from "../utils/barcode";
 
 import { useLanguage } from "../i18n";
+import { usePinGuardContext } from "../App";
 import { EmptyInventory } from "./illustrations";
 // ── Local types ───────────────────────────────────────────────────────────────
 
@@ -141,6 +142,7 @@ function fmtDate(d: string) {
 
 export default function SupplierReturns() {
   const { t } = useLanguage();
+  const { requireAdminPin } = usePinGuardContext();
   const { withAdminToken } = useAuth();
 
   const [returns, setReturns]         = useState<SupplierReturn[]>([]);
@@ -259,6 +261,7 @@ export default function SupplierReturns() {
   // ── Delete ────────────────────────────────────────────────────────────────────
 
   async function handleDelete(id: number) {
+    if (!(await requireAdminPin("Delete Supplier Return", "Enter the Admin PIN to delete this supplier return."))) return;
     setAuthError(null);
     try {
       await withAdminToken(async () => {

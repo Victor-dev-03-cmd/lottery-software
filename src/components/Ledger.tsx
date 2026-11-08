@@ -5,6 +5,7 @@ import type { Agent, Payment, PaymentType, InvoiceLedgerRow } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 
 import { useLanguage } from "../i18n";
+import { usePinGuardContext } from "../App";
 const PAYMENT_TYPES: { value: PaymentType; label: string }[] = [
   { value: "cash", label: "Cash" },
   { value: "cheque", label: "Cheque" },
@@ -55,6 +56,7 @@ const EMPTY_SPLIT = (): PaymentSplit => ({
 
 export default function Ledger() {
   const { t } = useLanguage();
+  const { requireAdminPin } = usePinGuardContext();
   const { withAdminToken } = useAuth();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<number | "">("");
@@ -118,6 +120,7 @@ export default function Ledger() {
 
   async function handleDelete(id: number) {
     if (!confirm("Delete this payment record?")) return;
+    if (!(await requireAdminPin("Delete Payment", "Enter the Admin PIN to delete this payment."))) return;
     setAuthError(null);
     try {
       await withAdminToken(async () => {
