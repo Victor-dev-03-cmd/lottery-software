@@ -49,6 +49,7 @@ import type {
 } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../i18n";
+import { usePinGuardContext } from "../App";
 import { EmptyInventory } from "./illustrations";
 
 // ── Shared constants ──────────────────────────────────────────────────────────
@@ -151,6 +152,7 @@ function MethodTab({ label, icon, active, onClick }: { label: string; icon: Reac
 
 function SupplierPanel({ games }: { games: LotteryGame[] }) {
   const { withAdminToken } = useAuth();
+  const { requireAdminPin } = usePinGuardContext();
 
   const [method,       setMethod]      = useState<"money" | "ticket">("money");
   const [outstanding,  setOutstanding] = useState(0);
@@ -253,6 +255,7 @@ function SupplierPanel({ games }: { games: LotteryGame[] }) {
   }
 
   async function handleDeleteReturn(id: number) {
+    if (!(await requireAdminPin("Delete Supplier Return", "Enter the Admin PIN to delete this supplier return."))) return;
     setAuthError(null);
     try {
       await withAdminToken(async () => {
@@ -625,6 +628,7 @@ function SupplierPanel({ games }: { games: LotteryGame[] }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AgentPanel({ games }: { games: LotteryGame[] }) {
+  const { requireAdminPin } = usePinGuardContext();
   const [method,        setMethod]       = useState<"money" | "ticket">("money");
   const [agents,        setAgents]       = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent]= useState<number | "">("");
@@ -787,6 +791,7 @@ function AgentPanel({ games }: { games: LotteryGame[] }) {
 
   async function handleDeleteReturn(id: number) {
     if (!confirm("Delete this return record?")) return;
+    if (!(await requireAdminPin("Delete Agent Return", "Enter the Admin PIN to delete this return."))) return;
     setAuthError(null);
     try {
       await deleteTicketReturn(id);

@@ -116,7 +116,16 @@ export function usePinGuard() {
   );
 
   const requireAdminPin = useCallback(
-    (title?: string, subtitle?: string): Promise<boolean> => {
+    async (title?: string, subtitle?: string): Promise<boolean> => {
+      try {
+        if (!(await isAdminPinSet())) {
+          window.alert("Admin PIN is not configured. Please open Settings > Security & Backup and set an Admin PIN before deleting records.");
+          return false;
+        }
+      } catch {
+        window.alert("Unable to verify Admin PIN configuration. The operation is blocked.");
+        return false;
+      }
       return new Promise((resolve) => {
         resolveRef.current = resolve;
         setRequest({

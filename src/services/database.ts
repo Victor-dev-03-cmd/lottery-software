@@ -877,7 +877,13 @@ export async function saveInvoice(invoice: Invoice): Promise<number> {
 
 export async function deleteInvoice(id: number): Promise<void> {
   const d = await getDb();
-  await d.execute("DELETE FROM invoices WHERE id=?", [id]);
+  // Paid and active invoices remain immutable financial records.
+  const result = await d.execute(
+    "DELETE FROM invoices WHERE id=? AND invoice_status='cancelled'", [id]
+  );
+  if ((result.rowsAffected ?? 0) === 0) {
+    throw new Error("Only cancelled invoices can be permanently deleted.");
+  }
   enqueueSync("invoices", "delete", { id }, "id").catch(() => {});
 }
 

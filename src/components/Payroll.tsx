@@ -9,6 +9,7 @@ import {
 import type { Worker, WorkerRole, WorkerSalary, SalaryType } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../i18n";
+import { usePinGuardContext } from "../App";
 import { EmptyAgents } from "./illustrations";
 // SI imported for bilingual string access (used inline in JSX)
 
@@ -96,6 +97,7 @@ function FormField({ label, required = false, children }: {
 // ─── main component ──────────────────────────────────────────────────────────
 export default function Payroll() {
   const { t } = useLanguage();
+  const { requireAdminPin } = usePinGuardContext();
   const { withAdminToken } = useAuth();
 
   const [tab, setTab]           = useState<"workers" | "payroll">("workers");
@@ -174,6 +176,7 @@ export default function Payroll() {
 
   const handleDeleteWorker = async (id: number) => {
     if (!confirm("Delete this worker? All their salary records will also be removed.")) return;
+    if (!(await requireAdminPin("Delete Worker", "Enter the Admin PIN to delete this worker."))) return;
     setAuthError(null);
     try {
       await withAdminToken(async (_token) => { await deleteWorker(id); });
