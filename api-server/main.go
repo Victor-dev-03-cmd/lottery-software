@@ -71,9 +71,17 @@ func main() {
 	// Public
 	mux.HandleFunc("GET /api/v1/health", healthHandler(pool))
 
+	// Body size limits
+	const (
+		syncBodyLimit = 5 * 1024 * 1024 // 5 MB — generous ceiling for 50-row chunks (~250 KB realistic max)
+		authBodyLimit = 4 * 1024        // 4 KB — sufficient for bootstrap/admin-token JSON payloads
+	)
+	syncLimitMW := middleware.BodyLimit(syncBodyLimit)
+	authLimitMW := middleware.BodyLimit(authBodyLimit)
+
 	// Auth — public (bootstrap token / PIN required, no admin JWT)
-	mux.HandleFunc("POST /api/v1/auth/bootstrap",   handlers.Bootstrap(authSvc))
-	mux.HandleFunc("POST /api/v1/auth/admin-token", handlers.AdminToken(authSvc))
+	mux.Handle("POST /api/v1/auth/bootstrap",   authLimitMW(http.HandlerFunc(handlers.Bootstrap(authSvc))))
+	mux.Handle("POST /api/v1/auth/admin-token", authLimitMW(http.HandlerFunc(handlers.AdminToken(authSvc))))
 
 	// Admin JWT required
 	adminMW := middleware.AdminAuth(authSvc)
@@ -82,8 +90,8 @@ func main() {
 
 	// Protected — device key required
 	devMW := middleware.DeviceAuth(authSvc)
-	mux.Handle("POST /api/v1/sync/batch",   devMW(handlers.SyncBatch(pool)))
-	mux.Handle("POST /api/v1/sync/full",    devMW(handlers.FullSync(pool)))
+	mux.Handle("POST /api/v1/sync/batch",   devMW(syncLimitMW(handlers.SyncBatch(pool))))
+	mux.Handle("POST /api/v1/sync/full",    devMW(syncLimitMW(handlers.FullSync(pool))))
 	mux.Handle("GET  /api/v1/sync/status",  devMW(handlers.SyncStatus(pool)))
 	mux.Handle("GET  /api/v1/results",      devMW(handlers.GetResults(pool)))
 	mux.Handle("POST /api/v1/results",      devMW(handlers.UpsertResult(pool)))

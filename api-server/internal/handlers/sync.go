@@ -55,6 +55,10 @@ func SyncBatch(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req batchReq
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			if strings.Contains(err.Error(), "request body too large") {
+				writeError(w, "request body too large", http.StatusRequestEntityTooLarge)
+				return
+			}
 			writeError(w, "invalid request body", http.StatusBadRequest)
 			return
 		}
@@ -256,6 +260,10 @@ func FullSync(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req fullSyncReq
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			if strings.Contains(err.Error(), "request body too large") {
+				writeError(w, "request body too large", http.StatusRequestEntityTooLarge)
+				return
+			}
 			writeError(w, "invalid request body", http.StatusBadRequest)
 			return
 		}
