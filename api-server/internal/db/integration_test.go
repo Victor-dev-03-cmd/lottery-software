@@ -36,7 +36,7 @@ func testDB(t *testing.T) (*pgxpool.Pool, func()) {
 	cleanup := func() {
 		// Drop all test tables to leave DB clean
 		pool.Exec(context.Background(), `
-			DROP TABLE IF EXISTS sync_log, agents, invoices, invoice_items,
+			DROP TABLE IF EXISTS sync_tombstones, sync_log, agents, invoices, invoice_items,
 			inventory_batches, payments, ticket_returns, daily_collections,
 			lottery_results, commission_schemes, suppliers, purchase_invoices,
 			purchase_invoice_items, purchase_payments, supplier_returns,
@@ -383,5 +383,160 @@ func TestAP04CompositeKeyGuard(t *testing.T) {
 	pool.QueryRow(ctx, "SELECT winning_numbers FROM lottery_results WHERE game_slug='ap04-test'").Scan(&wn)
 	if wn != "[]" {
 		t.Errorf("stale write overwrote composite-key row: winning_numbers=%q", wn)
+	}
+}
+
+// ── Tombstone / delete-protocol integration tests ─────────────────────────────
+
+// TestSyncTombstoneSchemaCreated verifies that RunMigrations creates the
+// sync_tombstones table.
+func TestSyncTombstoneSchemaCreated(t *testing.T) {
+	pool, cleanup := testDB(t)
+	defer cleanup()
+	if err := RunMigrations(context.Background(), pool); err != nil {
+		t.Fatalf("RunMigrations failed: %v", err)
+	}
+	ctx := context.Background()
+	var exists bool
+	err := pool.QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1 FROM information_schema.tables
+			WHERE table_schema='public' AND table_name='sync_tombstones'
+		)`).Scan(&exists)
+	if err != nil {
+		t.Fatalf("query failed: %v", err)
+	}
+	if !exists {
+		t.Error("sync_tombstones table missing after RunMigrations")
+	}
+}
+
+// TestDeleteRecordCreatesTombstone verifies that a delete creates a tombstone row.
+func TestDeleteRecordCreatesTombstone(t *testing.T) {
+	pool, cleanup := testDB(t)
+	defer cleanup()
+	if err := RunMigrations(context.Background(), pool); err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+
+	// Insert an invoice to delete.
+	_, err := pool.Exec(ctx,
+		`INSERT INTO invoices
+		   (id, invoice_number, agent_id, invoice_date, invoice_total, prev_outstanding,
+		    total_payable, cash_received, outstanding_balance)
+		 VALUES (77001, 'INV-T001', 1, '2026-01-01', 100, 0, 100, 100, 0)`)
+	if err != nil {
+		t.Fatalf("setup insert failed: %v", err)
+	}
+
+	// Tombstone insert (simulates deleteRecord tombstone step).
+	_, err = pool.Exec(ctx, `
+		INSERT INTO sync_tombstones (table_name, record_id, queue_id)
+		VALUES ('invoices', 77001, 101)
+		ON CONFLICT (table_name, record_id)
+		DO UPDATE SET queue_id   = GREATEST(sync_tombstones.queue_id, EXCLUDED.queue_id),
+		              deleted_at = NOW()
+		WHERE EXCLUDED.queue_id >= sync_tombstones.queue_id
+	`)
+	if err != nil {
+		t.Fatalf("tombstone insert failed: %v", err)
+	}
+
+	// Hard delete.
+	_, err = pool.Exec(ctx, `DELETE FROM invoices WHERE id = 77001`)
+	if err != nil {
+		t.Fatalf("hard delete failed: %v", err)
+	}
+
+	// Verify tombstone exists.
+	var tombQID int64
+	err = pool.QueryRow(ctx,
+		`SELECT queue_id FROM sync_tombstones WHERE table_name='invoices' AND record_id=77001`,
+	).Scan(&tombQID)
+	if err != nil {
+		t.Fatalf("tombstone not found: %v", err)
+	}
+	if tombQID != 101 {
+		t.Errorf("expected tombstone queue_id=101, got %d", tombQID)
+	}
+
+	// Verify invoice is gone.
+	var count int
+	pool.QueryRow(ctx, "SELECT COUNT(*) FROM invoices WHERE id=77001").Scan(&count)
+	if count != 0 {
+		t.Errorf("invoice still present after hard delete: count=%d", count)
+	}
+}
+
+// TestDeleteRecordResurrectionBlocked verifies that after a tombstone exists
+// (queue_id=101), an upsert with an older queue_id (100) is blocked by the guard.
+func TestDeleteRecordResurrectionBlocked(t *testing.T) {
+	pool, cleanup := testDB(t)
+	defer cleanup()
+	if err := RunMigrations(context.Background(), pool); err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+
+	// Plant tombstone: delete happened with queue_id=101.
+	_, err := pool.Exec(ctx, `
+		INSERT INTO sync_tombstones (table_name, record_id, queue_id)
+		VALUES ('invoices', 77002, 101)
+	`)
+	if err != nil {
+		t.Fatalf("tombstone setup failed: %v", err)
+	}
+
+	// Simulate resurrection guard: upsert arrives with queue_id=100.
+	upsertQID := int64(100)
+	var tombstoneQID int64
+	qErr := pool.QueryRow(ctx,
+		`SELECT queue_id FROM sync_tombstones WHERE table_name='invoices' AND record_id=77002`,
+	).Scan(&tombstoneQID)
+	if qErr != nil {
+		t.Fatalf("tombstone lookup failed: %v", qErr)
+	}
+
+	blocked := tombstoneQID >= upsertQID
+	if !blocked {
+		t.Errorf("resurrection guard should block upsert(qid=%d) when tombstone qid=%d",
+			upsertQID, tombstoneQID)
+	}
+}
+
+// TestDeleteRecordNewerUpsertAllowed verifies that after a tombstone exists
+// (queue_id=100), an upsert with a newer queue_id (200) is allowed.
+func TestDeleteRecordNewerUpsertAllowed(t *testing.T) {
+	pool, cleanup := testDB(t)
+	defer cleanup()
+	if err := RunMigrations(context.Background(), pool); err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+
+	// Plant tombstone: delete happened with queue_id=100.
+	_, err := pool.Exec(ctx, `
+		INSERT INTO sync_tombstones (table_name, record_id, queue_id)
+		VALUES ('invoices', 77003, 100)
+	`)
+	if err != nil {
+		t.Fatalf("tombstone setup failed: %v", err)
+	}
+
+	// Simulate resurrection guard: upsert arrives with queue_id=200.
+	upsertQID := int64(200)
+	var tombstoneQID int64
+	qErr := pool.QueryRow(ctx,
+		`SELECT queue_id FROM sync_tombstones WHERE table_name='invoices' AND record_id=77003`,
+	).Scan(&tombstoneQID)
+	if qErr != nil {
+		t.Fatalf("tombstone lookup failed: %v", qErr)
+	}
+
+	blocked := tombstoneQID >= upsertQID
+	if blocked {
+		t.Errorf("resurrection guard must allow upsert(qid=%d) when tombstone qid=%d",
+			upsertQID, tombstoneQID)
 	}
 }

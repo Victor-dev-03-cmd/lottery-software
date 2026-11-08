@@ -37,12 +37,20 @@ var tableAllowlist = map[string]string{
 	"company_settings":         "id",
 }
 
+// deletableTableAllowlist is a subset of tableAllowlist that permits hard deletes.
+// Only tables where delete sync is explicitly required should be listed here.
+var deletableTableAllowlist = map[string]bool{
+	"invoices": true,
+}
+
 // ── Batch upsert (sync queue drain) ───────────────────────────────────────────
 
 type batchReq struct {
 	Table      string                   `json:"table"`
 	Rows       []map[string]interface{} `json:"rows"`
 	OnConflict string                   `json:"on_conflict"`
+	Operation  string                   `json:"operation"` // "upsert" (default) or "delete"
+	RecordID   *int64                   `json:"record_id"` // required when Operation == "delete"
 }
 
 type batchResp struct {
@@ -68,6 +76,31 @@ func SyncBatch(pool *pgxpool.Pool) http.HandlerFunc {
 			writeError(w, fmt.Sprintf("table not allowed: %s", req.Table), http.StatusBadRequest)
 			return
 		}
+
+		// Route delete operations before the upsert path.
+		if req.Operation == "delete" {
+			if req.RecordID == nil {
+				writeError(w, "record_id required for delete operation", http.StatusBadRequest)
+				return
+			}
+			var queueID int64
+			if len(req.Rows) > 0 {
+				if raw, ok2 := req.Rows[0]["_queue_id"]; ok2 {
+					if coerced := coerceValue(raw); coerced != nil {
+						if id, ok3 := coerced.(int64); ok3 {
+							queueID = id
+						}
+					}
+				}
+			}
+			if err := deleteRecord(r.Context(), pool, req.Table, *req.RecordID, queueID); err != nil {
+				writeJSON(w, batchResp{Failed: 1, Error: err.Error()}, http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, batchResp{Upserted: 1}, http.StatusOK)
+			return
+		}
+
 		if len(req.Rows) == 0 {
 			writeJSON(w, batchResp{}, http.StatusOK)
 			return
@@ -142,6 +175,30 @@ func upsertRow(ctx context.Context, pool *pgxpool.Pool, table, conflictCol strin
 		delete(row, "_queue_id")
 	}
 
+	// Resurrection guard: if a tombstone exists for this record with a queue_id
+	// >= the incoming upsert's queue_id, the row was deleted more recently — skip.
+	if hasQueueID {
+		var rowID int64
+		if raw, ok := row["id"]; ok {
+			if v := coerceValue(raw); v != nil {
+				if id, ok2 := v.(int64); ok2 {
+					rowID = id
+				}
+			}
+		}
+		if rowID > 0 {
+			var tombstoneQID int64
+			qErr := pool.QueryRow(ctx,
+				`SELECT queue_id FROM sync_tombstones WHERE table_name = $1 AND record_id = $2`,
+				table, rowID,
+			).Scan(&tombstoneQID)
+			if qErr == nil && tombstoneQID >= queueID {
+				// Row was deleted with a newer or equal queue_id — skip this upsert.
+				return nil
+			}
+		}
+	}
+
 	cols := make([]string, 0, len(row)+1)
 	vals := make([]interface{}, 0, len(row)+1)
 	placeholders := make([]string, 0, len(row)+1)
@@ -198,6 +255,35 @@ func upsertRow(ctx context.Context, pool *pgxpool.Pool, table, conflictCol strin
 	}
 
 	_, err := pool.Exec(ctx, sqlStr, vals...)
+	return err
+}
+
+// deleteRecord records a tombstone and hard-deletes a row from a business table.
+// Only tables in deletableTableAllowlist may be deleted via this path.
+// The tombstone prevents stale upsert retries (with an older queue_id) from
+// resurrecting the deleted row.
+func deleteRecord(ctx context.Context, pool *pgxpool.Pool, table string, recordID, queueID int64) error {
+	if !deletableTableAllowlist[table] {
+		return fmt.Errorf("table not allowed for delete: %s", table)
+	}
+	// Record the tombstone first so subsequent upserts can detect resurrection.
+	// ON CONFLICT: keep the highest queue_id we have seen.
+	_, err := pool.Exec(ctx, `
+		INSERT INTO sync_tombstones (table_name, record_id, queue_id)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (table_name, record_id)
+		DO UPDATE SET queue_id    = GREATEST(sync_tombstones.queue_id, EXCLUDED.queue_id),
+		              deleted_at  = NOW()
+		WHERE EXCLUDED.queue_id >= sync_tombstones.queue_id
+	`, table, recordID, queueID)
+	if err != nil {
+		return fmt.Errorf("record tombstone: %w", err)
+	}
+	// Hard delete the row.
+	_, err = pool.Exec(ctx,
+		fmt.Sprintf(`DELETE FROM "%s" WHERE "id" = $1`, table),
+		recordID,
+	)
 	return err
 }
 
