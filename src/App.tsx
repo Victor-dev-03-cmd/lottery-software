@@ -20,6 +20,7 @@ import Alerts from "./components/Alerts";
 import LiveResults from "./components/LiveResults";
 import Purchases from "./components/Purchases";
 import SupplierReturns from "./components/SupplierReturns";
+import Settlement from "./components/Settlement";
 import DraftInvoices from "./components/DraftInvoices";
 import ConfirmedInvoices from "./components/ConfirmedInvoices";
 import CancelledInvoices from "./components/CancelledInvoices";
@@ -310,7 +311,8 @@ function AppInner({
           {effectiveView === "petty-cash"       && <PettyCash />}
           {effectiveView === "alerts"           && <Alerts />}
           {effectiveView === "live-results"     && <LiveResults />}
-          {effectiveView === "purchases"          && can("purchases")          && <Purchases />}
+          {effectiveView === "purchases"          && can("purchases")          && <Purchases onNavigate={navigate} />}
+          {effectiveView === "settlement"         && can("settlement")         && <Settlement />}
           {effectiveView === "supplier-returns"   && can("supplier-returns")   && <SupplierReturns />}
           {effectiveView === "draft-invoices"     && can("draft-invoices")     && <DraftInvoices onNavigate={navigate} />}
           {effectiveView === "confirmed-invoices" && can("confirmed-invoices") && <ConfirmedInvoices onNavigate={navigate} />}

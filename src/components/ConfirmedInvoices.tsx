@@ -197,6 +197,11 @@ export default function ConfirmedInvoices({ onNavigate }: Props) {
                       Paid ✓
                     </span>
                   )}
+                  <button onClick={() => onNavigate("print" as import("../types").View, inv.id)}
+                    style={{ padding: "5px 10px", border: "1px solid #D1D5DB", borderRadius: "5px", background: "#F9FAFB", color: "#374151", fontSize: "11px", fontWeight: 600, cursor: "pointer" }}
+                    title="Preview & Print">
+                    🖨
+                  </button>
                   <button onClick={() => handleCancel(inv.id!)}
                     style={{ padding: "5px 10px", border: "1px solid #FECACA", borderRadius: "5px", background: "#FEE2E2", color: "#DC2626", fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>
                     Cancel

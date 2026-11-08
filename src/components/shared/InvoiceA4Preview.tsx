@@ -4,7 +4,12 @@
  * Used by: DraftInvoices, ConfirmedInvoices, CancelledInvoices
  */
 
-import type { Invoice, InvoiceStatus, CompanySettings } from "../../types";
+import type { Invoice, InvoiceStatus, CompanySettings, Payment, TicketReturn } from "../../types";
+
+export interface InvoiceSettlementDetails {
+  payments:       Payment[];
+  ticket_returns: TicketReturn[];
+}
 
 // ── Status palette ────────────────────────────────────────────────────────────
 export const STATUS_COLORS: Record<InvoiceStatus, { bg: string; color: string; border: string; label: string }> = {
@@ -71,6 +76,7 @@ export default function InvoiceA4Preview({
   showSalesRep   = true,
   showCommission = true,
   footerText     = "",
+  settlementDetails,
 }: {
   invoice: Invoice;
   company: CompanySettings | null;
@@ -85,6 +91,7 @@ export default function InvoiceA4Preview({
   showSalesRep?:   boolean;
   showCommission?: boolean;
   footerText?:     string;
+  settlementDetails?: InvoiceSettlementDetails;
 }) {
   const sc = STATUS_COLORS[status] ?? STATUS_COLORS.draft;
   const totalTickets = (invoice.items ?? []).reduce((s, it) => s + Number(it.qty), 0);
@@ -106,6 +113,10 @@ export default function InvoiceA4Preview({
       color: "#111827",
       position: "relative",
       boxSizing: "border-box",
+      // Prevent any overflow from expanding the element beyond 210mm.
+      // This guards against long text or wide tables causing horizontal cropping.
+      overflowX: "hidden",
+      maxWidth: "210mm",
     }}>
       {/* Inter Variable is bundled locally — no CDN required */}
 
@@ -359,6 +370,136 @@ export default function InvoiceA4Preview({
             Commission applicable as per registered scheme for outstanding balance.
           </div>
         )}
+
+        {/* ── Settlement Details section ─────────────────────────────────────── */}
+        {settlementDetails && (settlementDetails.payments.length > 0 || settlementDetails.ticket_returns.length > 0) && (() => {
+          const fmtRsLocal = (n: number) => new Intl.NumberFormat("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+          const fmtDateLocal = (d: string) => { try { const [y, m, dd] = d.split("-"); return `${dd}/${m}/${y}`; } catch { return d; } };
+          const totalMoneyPaid    = settlementDetails.payments.reduce((s, p) => s + p.amount, 0);
+          const totalReturnCredit = settlementDetails.ticket_returns.reduce((s, r) => s + r.total_value, 0);
+          const ACCENT2 = ACCENT;
+          const PMT_LABELS: Record<string, string> = {
+            cash: "Cash", cheque: "Cheque", nlb_winning: "NLB Winning", dlb_winning: "DLB Winning",
+          };
+
+          return (
+            <div style={{ marginTop: "20px", pageBreakInside: "avoid" }}>
+              {/* Section header */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                <div style={{ width: "3px", height: "14px", borderRadius: "2px", background: ACCENT2 }} />
+                <span style={{ fontSize: "8.5pt", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#374151" }}>
+                  Settlement Details
+                </span>
+              </div>
+
+              {/* Money Payments */}
+              {settlementDetails.payments.length > 0 && (
+                <div style={{ marginBottom: "10px" }}>
+                  <div style={{ fontSize: "7.5pt", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#16A34A", marginBottom: "4px" }}>
+                    💵 Money Received
+                  </div>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "7.5pt", tableLayout: "fixed" }}>
+                    <thead>
+                      <tr style={{ background: "#F0FDF4", borderBottom: "1px solid #BBF7D0" }}>
+                        {["Date", "Payment Method", "Reference", "Amount (LKR)"].map(h => (
+                          <th key={h} style={{ padding: "3px 6px", textAlign: h === "Amount (LKR)" ? "right" : "left", fontWeight: 700, color: "#15803D", whiteSpace: "nowrap" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {settlementDetails.payments.map((p, i) => (
+                        <tr key={p.id ?? i} style={{ borderBottom: "1px solid #F0F9FF" }}>
+                          <td style={{ padding: "3px 6px", whiteSpace: "nowrap", color: "#374151" }}>{fmtDateLocal(p.payment_date)}</td>
+                          <td style={{ padding: "3px 6px", color: "#374151" }}>{PMT_LABELS[p.payment_type] ?? p.payment_type}</td>
+                          <td style={{ padding: "3px 6px", color: "#6B7280", fontFamily: "monospace", wordBreak: "break-all", maxWidth: "80px" }}>{p.reference || p.cheque_number || "—"}</td>
+                          <td style={{ padding: "3px 6px", textAlign: "right", fontWeight: 600, color: "#16A34A" }}>{fmtRsLocal(p.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr style={{ borderTop: "1px solid #BBF7D0", background: "#F0FDF4" }}>
+                        <td colSpan={3} style={{ padding: "3px 6px", fontWeight: 700, color: "#15803D" }}>Total Money Received</td>
+                        <td style={{ padding: "3px 6px", textAlign: "right", fontWeight: 700, color: "#16A34A" }}>{fmtRsLocal(totalMoneyPaid)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Ticket Returns */}
+              {settlementDetails.ticket_returns.length > 0 && (
+                <div style={{ marginBottom: "10px" }}>
+                  <div style={{ fontSize: "7.5pt", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#2563EB", marginBottom: "4px" }}>
+                    🎫 Ticket Return Credits
+                  </div>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "7.5pt" }}>
+                    <thead>
+                      <tr style={{ background: "#EFF6FF", borderBottom: "1px solid #BFDBFE" }}>
+                        {["Date", "Game / Ticket", "Qty", "Unit Price", "Credit (LKR)"].map(h => (
+                          <th key={h} style={{ padding: "3px 6px", textAlign: ["Qty", "Unit Price", "Credit (LKR)"].includes(h) ? "right" : "left", fontWeight: 700, color: "#1D4ED8", whiteSpace: "nowrap" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {settlementDetails.ticket_returns.map((r, i) => (
+                        <tr key={r.id ?? i} style={{ borderBottom: "1px solid #EFF6FF" }}>
+                          <td style={{ padding: "3px 6px", whiteSpace: "nowrap", color: "#374151" }}>{fmtDateLocal(r.return_date)}</td>
+                          <td style={{ padding: "3px 6px", color: "#374151" }}>{r.game_name}</td>
+                          <td style={{ padding: "3px 6px", textAlign: "right", color: "#374151" }}>{r.qty.toLocaleString()}</td>
+                          <td style={{ padding: "3px 6px", textAlign: "right", color: "#6B7280" }}>{fmtRsLocal(r.unit_price)}</td>
+                          <td style={{ padding: "3px 6px", textAlign: "right", fontWeight: 600, color: "#2563EB" }}>{fmtRsLocal(r.total_value)}</td>
+                        </tr>
+                      ))}
+                      <tr style={{ borderTop: "1px solid #BFDBFE", background: "#EFF6FF" }}>
+                        <td colSpan={4} style={{ padding: "3px 6px", fontWeight: 700, color: "#1D4ED8" }}>Total Return Credit</td>
+                        <td style={{ padding: "3px 6px", textAlign: "right", fontWeight: 700, color: "#2563EB" }}>{fmtRsLocal(totalReturnCredit)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Settlement Summary */}
+              <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: "5px", padding: "8px 12px" }}>
+                <div style={{ fontSize: "7.5pt", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#374151", marginBottom: "5px" }}>
+                  Settlement Summary
+                </div>
+                <table style={{ width: "100%", fontSize: "7.5pt" }}>
+                  <tbody>
+                    {[
+                      { label: "Original Invoice Amount", value: fmtRsLocal(invoice.invoice_total), color: "#374151" },
+                      { label: "Cash / Winning at Delivery", value: fmtRsLocal(invoice.cash_received + invoice.dlb_winning + invoice.nlb_winning), color: "#374151" },
+                      ...(totalMoneyPaid > 0 ? [{ label: "Post-Invoice Money Received", value: fmtRsLocal(totalMoneyPaid), color: "#16A34A" }] : []),
+                      ...(totalReturnCredit > 0 ? [{ label: "Ticket Return Credit", value: fmtRsLocal(totalReturnCredit), color: "#2563EB" }] : []),
+                    ].map(row => (
+                      <tr key={row.label}>
+                        <td style={{ padding: "1.5px 0", color: "#6B7280" }}>{row.label}</td>
+                        <td style={{ padding: "1.5px 0", textAlign: "right", fontWeight: 600, color: row.color }}>LKR {row.value}</td>
+                      </tr>
+                    ))}
+                    <tr>
+                      <td colSpan={2} style={{ borderTop: "1px dashed #CBD5E1", paddingTop: "4px" }} />
+                    </tr>
+                    <tr>
+                      <td style={{ padding: "1.5px 0", fontWeight: 700, color: invoice.outstanding_balance <= 0 ? "#16A34A" : "#EA4335" }}>
+                        Remaining Outstanding
+                      </td>
+                      <td style={{ padding: "1.5px 0", textAlign: "right", fontWeight: 700, color: invoice.outstanding_balance <= 0 ? "#16A34A" : "#EA4335" }}>
+                        LKR {fmtRsLocal(Math.max(0, invoice.outstanding_balance))}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: "1.5px 0", color: "#6B7280" }}>Invoice Status</td>
+                      <td style={{ padding: "1.5px 0", textAlign: "right" }}>
+                        <span style={{ padding: "1px 8px", borderRadius: "10px", fontWeight: 700, fontSize: "7pt", background: (STATUS_COLORS[status] ?? STATUS_COLORS.draft).bg, color: (STATUS_COLORS[status] ?? STATUS_COLORS.draft).color, border: `1px solid ${(STATUS_COLORS[status] ?? STATUS_COLORS.draft).border}` }}>
+                          {(STATUS_COLORS[status] ?? STATUS_COLORS.draft).label.toUpperCase()}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ── Signature line ── */}
         <div style={{

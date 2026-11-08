@@ -282,7 +282,7 @@ export interface PurchaseInvoiceItem {
   barcode_end: string;
   qty: number;
   unit_price: number;
-  value: number;
+  value: number;           // gross: qty × unit_price
   draw_number?: string;
   draw_date?: string;
   // ERP fields
@@ -291,6 +291,11 @@ export interface PurchaseInvoiceItem {
   ticket_end_no?: string;
   books_qty?: number;
   tickets_per_book?: number;
+  // Discount fields
+  discount_type?: "pct" | "lkr";  // percentage or fixed LKR
+  discount_pct?: number;           // 0–100 when type = "pct"
+  discount_amt?: number;           // computed discount in LKR
+  net_value?: number;              // value - discount_amt
 }
 
 export interface PurchaseInvoice {
@@ -387,7 +392,37 @@ export type View =
   | "payroll"
   | "ai-analytics"
   | "print-export"
-  | "petty-cash";
+  | "petty-cash"
+  | "settlement";
+
+// ── Agent Game Discounts ──────────────────────────────────────────────────────
+
+export interface AgentGameDiscount {
+  id?: number;
+  agent_id: number;
+  game_name: string;
+  discount_pct: number;
+  custom_price?: number | null;
+}
+
+// ── Supplier Returns ──────────────────────────────────────────────────────────
+
+export interface SupplierReturn {
+  id?: number;
+  purchase_id?: number | null;
+  purchase_number?: string;
+  return_date: string;
+  game_name: string;
+  barcode_start: string;
+  barcode_end: string;
+  qty: number;
+  unit_price: number;
+  total_value: number;
+  return_reason: string;
+  status: "pending" | "credited";
+  notes: string;
+  created_at?: string;
+}
 
 // ── Payroll ───────────────────────────────────────────────────────────────────
 

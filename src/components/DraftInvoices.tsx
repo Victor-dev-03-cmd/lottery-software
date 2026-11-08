@@ -365,6 +365,13 @@ export default function DraftInvoices({ onNavigate }: Props) {
                         <TickCircle size={11} variant="Linear" color="currentColor" /> Confirm
                       </button>
                       <button
+                        onClick={(e) => { e.stopPropagation(); onNavigate("print" as import("../types").View, inv.id); }}
+                        style={{ padding: "4px 8px", border: "1px solid #D1D5DB", borderRadius: "4px", background: "#F9FAFB", color: "#374151", fontSize: "11px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "3px" }}
+                        title="Preview & Print"
+                      >
+                        🖨
+                      </button>
+                      <button
                         onClick={(e) => { e.stopPropagation(); handleCancel(inv.id!); }}
                         style={{
                           padding: "4px 8px",

@@ -573,6 +573,14 @@ async function initSchema() {
     "ALTER TABLE purchase_invoice_items ADD COLUMN draw_date TEXT DEFAULT ''",
   ]) { try { await d.execute(col); } catch {} }
 
+  // purchase_invoice_items — per-item discount support
+  for (const col of [
+    "ALTER TABLE purchase_invoice_items ADD COLUMN discount_type TEXT DEFAULT 'pct'",
+    "ALTER TABLE purchase_invoice_items ADD COLUMN discount_pct REAL DEFAULT 0",
+    "ALTER TABLE purchase_invoice_items ADD COLUMN discount_amt REAL DEFAULT 0",
+    "ALTER TABLE purchase_invoice_items ADD COLUMN net_value REAL DEFAULT 0",
+  ]) { try { await d.execute(col); } catch {} }
+
   // Petty Cash — daily cash flow tracking
   await d.execute(`
     CREATE TABLE IF NOT EXISTS petty_cash_transactions (
@@ -734,6 +742,13 @@ export async function deleteLotteryGame(id: number): Promise<void> {
 // ── Invoices ──────────────────────────────────────────────────────────────────
 
 export type InvoiceStatus = "draft" | "waiting" | "confirmed" | "paid" | "cancelled";
+
+export async function getAgentGameDiscounts(): Promise<import("../types").AgentGameDiscount[]> {
+  const d = await getDb();
+  return d.select<import("../types").AgentGameDiscount[]>(
+    "SELECT id, agent_id, game_name, discount_pct, custom_price FROM agent_game_discounts"
+  );
+}
 
 export async function getInvoices(status?: InvoiceStatus | InvoiceStatus[]): Promise<Invoice[]> {
   const d = await getDb();
@@ -1235,9 +1250,9 @@ async function syncInvoiceLiveBalance(
   // payments, settled_returns) are stable or accumulated — never the running balance itself.
   await d.execute("UPDATE invoices SET outstanding_balance=? WHERE id=?", [clamped, invoiceId]);
 
-  // Auto-advance 'waiting' → paid when fully settled.
-  // 'confirmed' invoices are NOT auto-advanced — admin must explicitly click the Paid button.
-  if (invoice_status === "waiting" && clamped <= 0) {
+  // Auto-advance to 'paid' when balance hits zero.
+  // Applies to 'confirmed' (from the new workflow) and 'waiting' (legacy / existing records).
+  if ((invoice_status === "confirmed" || invoice_status === "waiting") && clamped <= 0) {
     await d.execute("UPDATE invoices SET invoice_status='paid' WHERE id=?", [invoiceId]);
     enqueueSync("invoices", "upsert", { id: invoiceId, invoice_status: "paid", outstanding_balance: 0 }, "id").catch(() => {});
   } else {
@@ -1247,6 +1262,34 @@ async function syncInvoiceLiveBalance(
 
 // Keep old name as alias so existing call-sites (autoMarkPaidIfSettled) compile
 const autoMarkPaidIfSettled = syncInvoiceLiveBalance;
+
+/**
+ * Returns individual payment and ticket-return records for an invoice.
+ * Used by the Invoice Preview to render the Settlement Details section.
+ * Read-only — never modifies any record.
+ */
+export async function getInvoiceSettlementDetails(invoiceId: number): Promise<{
+  payments:       import("../types").Payment[];
+  ticket_returns: import("../types").TicketReturn[];
+}> {
+  const d = await getDb();
+  const [pmts, rets] = await Promise.all([
+    d.select<import("../types").Payment[]>(
+      `SELECT p.*, a.name as agent_name FROM payments p
+       LEFT JOIN agents a ON a.id = p.agent_id
+       WHERE p.invoice_id = ?
+       ORDER BY p.payment_date ASC, p.id ASC`,
+      [invoiceId]
+    ),
+    d.select<import("../types").TicketReturn[]>(
+      `SELECT r.* FROM ticket_returns r
+       WHERE r.invoice_id = ? AND r.status = 'settled'
+       ORDER BY r.return_date ASC, r.id ASC`,
+      [invoiceId]
+    ),
+  ]);
+  return { payments: pmts, ticket_returns: rets };
+}
 
 /** Returns post-delivery payments and settled returns for invoice print display */
 export async function getInvoicePaymentSummary(invoiceId: number): Promise<{
@@ -1542,6 +1585,76 @@ export async function getAllSavedResults(): Promise<{ game_slug:string; game_nam
   return d.select(
     "SELECT game_slug, game_name, board, draw_date, saved_at FROM lottery_results ORDER BY saved_at DESC"
   );
+}
+
+// ── Supplier Returns ─────────────────────────────────────────────────────────
+
+export async function getSupplierReturns(): Promise<import("../types").SupplierReturn[]> {
+  const d = await getDb();
+  return d.select<import("../types").SupplierReturn[]>(`
+    SELECT sr.*, pi.purchase_number
+    FROM supplier_returns sr
+    LEFT JOIN purchase_invoices pi ON pi.id = sr.purchase_id
+    ORDER BY sr.return_date DESC, sr.id DESC
+  `);
+}
+
+export async function saveSupplierReturn(r: import("../types").SupplierReturn): Promise<number> {
+  const d = await getDb();
+  const val = Number((r.qty * r.unit_price).toFixed(2));
+  if (r.id) {
+    await d.execute(
+      `UPDATE supplier_returns SET purchase_id=?,return_date=?,game_name=?,
+       barcode_start=?,barcode_end=?,qty=?,unit_price=?,total_value=?,
+       return_reason=?,notes=? WHERE id=?`,
+      [r.purchase_id ?? null, r.return_date, r.game_name, r.barcode_start,
+       r.barcode_end, r.qty, r.unit_price, val, r.return_reason, r.notes, r.id]
+    );
+    return r.id;
+  }
+  const res = await d.execute(
+    `INSERT INTO supplier_returns (purchase_id,return_date,game_name,barcode_start,barcode_end,qty,unit_price,total_value,return_reason,status,notes)
+     VALUES (?,?,?,?,?,?,?,?,?,'pending',?)`,
+    [r.purchase_id ?? null, r.return_date, r.game_name, r.barcode_start,
+     r.barcode_end, r.qty, r.unit_price, val, r.return_reason, r.notes]
+  );
+  return res.lastInsertId as number;
+}
+
+export async function creditSupplierReturn(id: number): Promise<void> {
+  const d = await getDb();
+  const rows = await d.select<{ id: number; game_name: string; qty: number; total_value: number; purchase_id: number | null }[]>(
+    "SELECT * FROM supplier_returns WHERE id=?", [id]
+  );
+  if (!rows.length) return;
+  const ret = rows[0];
+  await d.execute("UPDATE supplier_returns SET status='credited' WHERE id=?", [id]);
+  // Decrease inventory total_qty (FIFO — oldest batch first)
+  await d.execute(
+    `UPDATE inventory_batches
+     SET total_qty = MAX(0, total_qty - ?),
+         distributed_qty = MAX(0, MIN(distributed_qty, MAX(0, total_qty - ?)))
+     WHERE id = (
+       SELECT id FROM inventory_batches
+       WHERE game_name = ?
+       ORDER BY batch_date ASC LIMIT 1
+     )`,
+    [ret.qty, ret.qty, ret.game_name]
+  );
+  // Apply credit to purchase invoice outstanding balance
+  if (ret.purchase_id) {
+    await d.execute(
+      `UPDATE purchase_invoices
+       SET outstanding_balance = MAX(0, outstanding_balance - ?)
+       WHERE id = ?`,
+      [ret.total_value, ret.purchase_id]
+    );
+  }
+}
+
+export async function deleteSupplierReturn(id: number): Promise<void> {
+  const d = await getDb();
+  await d.execute("DELETE FROM supplier_returns WHERE id=?", [id]);
 }
 
 // ── Ticket Returns ────────────────────────────────────────────────────────────
@@ -1934,7 +2047,8 @@ export async function getPurchaseInvoices(): Promise<import("../types").Purchase
     const [items, returnCredits] = await Promise.all([
       d.select<import("../types").PurchaseInvoiceItem[]>(
         `SELECT id, purchase_id, game_name, barcode_start, barcode_end, qty, unit_price, value,
-                draw_number, draw_date, batch_number, ticket_start_no, ticket_end_no, books_qty, tickets_per_book
+                draw_number, draw_date, batch_number, ticket_start_no, ticket_end_no, books_qty, tickets_per_book,
+                discount_type, discount_pct, discount_amt, net_value
          FROM purchase_invoice_items WHERE purchase_id=? ORDER BY id ASC`,
         [inv.id]
       ),
@@ -1965,7 +2079,8 @@ export async function savePurchaseInvoice(
   items: import("../types").PurchaseInvoiceItem[]
 ): Promise<number> {
   const d = await getDb();
-  const total = items.reduce((s, it) => s + it.value, 0);
+  // Use net_value (after discount) when available; fall back to gross value for backward compat
+  const total = items.reduce((s, it) => s + (it.net_value ?? it.value), 0);
   const balance = total - (inv.initial_payment ?? 0);
   const erpVals = [
     inv.supplier_ref ?? "", inv.tax_amount ?? 0,
@@ -1976,13 +2091,16 @@ export async function savePurchaseInvoice(
     await d.execute(
       `INSERT INTO purchase_invoice_items
        (purchase_id,game_name,barcode_start,barcode_end,qty,unit_price,value,
-        batch_number,ticket_start_no,ticket_end_no,books_qty,tickets_per_book,draw_number,draw_date)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        batch_number,ticket_start_no,ticket_end_no,books_qty,tickets_per_book,draw_number,draw_date,
+        discount_type,discount_pct,discount_amt,net_value)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [purchaseId, item.game_name, item.barcode_start, item.barcode_end,
        item.qty, item.unit_price, item.value,
        item.batch_number ?? "", item.ticket_start_no ?? "", item.ticket_end_no ?? "",
        item.books_qty ?? 0, item.tickets_per_book ?? 100, item.draw_number ?? "",
-       item.draw_date ?? ""]
+       item.draw_date ?? "",
+       item.discount_type ?? "pct", item.discount_pct ?? 0,
+       item.discount_amt ?? 0, item.net_value ?? item.value]
     );
   };
 
@@ -2724,16 +2842,48 @@ export async function confirmInvoice(id: number): Promise<void> {
   );
   if (!before.length || before[0].invoice_status !== "draft") return;
 
+  // ── Backend stock validation (runs before any stock deduction) ────────────
+  // This is the authoritative check. The frontend validates for UX; this prevents
+  // race conditions and bypassed frontend validation from overselling stock.
+  const items = await d.select<{ ticket_name: string; qty: number; purchase_batch_id: number | null }[]>(
+    "SELECT ticket_name, qty, purchase_batch_id FROM invoice_items WHERE invoice_id=? AND ticket_name != '' AND qty > 0", [id]
+  );
+  for (const item of items) {
+    if (item.purchase_batch_id) {
+      const [row] = await d.select<{ remaining: number }[]>(
+        `SELECT (total_qty - distributed_qty) AS remaining
+         FROM inventory_batches WHERE id = ?`,
+        [item.purchase_batch_id]
+      );
+      const avail = row?.remaining ?? 0;
+      if (avail < item.qty) {
+        throw new Error(
+          `Insufficient stock for "${item.ticket_name}" (batch #${item.purchase_batch_id}): ` +
+          `requested ${item.qty.toLocaleString()}, available ${avail.toLocaleString()}.`
+        );
+      }
+    } else {
+      // No batch selected: check total available across all batches for this game
+      const [row] = await d.select<{ available: number }[]>(
+        `SELECT COALESCE(SUM(total_qty - distributed_qty), 0) AS available
+         FROM inventory_batches WHERE game_name = ?`,
+        [item.ticket_name]
+      );
+      const avail = row?.available ?? 0;
+      if (avail < item.qty) {
+        throw new Error(
+          `Insufficient stock for "${item.ticket_name}": ` +
+          `requested ${item.qty.toLocaleString()}, available ${avail.toLocaleString()}.`
+        );
+      }
+    }
+  }
+  // ── Stock validation passed — proceed with confirm ────────────────────────
+
   await d.execute(
     "UPDATE invoices SET invoice_status='confirmed' WHERE id=? AND invoice_status='draft'", [id]
   );
   enqueueSync("invoices","upsert",{ id, invoice_status: "confirmed" },"id").catch(()=>{});
-
-  // Decrement inventory stock: use the specific batch the user picked (purchase_batch_id),
-  // or fall back to FIFO across batches when no batch was chosen.
-  const items = await d.select<{ ticket_name: string; qty: number; purchase_batch_id: number | null }[]>(
-    "SELECT ticket_name, qty, purchase_batch_id FROM invoice_items WHERE invoice_id=? AND ticket_name != '' AND qty > 0", [id]
-  );
   for (const item of items) {
     if (item.purchase_batch_id) {
       // Deduct from the exact batch the user selected — preserves per-batch accuracy
@@ -2763,6 +2913,10 @@ export async function confirmInvoice(id: number): Promise<void> {
       }
     }
   }
+  // Auto-advance to 'paid' immediately if the invoice already has full payment
+  // (outstanding_balance = 0). This satisfies the business rule: Draft → Paid in one
+  // step when cash_received covers the full amount.
+  await syncInvoiceLiveBalance(d, id);
 }
 
 /** Move a waiting/confirmed invoice to Paid */

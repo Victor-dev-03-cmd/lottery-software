@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import {
   Category2, Notification, ShoppingCart, RotateLeft, House,
   AddCircle, Clock, DocumentFilter, DocumentText, ClipboardClose,
-  Brush, Money3, Book1, ClipboardText, PercentageCircle, Wallet,
+  Brush, Book1, ClipboardText, PercentageCircle, Wallet,
   People, Hierarchy, Chart21, TrendUp, Cpu, Cup, UserEdit,
   Printer, Setting2, ArrowLeft2, ArrowRight2, Tag,
 } from "iconsax-react";
@@ -66,7 +66,7 @@ export default function Sidebar({
       headingKey: "nav_purchasing", heading: t("nav_purchasing"),
       items: [
         { view: "purchases",        labelKey: "nav_purchases",        label: t("nav_purchases"),        icon: <ShoppingCart size={20} variant="Linear" color="currentColor" /> },
-        { view: "supplier-returns", labelKey: "nav_supplier_returns", label: t("nav_supplier_returns"), icon: <RotateLeft   size={20} variant="Linear" color="currentColor" /> },
+        { view: "settlement",       labelKey: "nav_settlement",       label: t("nav_settlement"),       icon: <RotateLeft   size={20} variant="Linear" color="currentColor" /> },
         { view: "inventory",        labelKey: "nav_inventory",        label: t("nav_inventory"),        icon: <House        size={20} variant="Linear" color="currentColor" /> },
       ],
     },
@@ -79,7 +79,6 @@ export default function Sidebar({
         { view: "invoices",           labelKey: "nav_paid_invoices",      label: t("nav_paid_invoices"),      icon: <DocumentText   size={20} variant="Linear" color="currentColor" /> },
         { view: "cancelled-invoices", labelKey: "nav_cancelled_invoices", label: t("nav_cancelled_invoices"), icon: <ClipboardClose size={20} variant="Linear" color="currentColor" /> },
         { view: "invoice-model",      labelKey: "nav_invoice_model",      label: t("nav_invoice_model"),      icon: <Brush          size={20} variant="Linear" color="currentColor" /> },
-        { view: "returns",            labelKey: "nav_returns",            label: t("nav_returns"),            icon: <Money3         size={20} variant="Linear" color="currentColor" /> },
         { view: "ledger",             labelKey: "nav_ledger",             label: t("nav_ledger"),             icon: <Book1          size={20} variant="Linear" color="currentColor" /> },
       ],
     },

@@ -3,10 +3,11 @@ import { Printer, ArrowLeft, Thermometer, FileText, MessageCircle } from "lucide
 import {
   getInvoiceWithItems, getCompanySettings, getInvoicePaymentSummary,
   getInvoiceTemplate, DEFAULT_INVOICE_TEMPLATE,
+  getInvoiceSettlementDetails,
 } from "../services/database";
 import type { InvoiceTemplate } from "../services/database";
 import type { Invoice, CompanySettings, InvoiceStatus } from "../types";
-import InvoiceA4Preview from "./shared/InvoiceA4Preview";
+import InvoiceA4Preview, { type InvoiceSettlementDetails } from "./shared/InvoiceA4Preview";
 
 interface Props {
   invoiceId: number;
@@ -21,28 +22,31 @@ function fmtDate(d: string) {
 }
 
 export default function InvoicePrint({ invoiceId, onBack }: Props) {
-  const [invoice,  setInvoice]  = useState<Invoice | null>(null);
-  const [company,  setCompany]  = useState<CompanySettings | null>(null);
-  const [paySum,   setPaySum]   = useState({ post_payments: 0, settled_returns: 0 });
-  const [template, setTemplate] = useState<InvoiceTemplate>(DEFAULT_INVOICE_TEMPLATE);
-  const [loading,  setLoading]  = useState(true);
-  const [printMode, setPrintMode] = useState<PrintMode>("a4");
-  const [pdfBusy, setPdfBusy]   = useState(false);
+  const [invoice,           setInvoice]       = useState<Invoice | null>(null);
+  const [company,           setCompany]       = useState<CompanySettings | null>(null);
+  const [paySum,            setPaySum]        = useState({ post_payments: 0, settled_returns: 0 });
+  const [settlementDetails, setSettlement]    = useState<InvoiceSettlementDetails | undefined>(undefined);
+  const [template,          setTemplate]      = useState<InvoiceTemplate>(DEFAULT_INVOICE_TEMPLATE);
+  const [loading,           setLoading]       = useState(true);
+  const [printMode,         setPrintMode]     = useState<PrintMode>("a4");
+  const [pdfBusy,           setPdfBusy]       = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function load() {
       try {
-        const [inv, co, ps, tpl] = await Promise.all([
+        const [inv, co, ps, tpl, sd] = await Promise.all([
           getInvoiceWithItems(invoiceId),
           getCompanySettings(),
           getInvoicePaymentSummary(invoiceId),
           getInvoiceTemplate(),
+          getInvoiceSettlementDetails(invoiceId),
         ]);
         setInvoice(inv);
         setCompany(co);
         setPaySum(ps);
         setTemplate(tpl);
+        setSettlement(sd);
       } finally { setLoading(false); }
     }
     load();
@@ -56,10 +60,22 @@ export default function InvoicePrint({ invoiceId, onBack }: Props) {
       const html2pdf = (await import("html2pdf.js")).default;
       await html2pdf()
         .set({
-          margin:   [8, 8, 8, 8],
-          filename: `invoice-${invoice.invoice_number}.pdf`,
+          // margin: 0 — the InvoiceA4Preview component has its own internal padding
+          // (padding: "16px 22px 20px" ≈ 4–6 mm on all sides) so content never touches
+          // the page edge. Setting external margins here caused two bugs:
+          //   1. Cropping: a 210mm element in a (210 - 8 - 8 = 194mm) slot clips 16mm off the right.
+          //   2. Blank second page: a 297mm element in a (297 - 8 - 8 = 281mm) slot
+          //      needs 1.057 pages → html2pdf generates 2 pages, the second almost empty.
+          margin:   0,
+          filename: `Invoice-${invoice.invoice_number}.pdf`,
           image:    { type: "jpeg", quality: 0.97 },
-          html2canvas: { scale: 2, useCORS: true, logging: false },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            // Fix canvas width to exactly 210mm at 96 dpi so html2pdf scales 1:1 onto A4
+            width: Math.round(794),
+          },
           jsPDF:    { unit: "mm", format: "a4", orientation: "portrait" },
         })
         .from(previewRef.current)
@@ -155,6 +171,7 @@ export default function InvoicePrint({ invoiceId, onBack }: Props) {
               logoSrc={template.logoData || "/ajith_rohana_logo.png"}
               postPayments={paySum.post_payments}
               settledReturns={paySum.settled_returns}
+              settlementDetails={settlementDetails}
               showBarcodes={template.showBarcodes}
               showDiscount={template.showDiscount}
               showRoute={template.showRoute}
