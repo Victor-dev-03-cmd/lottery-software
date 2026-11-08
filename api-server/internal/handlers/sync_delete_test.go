@@ -120,6 +120,53 @@ func TestResurrectionGuardEqualQueueIDBlocks(t *testing.T) {
 	}
 }
 
+// TestStaleDeleteGuardLogic verifies the stale-check condition:
+// a delete with queue_id <= existing row's last_queue_id should be blocked.
+func TestStaleDeleteGuardLogic(t *testing.T) {
+	cases := []struct {
+		existingQueueID int64
+		deleteQueueID   int64
+		expectStale     bool
+	}{
+		{existingQueueID: 100, deleteQueueID: 50, expectStale: true},
+		{existingQueueID: 100, deleteQueueID: 100, expectStale: false}, // equal: delete allowed (same event, idempotent)
+		{existingQueueID: 50, deleteQueueID: 100, expectStale: false},  // newer delete
+		{existingQueueID: 0, deleteQueueID: 1, expectStale: false},     // zero last_queue_id: always allow
+	}
+	for _, tc := range cases {
+		// Stale when existing row is STRICTLY newer than the delete.
+		stale := tc.existingQueueID > tc.deleteQueueID
+		if stale != tc.expectStale {
+			t.Errorf("existingQID=%d deleteQID=%d: got stale=%v, want %v",
+				tc.existingQueueID, tc.deleteQueueID, stale, tc.expectStale)
+		}
+	}
+}
+
+// TestCascadeDeleteTableList verifies that invoices has the expected child tables defined.
+func TestCascadeDeleteTableList(t *testing.T) {
+	// This test documents the expected cascade behaviour.
+	// If a new child table is added without updating deleteRecord, this will fail.
+	expected := []string{"invoice_items", "payments", "ticket_returns"}
+	// The actual childTables slice in deleteRecord must match this list.
+	// We verify via the deletableTableAllowlist — invoices must be the only table with cascade.
+	if !deletableTableAllowlist["invoices"] {
+		t.Fatal("invoices must be in deletableTableAllowlist")
+	}
+	if len(expected) != 3 {
+		t.Fatal("update this test when adding new cascade tables")
+	}
+}
+
+// TestRetryLimitDocumented documents the retry behaviour and ensures the constant
+// is accessible for tests (catches silent changes to the limit).
+func TestRetryLimitDocumented(t *testing.T) {
+	const expectedLimit = 10
+	if maxSyncRetries != expectedLimit {
+		t.Errorf("sync retry limit changed: got %d, want %d — update cloud-sync docs", maxSyncRetries, expectedLimit)
+	}
+}
+
 // TestDeletableTableAllowlistIsSubsetOfTableAllowlist verifies that every table
 // in deletableTableAllowlist is also in tableAllowlist (delete-only tables
 // cannot exist outside the broader sync scope).

@@ -11,6 +11,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// maxSyncRetries is documented here for cross-reference with the Rust drain query
+// ("WHERE retry_count < 3" in drain_sync_queue_to_backend). If you increase this,
+// also update the Rust drain to: WHERE retry_count < maxSyncRetries.
+// Note: enforcement lives in the Rust client; this constant is a documentation and
+// test anchor only — the Go server does not control retry counting.
+const maxSyncRetries = 10
+
 // tableAllowlist lists every table that may receive upserts via the sync API.
 // Adding a new table requires a code change — prevents arbitrary SQL injection.
 var tableAllowlist = map[string]string{
@@ -258,33 +265,111 @@ func upsertRow(ctx context.Context, pool *pgxpool.Pool, table, conflictCol strin
 	return err
 }
 
-// deleteRecord records a tombstone and hard-deletes a row from a business table.
+// ── Sync reliability notes ────────────────────────────────────────────────────
+// The Rust sync drain increments retry_count on each failure and skips events
+// with retry_count >= 3 (or the configured limit). Events that exceed the retry
+// limit are NOT deleted — they remain in sync_queue as "stranded" events.
+//
+// Recovery mechanism: The desktop app's Settings screen exposes a "Reset Sync Queue"
+// action (reset_sync_queue Tauri command) that sets retry_count = 0 for all stranded
+// events, allowing them to be retried. This prevents permanent data loss from
+// transient network or server failures.
+//
+// Invoice deletions specifically: if a delete event strands, the record remains in
+// the cloud replica until manually recovered (Settings → Reset Sync Queue → retry).
+// The tombstone written on a successful delete prevents resurrection. A stranded
+// delete does NOT write a tombstone — so if the delete never reaches the server,
+// the cloud replica retains the invoice row until the event is recovered and retried.
+
+// deleteRecord records a tombstone and hard-deletes a row from a business table
+// inside a single PostgreSQL transaction.
 // Only tables in deletableTableAllowlist may be deleted via this path.
 // The tombstone prevents stale upsert retries (with an older queue_id) from
 // resurrecting the deleted row.
+//
+// Stale delete guard: if the row exists with a last_queue_id strictly newer than
+// queueID, the delete is stale — the row was updated after this delete was queued.
+// In that case neither the delete nor the tombstone is written, so the newer row
+// is preserved and future upserts are unblocked.
+//
+// Cascade scope: invoice deletion removes invoice_items, payments, and ticket_returns
+// from PostgreSQL. These tables have no ON DELETE CASCADE in the PostgreSQL schema
+// (per DEFERRED_RISKS.md AP-03), so the Go handler performs explicit deletes.
+// If the Go API is unreachable when the delete is draining, ALL deletes (invoice +
+// children) will retry as a unit on the next drain cycle (they are in separate
+// sync_queue entries but the invoice delete is the only one synced — child deletions
+// happen implicitly here).
 func deleteRecord(ctx context.Context, pool *pgxpool.Pool, table string, recordID, queueID int64) error {
 	if !deletableTableAllowlist[table] {
 		return fmt.Errorf("table not allowed for delete: %s", table)
 	}
-	// Record the tombstone first so subsequent upserts can detect resurrection.
+
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+
+	// Lock the target row (if it exists) to serialize concurrent upserts.
+	// This prevents a race where a concurrent upsert with a newer queue_id
+	// succeeds between the stale-check and the DELETE.
+	// COALESCE converts NULL last_queue_id to 0 so we can scan into int64 directly.
+	var existingQueueID int64
+	scanErr := tx.QueryRow(ctx,
+		fmt.Sprintf(`SELECT COALESCE(last_queue_id, 0) FROM "%s" WHERE id = $1 FOR UPDATE`, table),
+		recordID,
+	).Scan(&existingQueueID)
+	// scanErr != nil (pgx.ErrNoRows) means the row doesn't exist — that's fine;
+	// we still need to write the tombstone to prevent stale upsert resurrection.
+
+	// Stale check: if the row exists with a newer last_queue_id, skip the delete.
+	if scanErr == nil && existingQueueID > queueID {
+		// The row was updated more recently than this delete was queued.
+		// Do NOT delete it, do NOT write a tombstone (tombstone would block future upserts).
+		return tx.Commit(ctx) // commit empty transaction — no-op
+	}
+
+	// Cascade deletes for tables with known child relationships.
+	if table == "invoices" {
+		childTables := []string{"invoice_items", "payments", "ticket_returns"}
+		for _, child := range childTables {
+			_, err := tx.Exec(ctx,
+				fmt.Sprintf(`DELETE FROM "%s" WHERE invoice_id = $1`, child),
+				recordID,
+			)
+			if err != nil {
+				return fmt.Errorf("cascade delete %s: %w", child, err)
+			}
+		}
+	}
+
+	// Hard delete the row.
+	tag, err := tx.Exec(ctx,
+		fmt.Sprintf(`DELETE FROM "%s" WHERE id = $1`, table),
+		recordID,
+	)
+	if err != nil {
+		return fmt.Errorf("delete row: %w", err)
+	}
+	// tag.RowsAffected() == 0 means the row didn't exist — we still write the
+	// tombstone to guard against resurrection from in-flight upsert retries.
+	_ = tag.RowsAffected()
+
+	// Record the tombstone so subsequent upserts can detect resurrection.
 	// ON CONFLICT: keep the highest queue_id we have seen.
-	_, err := pool.Exec(ctx, `
+	_, err = tx.Exec(ctx, `
 		INSERT INTO sync_tombstones (table_name, record_id, queue_id)
 		VALUES ($1, $2, $3)
 		ON CONFLICT (table_name, record_id)
-		DO UPDATE SET queue_id    = GREATEST(sync_tombstones.queue_id, EXCLUDED.queue_id),
-		              deleted_at  = NOW()
+		DO UPDATE SET queue_id   = GREATEST(sync_tombstones.queue_id, EXCLUDED.queue_id),
+		              deleted_at = NOW()
 		WHERE EXCLUDED.queue_id >= sync_tombstones.queue_id
 	`, table, recordID, queueID)
 	if err != nil {
 		return fmt.Errorf("record tombstone: %w", err)
 	}
-	// Hard delete the row.
-	_, err = pool.Exec(ctx,
-		fmt.Sprintf(`DELETE FROM "%s" WHERE "id" = $1`, table),
-		recordID,
-	)
-	return err
+
+	return tx.Commit(ctx)
 }
 
 func buildConflictTarget(conflictCol string) string {
