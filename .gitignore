@@ -58,3 +58,6 @@ mobile-app/android/app/proguard-rules.pro
 *.db
 *.db-shm
 *.db-wal
+
+# Private signing keys — never commit
+*.key
