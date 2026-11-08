@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"bytes"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,22 +11,22 @@ import (
 
 func TestBodyLimitRejectsOversizedBody(t *testing.T) {
 	handler := BodyLimit(10)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := io.ReadAll(r.Body)
+		if err != nil && strings.Contains(err.Error(), "request body too large") {
+			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	big := bytes.NewBufferString(strings.Repeat("x", 100))
 	req := httptest.NewRequest(http.MethodPost, "/", big)
-	req.ContentLength = int64(big.Len())
 	rr := httptest.NewRecorder()
 
 	handler.ServeHTTP(rr, req)
 
-	// The handler itself returns 200; the body limit middleware does not
-	// interrupt the handler — it wraps r.Body so json.Decode fails.
-	// Here we just verify the middleware compiles and the wrapped reader
-	// can be obtained without panicking.
-	if rr.Code == 0 {
-		t.Fatal("no response written")
+	if rr.Code != http.StatusRequestEntityTooLarge {
+		t.Errorf("expected 413 for body > 10 bytes, got %d", rr.Code)
 	}
 }
 
