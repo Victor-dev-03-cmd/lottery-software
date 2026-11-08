@@ -37,12 +37,22 @@ jobs:
       - name: Build frontend
         run: bun run build
 
-      - name: Cargo check (Rust compilation — no binary output)
+      - name: Cargo check (fast type/syntax check, no binary)
         working-directory: src-tauri
         run: cargo check --target x86_64-pc-windows-msvc
+
+      - name: Cargo build debug (full link validation — no installer produced)
+        working-directory: src-tauri
+        # Builds the Rust binary in debug mode. This validates that every symbol
+        # links correctly on the MSVC toolchain, which cargo check cannot confirm.
+        # The resulting .exe is NOT packaged, signed, uploaded, or released.
+        # dangerousInsecure: true remains in tauri.conf.json — H-02 is explicitly
+        # unresolved until the repo owner adds TAURI_SIGNING_PRIVATE_KEY.
+        run: cargo build --target x86_64-pc-windows-msvc 2>&1
 
       - name: Report
         if: always()
         run: |
-          echo "Windows MSVC compilation check complete."
+          echo "Windows MSVC compilation and link check complete."
           echo "No release was created, no tag was pushed, no artifact was uploaded."
+          echo "H-02 (dangerousInsecure: true) remains unresolved — see RELEASE_SECURITY.md."
