@@ -1,0 +1,64 @@
+name: Windows Performance Test Installer
+
+# Test-only build from the already combined integration branch.
+# Do not publish a GitHub Release, tag, or updater manifest.
+on:
+  push:
+    branches:
+      - integration/security-and-perf
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-test-installer:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Rust MSVC toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install JS dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build Windows NSIS installer for manual performance testing
+        run: bun run tauri build --bundles nsis
+
+      - name: Verify installer exists
+        shell: pwsh
+        run: |
+          $files = @(Get-ChildItem -Path "src-tauri/target/release/bundle/nsis/*-setup.exe" -ErrorAction SilentlyContinue)
+          if ($files.Count -eq 0) { throw "Tauri NSIS installer not found" }
+          foreach ($f in $files) { Write-Host ("Installer: {0} ({1} MB)" -f $f.Name, [math]::Round($f.Length/1MB,2)) }
+
+      - name: Upload test installer and performance measurement script
+        uses: actions/upload-artifact@v4
+        with:
+          name: lottery-manager-windows-test-${{ github.sha }}
+          path: |
+            src-tauri/target/release/bundle/nsis/*-setup.exe
+            scripts/Measure-WindowsPerformance.ps1
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Test-build safety notes
+        shell: pwsh
+        run: |
+          Write-Host "TEST BUILD ONLY. No release, tag, updater feed, or production deployment was created."
+          Write-Host "Test on a backed-up / non-production SQLite database."
+          Write-Host "Existing updater signature verification remains an open release-security issue."
