@@ -3297,19 +3297,18 @@ async fn delete_cancelled_invoice(
             return Err("Invoice was not deleted — it may have been modified concurrently.".to_string());
         }
 
-        // 4. Commit. If commit fails, all changes are rolled back automatically.
-        tx.commit()
-            .map_err(|e| format!("Transaction commit failed: {}", e))?;
-
-        // 5. Enqueue a sync delete so the cloud replica is updated.
-        // This runs AFTER the commit — if it fails, the local deletion still stands;
-        // the sync will be retried on the next drain cycle.
+        // 3d. Enqueue the sync delete INSIDE the transaction.
+        // If this fails, the entire transaction rolls back — no invoice is deleted without sync enqueued.
         let payload = serde_json::json!({"id": invoice_id}).to_string();
-        conn.execute(
-            "INSERT INTO sync_queue (table_name, operation, payload, on_conflict, retry_count)
+        tx.execute(
+            "INSERT INTO sync_queue (table_name, operation, payload, on_conflict, retry_count) \
              VALUES ('invoices', 'delete', ?1, 'id', 0)",
             rusqlite::params![payload],
-        ).ok(); // Non-fatal if sync_queue insert fails
+        ).map_err(|e| format!("Failed to enqueue sync delete: {}", e))?;
+
+        // 4. Commit only after all steps (including sync enqueue) have succeeded.
+        tx.commit()
+            .map_err(|e| format!("Transaction commit failed — all changes rolled back: {}", e))?;
 
         Ok(())
     }).await.map_err(|e| e.to_string())?
@@ -3507,20 +3506,108 @@ mod tests {
         assert_eq!(rets, 0);
     }
 
+    /// Core deletion logic with sync enqueue, using manual BEGIN/COMMIT/ROLLBACK so
+    /// the function takes `&Connection` (not `&mut Connection`) — safe for testing.
+    fn delete_invoice_tx_with_enqueue(conn: &Connection, invoice_id: i64) -> Result<(), String> {
+        let status: String = conn.query_row(
+            "SELECT invoice_status FROM invoices WHERE id = ?1",
+            rusqlite::params![invoice_id],
+            |row| row.get(0),
+        ).map_err(|e| match e {
+            rusqlite::Error::QueryReturnedNoRows => "Invoice not found.".to_string(),
+            e => format!("Database error: {}", e),
+        })?;
+
+        if status != "cancelled" {
+            return Err(format!(
+                "Cannot delete invoice: status is '{}'. Only cancelled invoices may be permanently deleted.",
+                status
+            ));
+        }
+
+        conn.execute("BEGIN", []).map_err(|e| e.to_string())?;
+
+        let result = (|| -> Result<(), String> {
+            conn.execute("DELETE FROM invoice_items  WHERE invoice_id = ?1", rusqlite::params![invoice_id])
+                .map_err(|e| format!("Failed to delete invoice items: {}", e))?;
+            conn.execute("DELETE FROM payments        WHERE invoice_id = ?1", rusqlite::params![invoice_id])
+                .map_err(|e| format!("Failed to delete payments: {}", e))?;
+            conn.execute("DELETE FROM ticket_returns  WHERE invoice_id = ?1", rusqlite::params![invoice_id])
+                .map_err(|e| format!("Failed to delete ticket returns: {}", e))?;
+
+            let rows = conn.execute("DELETE FROM invoices WHERE id = ?1", rusqlite::params![invoice_id])
+                .map_err(|e| format!("Failed to delete invoice: {}", e))?;
+            if rows == 0 {
+                return Err("Invoice was not deleted — it may have been modified concurrently.".to_string());
+            }
+
+            let payload = serde_json::json!({"id": invoice_id}).to_string();
+            conn.execute(
+                "INSERT INTO sync_queue (table_name, operation, payload, on_conflict, retry_count) \
+                 VALUES ('invoices', 'delete', ?1, 'id', 0)",
+                rusqlite::params![payload],
+            ).map_err(|e| format!("Failed to enqueue sync delete: {}", e))?;
+
+            Ok(())
+        })();
+
+        match result {
+            Ok(()) => {
+                conn.execute("COMMIT", []).map_err(|e| e.to_string())?;
+                Ok(())
+            }
+            Err(e) => {
+                conn.execute("ROLLBACK", []).ok();
+                Err(e)
+            }
+        }
+    }
+
     #[test]
-    fn test_delete_invoice_rollback_on_constraint_violation() {
-        // This test verifies that if a DELETE fails mid-transaction (e.g. a
-        // table that does not exist is referenced), the transaction is rolled back.
-        // We simulate this by testing that after a failed deletion attempt,
-        // the invoice row is unchanged.
-        // (A full mid-transaction failure requires a contrived schema; this test
-        // verifies the positive case with an intact schema instead.)
-        let mut conn = setup_test_db();
-        conn.execute("INSERT INTO invoices (id, invoice_status) VALUES (4, 'cancelled')", []).unwrap();
-        // We cannot easily trigger a mid-tx failure without an artificial schema
-        // break, so we verify the normal path leaves no orphans.
-        delete_invoice_tx(&mut conn, 4).unwrap();
-        let count: i64 = conn.query_row("SELECT COUNT(*) FROM invoices WHERE id=4", [], |r| r.get(0)).unwrap();
-        assert_eq!(count, 0);
+    fn test_delete_invoice_rollback_on_sync_enqueue_failure() {
+        // This database intentionally omits the sync_queue table.
+        // When delete_invoice_tx_with_enqueue() tries to INSERT INTO sync_queue,
+        // it will fail, and the entire transaction (including invoice and child deletions)
+        // must be rolled back.
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch("
+            CREATE TABLE app_settings (key TEXT PRIMARY KEY, value TEXT);
+            INSERT INTO app_settings (key, value) VALUES ('admin_pin_hash', 'test_hash');
+            CREATE TABLE invoices (
+                id INTEGER PRIMARY KEY,
+                invoice_status TEXT NOT NULL DEFAULT 'paid'
+            );
+            CREATE TABLE invoice_items (id INTEGER PRIMARY KEY, invoice_id INTEGER NOT NULL);
+            CREATE TABLE payments (id INTEGER PRIMARY KEY, invoice_id INTEGER NOT NULL);
+            CREATE TABLE ticket_returns (id INTEGER PRIMARY KEY, invoice_id INTEGER NOT NULL);
+            -- NOTE: sync_queue table deliberately NOT created
+        ").unwrap();
+
+        // Seed invoice with children.
+        conn.execute("INSERT INTO invoices (id, invoice_status) VALUES (99, 'cancelled')", []).unwrap();
+        conn.execute("INSERT INTO invoice_items (id, invoice_id) VALUES (1, 99)", []).unwrap();
+        conn.execute("INSERT INTO payments (id, invoice_id) VALUES (2, 99)", []).unwrap();
+        conn.execute("INSERT INTO ticket_returns (id, invoice_id) VALUES (3, 99)", []).unwrap();
+
+        // Attempt deletion — sync_queue INSERT will fail because the table doesn't exist.
+        let result = delete_invoice_tx_with_enqueue(&conn, 99);
+        assert!(result.is_err(), "must fail when sync_queue table is missing");
+
+        // The entire transaction must have rolled back — all records still present.
+        let invoice_count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM invoices WHERE id=99", [], |r| r.get(0)).unwrap();
+        assert_eq!(invoice_count, 1, "invoice must be rolled back and still present");
+
+        let items_count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM invoice_items WHERE invoice_id=99", [], |r| r.get(0)).unwrap();
+        assert_eq!(items_count, 1, "invoice_items must be rolled back");
+
+        let pay_count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM payments WHERE invoice_id=99", [], |r| r.get(0)).unwrap();
+        assert_eq!(pay_count, 1, "payments must be rolled back");
+
+        let ret_count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM ticket_returns WHERE invoice_id=99", [], |r| r.get(0)).unwrap();
+        assert_eq!(ret_count, 1, "ticket_returns must be rolled back");
     }
 }
