@@ -24,6 +24,7 @@ type rateLimiter struct {
 type attempt struct {
 	count    int
 	lockedAt time.Time
+	lastSeen time.Time
 }
 
 var authLimiter = &rateLimiter{attempts: make(map[string]*attempt)}
@@ -31,39 +32,48 @@ var authLimiter = &rateLimiter{attempts: make(map[string]*attempt)}
 const (
 	maxAttempts  = 5
 	lockDuration = 15 * time.Minute
+	staleTTL     = 30 * time.Minute // evict non-locked entries idle longer than this
 )
 
 func (rl *rateLimiter) check(ip string) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
-	// Lazy cleanup: if 5 minutes have passed since last sweep, evict expired entries.
-	// This prevents unbounded map growth under prolonged dictionary attacks.
+	// Lazy cleanup: evict both expired locks and stale low-count entries.
+	// Runs at most once per 5 minutes to bound cleanup overhead.
 	if time.Since(rl.lastCleanup) > 5*time.Minute {
 		rl.lastCleanup = time.Now()
 		for k, a := range rl.attempts {
 			if !a.lockedAt.IsZero() && time.Since(a.lockedAt) > lockDuration {
+				// Expired lock — remove.
+				delete(rl.attempts, k)
+			} else if a.lockedAt.IsZero() && time.Since(a.lastSeen) > staleTTL {
+				// Non-locked entry with no recent activity — remove.
+				// Without this, IPs with 1–4 attempts that never reach maxAttempts
+				// accumulate indefinitely under a low-volume probing attack.
 				delete(rl.attempts, k)
 			}
 		}
 	}
 
+	now := time.Now()
 	a := rl.attempts[ip]
 	if a == nil {
-		rl.attempts[ip] = &attempt{count: 1}
+		rl.attempts[ip] = &attempt{count: 1, lastSeen: now}
 		return true
 	}
 	if !a.lockedAt.IsZero() {
 		if time.Since(a.lockedAt) > lockDuration {
 			delete(rl.attempts, ip)
-			rl.attempts[ip] = &attempt{count: 1}
+			rl.attempts[ip] = &attempt{count: 1, lastSeen: now}
 			return true
 		}
 		return false
 	}
 	a.count++
+	a.lastSeen = now
 	if a.count > maxAttempts {
-		a.lockedAt = time.Now()
+		a.lockedAt = now
 		return false
 	}
 	return true
@@ -75,7 +85,7 @@ func (rl *rateLimiter) reset(ip string) {
 	rl.mu.Unlock()
 }
 
-// cleanup removes entries whose lock period has expired.
+// cleanup removes expired locks and stale non-locked entries.
 // It is safe to call concurrently with check() and reset().
 // Tests call this directly; in production the lazy path inside check() is used.
 func (rl *rateLimiter) cleanup() {
@@ -83,6 +93,8 @@ func (rl *rateLimiter) cleanup() {
 	defer rl.mu.Unlock()
 	for ip, a := range rl.attempts {
 		if !a.lockedAt.IsZero() && time.Since(a.lockedAt) > lockDuration {
+			delete(rl.attempts, ip)
+		} else if a.lockedAt.IsZero() && time.Since(a.lastSeen) > staleTTL {
 			delete(rl.attempts, ip)
 		}
 	}
