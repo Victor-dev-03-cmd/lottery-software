@@ -875,32 +875,12 @@ export async function saveInvoice(invoice: Invoice): Promise<number> {
   return invoiceId;
 }
 
-export async function deleteInvoice(id: number): Promise<void> {
-  const d = await getDb();
-  // Guard: only cancelled invoices may be deleted — paid/active are immutable records.
-  const rows = await d.select<{ invoice_status: string }[]>(
-    "SELECT invoice_status FROM invoices WHERE id=?", [id]
-  );
-  if (rows.length === 0) throw new Error("Invoice not found.");
-  if (rows[0].invoice_status !== "cancelled") {
-    throw new Error("Only cancelled invoices can be permanently deleted.");
-  }
-  // SQLite foreign_keys enforcement is OFF by default in tauri-plugin-sql.
-  // Cascade on invoice_items would not fire, and payments/ticket_returns have
-  // no cascade at all. Delete child rows explicitly inside a transaction so
-  // no orphaned financial data can survive a partial failure.
-  await d.execute("BEGIN");
-  try {
-    await d.execute("DELETE FROM invoice_items  WHERE invoice_id=?", [id]);
-    await d.execute("DELETE FROM payments        WHERE invoice_id=?", [id]);
-    await d.execute("DELETE FROM ticket_returns  WHERE invoice_id=?", [id]);
-    await d.execute("DELETE FROM invoices        WHERE id=?",         [id]);
-    await d.execute("COMMIT");
-  } catch (err) {
-    await d.execute("ROLLBACK").catch(() => {});
-    throw err;
-  }
-  enqueueSync("invoices", "delete", { id }, "id").catch(() => {});
+export async function deleteInvoice(id: number, adminToken: string = ""): Promise<void> {
+  // Atomicity is guaranteed by the Rust command: rusqlite::Connection::transaction()
+  // runs all DELETEs on a single connection. The old JS BEGIN/COMMIT approach was
+  // unreliable because tauri-plugin-sql uses a connection pool (separate calls may
+  // use different connections). Sync enqueuing is also handled inside the Rust command.
+  await invoke("delete_cancelled_invoice", { invoiceId: id, token: adminToken });
 }
 
 // ── Agent Summary (dashboard data) ────────────────────────────────────────────
