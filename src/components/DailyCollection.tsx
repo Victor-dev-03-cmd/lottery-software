@@ -5,6 +5,7 @@ import { getAgents, getDailyCollections, saveDailyCollection, deleteDailyCollect
 import type { Agent, DailyCollection } from "../types";
 
 import { useLanguage } from "../i18n";
+import { usePinGuardContext } from "../App";
 const EMPTY = (date: string): DailyCollection => ({
   collection_date: date,
   collector_name: "",
@@ -22,6 +23,7 @@ const EMPTY = (date: string): DailyCollection => ({
 
 export default function DailyCollectionView() {
   const { t } = useLanguage();
+  const { requireAdminPin } = usePinGuardContext();
   
   const [agents, setAgents] = useState<Agent[]>([]);
   const [dates, setDates] = useState<{ date: string; total: number; count: number }[]>([]);
@@ -58,6 +60,7 @@ export default function DailyCollectionView() {
 
   async function handleDelete(id: number) {
     if (!confirm("Delete this entry?")) return;
+    if (!(await requireAdminPin("Delete Collection", "Enter the Admin PIN to delete this collection."))) return;
     await deleteDailyCollection(id);
     loadDate(selectedDate);
   }

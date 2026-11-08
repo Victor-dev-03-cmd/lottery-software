@@ -6,6 +6,7 @@ import {
 import { getAgents, getCommissionSchemes, saveCommissionScheme, deleteCommissionScheme, getCommissionReport } from "../services/database";
 import type { Agent, CommissionScheme, CommissionEntry, CommissionType } from "../types";
 import { useLanguage } from "../i18n";
+import { usePinGuardContext } from "../App";
 
 const TYPES: { value: CommissionType; label: string; desc: string }[] = [
   { value: "percentage", label: "% of Invoice", desc: "e.g. 5% of invoice total" },
@@ -25,6 +26,7 @@ const EMPTY_SCHEME = (): CommissionScheme => ({
 
 export default function Commission() {
   const { t, lang } = useLanguage();
+  const { requireAdminPin } = usePinGuardContext();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [schemes, setSchemes] = useState<CommissionScheme[]>([]);
   const [report, setReport] = useState<CommissionEntry[]>([]);
@@ -53,6 +55,7 @@ export default function Commission() {
 
   async function handleDelete(id: number) {
     if (!confirm("Delete this scheme?")) return;
+    if (!(await requireAdminPin("Delete Commission Scheme", "Enter the Admin PIN to delete this scheme."))) return;
     await deleteCommissionScheme(id); load();
   }
 
