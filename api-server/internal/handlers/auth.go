@@ -192,7 +192,6 @@ type registerDeviceReq struct {
 
 func RegisterDevice(svc *auth.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Admin JWT required for additional device registration
 		var req registerDeviceReq
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeError(w, "invalid request body", http.StatusBadRequest)

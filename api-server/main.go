@@ -71,10 +71,14 @@ func main() {
 	// Public
 	mux.HandleFunc("GET /api/v1/health", healthHandler(pool))
 
-	// Auth
-	mux.HandleFunc("POST /api/v1/auth/bootstrap",        handlers.Bootstrap(authSvc))
-	mux.HandleFunc("POST /api/v1/auth/admin-token",      handlers.AdminToken(authSvc))
-	mux.HandleFunc("POST /api/v1/auth/register-device",  handlers.RegisterDevice(authSvc))
+	// Auth — public (bootstrap token / PIN required, no admin JWT)
+	mux.HandleFunc("POST /api/v1/auth/bootstrap",   handlers.Bootstrap(authSvc))
+	mux.HandleFunc("POST /api/v1/auth/admin-token", handlers.AdminToken(authSvc))
+
+	// Admin JWT required
+	adminMW := middleware.AdminAuth(authSvc)
+	mux.Handle("POST /api/v1/auth/register-device", adminMW(handlers.RegisterDevice(authSvc)))
+	mux.Handle("POST /api/v1/auth/rotate-key",      adminMW(handlers.RotateKey(authSvc)))
 
 	// Protected — device key required
 	devMW := middleware.DeviceAuth(authSvc)
@@ -83,10 +87,6 @@ func main() {
 	mux.Handle("GET  /api/v1/sync/status",  devMW(handlers.SyncStatus(pool)))
 	mux.Handle("GET  /api/v1/results",      devMW(handlers.GetResults(pool)))
 	mux.Handle("POST /api/v1/results",      devMW(handlers.UpsertResult(pool)))
-
-	// Admin JWT required
-	adminMW := middleware.AdminAuth(authSvc)
-	mux.Handle("POST /api/v1/auth/rotate-key", adminMW(handlers.RotateKey(authSvc)))
 
 	// ── Server with graceful shutdown ──────────────────────────────────────────
 	srv := &http.Server{
