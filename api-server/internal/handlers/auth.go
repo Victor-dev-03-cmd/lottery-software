@@ -294,12 +294,16 @@ func RotateKey(svc *auth.Service) http.HandlerFunc {
 			writeError(w, "server error", http.StatusInternalServerError)
 			return
 		}
-		_, err = svc.Pool().Exec(r.Context(),
+		tag, err := svc.Pool().Exec(r.Context(),
 			`UPDATE devices SET key_hash = $1 WHERE key_hash = $2 AND is_revoked = FALSE`,
 			newHash, hash,
 		)
 		if err != nil {
 			writeError(w, "server error", http.StatusInternalServerError)
+			return
+		}
+		if tag.RowsAffected() == 0 {
+			writeError(w, "device not found or revoked", http.StatusNotFound)
 			return
 		}
 		writeJSON(w, map[string]string{"new_device_key": rawKey}, http.StatusOK)
