@@ -132,10 +132,13 @@ interface TProps {
 }
 
 export function T({ k, className }: TProps) {
-  const { lang, t } = useLanguage();
+  const { t } = useLanguage();
+  const value = t(k);
+  // English fallback strings retain the Inter face even in Sinhala mode.
+  const isSinhala = /[\u0D80-\u0DFF]/.test(value);
   return (
-    <span lang={lang} className={`${lang === "si" ? "si" : ""} ${className ?? ""}`.trim()}>
-      {t(k)}
+    <span lang={isSinhala ? "si" : "en"} className={`${isSinhala ? "si" : ""} ${className ?? ""}`.trim()}>
+      {value}
     </span>
   );
 }
