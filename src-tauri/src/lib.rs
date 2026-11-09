@@ -1872,6 +1872,71 @@ async fn delete_cancelled_invoice(
     }).await.map_err(|e| e.to_string())?
 }
 
+/// Factory-reset local operational data. Does NOT delete external backups/cloud data.
+/// Both a current Rust admin session and a configured Admin PIN are required.
+/// The frontend also requires a fresh PIN challenge and typed confirmation.
+#[tauri::command]
+async fn factory_reset_local_data(
+    app: tauri::AppHandle,
+    token: String,
+    confirmation: String,
+) -> Result<u64, String> {
+    if confirmation != "RESET ALL DATA" {
+        return Err("Confirmation phrase does not match.".into());
+    }
+    if !verify_admin_token(&token) {
+        return Err("An active administrator session is required.".into());
+    }
+    let db_path = resolve_db_path(&app);
+    tokio::task::spawn_blocking(move || {
+        let mut conn = rusqlite::Connection::open(&db_path)
+            .map_err(|e| format!("Cannot open local database: {}", e))?;
+        conn.busy_timeout(Duration::from_secs(10))
+            .map_err(|e| e.to_string())?;
+        let pin_hash: String = conn.query_row(
+            "SELECT value FROM app_settings WHERE key='admin_pin_hash' LIMIT 1",
+            [],
+            |row| row.get(0),
+        ).map_err(|_| "Admin PIN is not configured. Reset is blocked.".to_string())?;
+        if pin_hash.is_empty() {
+            return Err("Admin PIN must be configured before factory reset.".into());
+        }
+        // secure_delete overwrites deleted SQLite content, rather than only
+        // marking pages free. Foreign keys must be disabled before transaction.
+        conn.execute_batch("PRAGMA secure_delete=ON; PRAGMA foreign_keys=OFF;")
+            .map_err(|e| e.to_string())?;
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        let names: Vec<String> = {
+            let mut stmt = tx.prepare(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            ).map_err(|e| e.to_string())?;
+            let rows = stmt.query_map([], |row| row.get::<_, String>(0))
+                .map_err(|e| e.to_string())?;
+            rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())?
+        };
+        let mut count = 0u64;
+        for name in names {
+            if name == "app_settings" {
+                // Keep Admin PIN and its device salt so reset cannot silently
+                // turn security off. All other preferences are reset.
+                count += tx.execute(
+                    "DELETE FROM app_settings WHERE key NOT IN ('admin_pin_hash','pin_device_salt')",
+                    [],
+                ).map_err(|e| e.to_string())? as u64;
+            } else {
+                // Names are read from sqlite_master, never from user input.
+                let quoted = name.replace('"', "\"\"");
+                count += tx.execute(&format!("DELETE FROM \"{}\"", quoted), [])
+                    .map_err(|e| format!("Failed to clear {}: {}", name, e))? as u64;
+            }
+        }
+        tx.commit().map_err(|e| format!("Reset rolled back: {}", e))?;
+        // Reclaim deleted pages; a failure here cannot undo committed deletion.
+        let _ = conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE); VACUUM;");
+        Ok::<u64, String>(count)
+    }).await.map_err(|e| format!("Reset task failed: {}", e))?
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -1914,6 +1979,7 @@ pub fn run() {
             get_server_qr_code,
             get_qr_for_url,
             delete_cancelled_invoice,
+            factory_reset_local_data,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
