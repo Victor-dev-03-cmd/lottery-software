@@ -165,7 +165,7 @@ export default function PettyCash() {
             <div style={{ padding:20, display:"flex", flexDirection:"column", gap:14 }}>
               <div>
                 <label style={{ fontSize:11, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>
-                  Category <span className="si" style={{ fontWeight:400, color:"#9CA3AF" }}>· {SI.category}</span>
+                  Category <span className="si si-caption" lang="si" style={{ fontWeight:600, color:"#374151", fontSize:11 }}>· {SI.category}</span>
                 </label>
                 <select value={form.category} onChange={e => setForm(p=>({...p, category:e.target.value}))}
                   style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:"1px solid #E5E7EB", fontSize:13, background:"#FAFAFA", color:"#1D1D1D", outline:"none" }}
@@ -176,7 +176,7 @@ export default function PettyCash() {
               </div>
               <div>
                 <label style={{ fontSize:11, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>
-                  Amount (Rs.) <span className="si" style={{ fontWeight:400, color:"#9CA3AF" }}>· {SI.amount}</span>
+                  Amount (Rs.) <span className="si si-caption" lang="si" style={{ fontWeight:600, color:"#374151", fontSize:11 }}>· {SI.amount}</span>
                 </label>
                 <input type="number" min="0" step="0.01" value={form.amount || ""}
                   onChange={e => setForm(p=>({...p, amount:parseFloat(e.target.value)||0}))}
@@ -189,7 +189,7 @@ export default function PettyCash() {
               </div>
               <div>
                 <label style={{ fontSize:11, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>
-                  Reason / Description * <span className="si" style={{ fontWeight:400, color:"#9CA3AF" }}>· {SI.reason}</span>
+                  Reason / Description * <span className="si si-caption" lang="si" style={{ fontWeight:600, color:"#374151", fontSize:11 }}>· {SI.reason}</span>
                 </label>
                 <textarea rows={2} value={form.reason}
                   onChange={e => setForm(p=>({...p, reason:e.target.value}))}
@@ -312,7 +312,7 @@ export default function PettyCash() {
                   <div key={row.label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 10px", background:"#F9FAFB", borderRadius:8 }}>
                     <span style={{ fontSize:12, color:"#374151" }}>
                       {row.label}
-                      <span className="si" style={{ display:"block", fontSize:9, color:"#9CA3AF" }}>{row.si}</span>
+                      <span className="si si-caption" lang="si" style={{ display:"block", fontSize:11, color:"#374151", fontWeight:600 }}>{row.si}</span>
                     </span>
                     <span style={{ fontSize:13, fontWeight:700, color: row.value > 0 ? row.color : "#9CA3AF" }}>
                       Rs. {fmt(row.value)}
@@ -408,7 +408,7 @@ export default function PettyCash() {
             <div style={{ background:"#fff", borderRadius:12, border:"1px solid #E8E8E8", overflow:"hidden" }}>
               <div style={{ padding:"12px 14px", borderBottom:"1px solid #F3F4F6", borderLeft:"3px solid #6B7280" }}>
                 <p style={{ fontSize:12, fontWeight:700, color:"#374151", margin:0 }}>
-                  Opening Balance <span className="si" style={{ fontSize:11, fontWeight:400, color:"#9CA3AF" }}>· {SI.openingBalance}</span>
+                  Opening Balance <span className="si si-caption" lang="si" style={{ fontSize:11, fontWeight:600, color:"#374151" }}>· {SI.openingBalance}</span>
                 </p>
                 <p style={{ fontSize:10, color:"#9CA3AF", marginTop:2 }}>
                   Cash available at start of day / <span className="si">දිනය ආරම්භයේ ලැබෙන මුදල</span>
@@ -435,7 +435,7 @@ export default function PettyCash() {
             <div style={{ background:"#fff", borderRadius:12, border:`2px solid ${isBalanced&&closing.actual_cash>0?"#BBF7D0":"#E8E8E8"}`, overflow:"hidden" }}>
               <div style={{ padding:"12px 14px", borderBottom:"1px solid #F3F4F6", borderLeft:"3px solid #D97706" }}>
                 <p style={{ fontSize:12, fontWeight:700, color:"#374151", margin:0 }}>
-                  Physical Cash Count <span className="si" style={{ fontSize:11, fontWeight:400, color:"#9CA3AF" }}>· {SI.physicalCashCount}</span>
+                  Physical Cash Count <span className="si si-caption" lang="si" style={{ fontSize:11, fontWeight:600, color:"#374151" }}>· {SI.physicalCashCount}</span>
                 </p>
                 <p style={{ fontSize:10, color:"#9CA3AF", marginTop:2 }}>
                   Count cash in drawer and enter below / <span className="si">ලෙස ගණන් කරන්න</span>
@@ -474,7 +474,7 @@ export default function PettyCash() {
             <div style={{ background:"#fff", borderRadius:12, border:"1px solid #E8E8E8", overflow:"hidden" }}>
               <div style={{ padding:"10px 14px", borderBottom:"1px solid #F3F4F6" }}>
                 <p style={{ fontSize:12, fontWeight:700, color:"#374151", margin:0 }}>
-                  Day Notes <span className="si" style={{ fontSize:11, fontWeight:400, color:"#9CA3AF" }}>· {SI.dayNotes}</span>
+                  Day Notes <span className="si si-caption" lang="si" style={{ fontSize:11, fontWeight:600, color:"#374151" }}>· {SI.dayNotes}</span>
                 </p>
               </div>
               <div style={{ padding:"12px 14px" }}>
@@ -499,7 +499,7 @@ export default function PettyCash() {
                 <TickCircle size={14} variant="Linear" color="currentColor"/>
                 <span>
                   {closingSaving ? "Saving…" : "Close Day & Save Reconciliation"}
-                  <span className="si" style={{ display:"block", fontSize:9, fontWeight:400, opacity:0.7 }}>{SI.closeDay} · {SI.reconciliation}</span>
+                  <span className="si" lang="si" style={{ display:"block", fontSize:11, fontWeight:600, opacity:1 }}>{SI.closeDay} · {SI.reconciliation}</span>
                 </span>
               </button>
             ) : (
