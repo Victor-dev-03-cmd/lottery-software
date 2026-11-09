@@ -11,13 +11,11 @@ import AgentsManager from "./components/AgentsManager";
 import Settings from "./components/Settings";
 import Inventory from "./components/Inventory";
 import Reports from "./components/Reports";
-import Ledger from "./components/Ledger";
 import Returns from "./components/Returns";
 import DailyCollectionView from "./components/DailyCollection";
 import Commission from "./components/Commission";
 import PettyCash from "./components/PettyCash";
 import Alerts from "./components/Alerts";
-import LiveResults from "./components/LiveResults";
 import Purchases from "./components/Purchases";
 import SupplierReturns from "./components/SupplierReturns";
 import Settlement from "./components/Settlement";
@@ -109,7 +107,6 @@ export default function App() {
         // 4. Start offline-first background sync (non-blocking)
         startSyncWorker();
         // Desktop-only mode: skip the unused LAN/mobile API and discovery beacon.
-        // Heavy lottery results fetching is deferred until Live Results is opened.
 
         // 4. Ensure min splash time for branding
         const elapsed = Date.now() - splashStart;
@@ -301,13 +298,11 @@ function AppInner({
           {effectiveView === "agents"           && can("agents")           && <AgentsManager />}
           {effectiveView === "inventory"        && can("inventory")        && <Inventory />}
           {effectiveView === "reports"          && can("reports")          && <Reports />}
-          {effectiveView === "ledger"           && can("ledger")           && <Ledger />}
           {effectiveView === "returns"          && can("returns")          && <Returns />}
           {effectiveView === "collections"      && <DailyCollectionView />}
           {effectiveView === "commission"       && can("commission")       && <Commission />}
           {effectiveView === "petty-cash"       && <PettyCash />}
           {effectiveView === "alerts"           && <Alerts />}
-          {effectiveView === "live-results"     && <LiveResults />}
           {effectiveView === "purchases"          && can("purchases")          && <Purchases onNavigate={navigate} />}
           {effectiveView === "settlement"         && can("settlement")         && <Settlement />}
           {effectiveView === "supplier-returns"   && can("supplier-returns")   && <SupplierReturns />}
