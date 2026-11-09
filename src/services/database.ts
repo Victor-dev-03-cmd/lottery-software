@@ -883,6 +883,41 @@ export async function deleteInvoice(id: number, adminToken: string = ""): Promis
   await invoke("delete_cancelled_invoice", { invoiceId: id, token: adminToken });
 }
 
+/**
+ * Delete a paid invoice only when no financial records depend on it.
+ * An administrator PIN must be verified by the caller before this function is invoked.
+ * We deliberately do not return sold tickets to inventory: deleting the paperwork
+ * must not make already-delivered physical lottery tickets available for resale.
+ */
+export async function deletePaidInvoice(id: number): Promise<void> {
+  const d = await getDb();
+  const [invoice] = await d.select<{ id: number; agent_id: number; invoice_status: string }[]>(
+    "SELECT id, agent_id, invoice_status FROM invoices WHERE id=?", [id]
+  );
+  if (!invoice || invoice.invoice_status !== "paid") {
+    throw new Error("This invoice is no longer a paid invoice. Refresh the list.");
+  }
+  const [linked] = await d.select<{ payments: number; returns: number; later: number }[]>(`
+    SELECT
+      (SELECT COUNT(*) FROM payments WHERE invoice_id=?) AS payments,
+      (SELECT COUNT(*) FROM ticket_returns WHERE invoice_id=?) AS returns,
+      (SELECT COUNT(*) FROM invoices WHERE agent_id=? AND id>?) AS later
+  `, [id, id, invoice.agent_id, id]);
+  if (linked.payments || linked.returns) {
+    throw new Error("Cannot delete: this invoice has linked payments or ticket returns. Reverse those records through the appropriate workflow first.");
+  }
+  if (linked.later) {
+    throw new Error("Cannot delete: this agent has newer invoices whose previous balances may depend on this invoice.");
+  }
+  // The invoice items use ON DELETE CASCADE. Keep inventory distribution unchanged
+  // because deleting a financial document does not reverse physical ticket delivery.
+  const result = await d.execute("DELETE FROM invoices WHERE id=? AND invoice_status='paid'", [id]);
+  if ((result.rowsAffected ?? 0) !== 1) {
+    throw new Error("Paid invoice was not deleted. Refresh and try again.");
+  }
+  enqueueSync("invoices", "delete", { id }, "id").catch(() => {});
+}
+
 // ── Agent Summary (dashboard data) ────────────────────────────────────────────
 
 export async function getAgentSummaries(): Promise<AgentSummary[]> {
