@@ -377,6 +377,10 @@ async function initSchema() {
     await d.execute("ALTER TABLE agents ADD COLUMN credit_limit REAL DEFAULT 0");
   } catch { /* column already exists */ }
 
+  // Keep agents referenced by historical invoices/payments, but hide archived profiles.
+  // Do not replace the agents table: its foreign keys protect accounting records.
+  try { await d.execute("ALTER TABLE agents ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0"); } catch { /* existing database */ }
+
   // Migrate: add new agent profile fields
   try { await d.execute("ALTER TABLE agents ADD COLUMN nic_number TEXT DEFAULT ''"); } catch {}
   try { await d.execute("ALTER TABLE agents ADD COLUMN bank_name TEXT DEFAULT ''"); } catch {}
@@ -633,7 +637,7 @@ export async function saveCompanySettings(s: CompanySettings): Promise<void> {
 
 export async function getAgents(): Promise<Agent[]> {
   const d = await getDb();
-  return d.select<Agent[]>("SELECT * FROM agents ORDER BY name ASC");
+  return d.select<Agent[]>("SELECT * FROM agents WHERE COALESCE(is_archived,0)=0 ORDER BY name ASC");
 }
 
 export async function saveAgent(agent: Agent): Promise<number> {
@@ -681,7 +685,7 @@ export async function getAgentsWithCreditLimit(): Promise<(Agent & { credit_limi
              FROM invoices i WHERE i.agent_id=a.id
                AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')
            ), 0) as outstanding_balance
-    FROM agents a ORDER BY a.name ASC
+    FROM agents a WHERE COALESCE(a.is_archived,0)=0 ORDER BY a.name ASC
   `);
 }
 
@@ -691,9 +695,20 @@ export async function updateAgentCreditLimit(agentId: number, limit: number): Pr
   enqueueSync("agents", "upsert", { id: agentId, credit_limit: limit }, "id").catch(() => {});
 }
 
+/**
+ * Remove an agent from active profiles without corrupting their historical
+ * invoices, collections, payments, returns and financial reports.
+ * Caller must obtain a fresh administrator PIN verification first.
+ */
 export async function deleteAgent(id: number): Promise<void> {
   const d = await getDb();
-  await d.execute("DELETE FROM agents WHERE id=?", [id]);
+  const result = await d.execute(
+    "UPDATE agents SET is_archived=1 WHERE id=? AND COALESCE(is_archived,0)=0",
+    [id]
+  );
+  if ((result.rowsAffected ?? 0) !== 1) {
+    throw new Error("Agent was not removed. The profile may already be archived.");
+  }
 }
 
 // ── Lottery Games ─────────────────────────────────────────────────────────────
