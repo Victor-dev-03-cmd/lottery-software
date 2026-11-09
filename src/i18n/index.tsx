@@ -83,6 +83,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Keep the document language synchronized so every page, dialog and portal
+  // receives the correct Sinhala font and browser language metadata.
+  useEffect(() => {
+    document.documentElement.lang = lang === "si" ? "si" : "en";
+    document.documentElement.dataset.uiLang = lang;
+  }, [lang]);
+
   const t = useCallback(
     (key: TranslationKey): string => {
       if (lang === "si") {
@@ -116,7 +123,7 @@ interface TProps {
 export function T({ k, className }: TProps) {
   const { lang, t } = useLanguage();
   return (
-    <span className={`${lang === "si" ? "si" : ""} ${className ?? ""}`.trim()}>
+    <span lang={lang} className={`${lang === "si" ? "si" : ""} ${className ?? ""}`.trim()}>
       {t(k)}
     </span>
   );
