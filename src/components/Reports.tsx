@@ -119,12 +119,12 @@ export default function Reports() {
           <>
             {/* KPI strip */}
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
-              <KpiCard label="Tickets Distributed" value={fmt(stats?.total_tickets_distributed ?? 0)} icon={<Tag size={14} variant="Linear" color="#4285F4"/>} />
+              <KpiCard accent="#FBBC05" tint="#FEF9E0" label="Tickets Distributed" value={fmt(stats?.total_tickets_distributed ?? 0)} icon={<Tag size={14} variant="Linear" color="#4285F4"/>} />
               <KpiCard label="Total Invoiced" value={`Rs. ${fmt(stats?.total_invoice_value ?? 0)}`} icon={<Chart21 size={14} variant="Linear" color="#4285F4"/>} />
-              <KpiCard label="Cash Collected" value={`Rs. ${fmt(stats?.total_cash_collected ?? 0)}`} icon={<Moneys size={14} variant="Linear" color="#4285F4"/>} />
-              <KpiCard label="Winnings Returned" value={`Rs. ${fmt(stats?.total_winnings_returned ?? 0)}`} icon={<Cup size={14} variant="Linear" color="#4285F4"/>} />
-              <KpiCard label="Outstanding" value={`Rs. ${fmt(stats?.total_outstanding ?? 0)}`} icon={<Warning2 size={14} variant="Linear" color="#EA4335"/>} />
-              <KpiCard label="Total Invoices" value={String(stats?.total_invoices ?? 0)} icon={<TrendUp size={14} variant="Linear" color="#4285F4"/>} />
+              <KpiCard accent="#34A853" tint="#E6F4EA" label="Cash Collected" value={`Rs. ${fmt(stats?.total_cash_collected ?? 0)}`} icon={<Moneys size={14} variant="Linear" color="#4285F4"/>} />
+              <KpiCard accent="#FBBC05" tint="#FEF9E0" label="Winnings Returned" value={`Rs. ${fmt(stats?.total_winnings_returned ?? 0)}`} icon={<Cup size={14} variant="Linear" color="#4285F4"/>} />
+              <KpiCard accent="#EA4335" tint="#FCE8E6" label="Outstanding" value={`Rs. ${fmt(stats?.total_outstanding ?? 0)}`} icon={<Warning2 size={14} variant="Linear" color="#EA4335"/>} />
+              <KpiCard accent="#34A853" tint="#E6F4EA" label="Total Invoices" value={String(stats?.total_invoices ?? 0)} icon={<TrendUp size={14} variant="Linear" color="#4285F4"/>} />
             </div>
 
             {/* ASROZ tab bar */}
@@ -185,7 +185,7 @@ export default function Reports() {
                               dataKey="value"
                               label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                               labelLine={false} fontSize={11}>
-                              <Cell fill="#10b981" />
+                              <Cell fill="#34A853" />
                               <Cell fill="#EA4335" />
                             </Pie>
                             <Tooltip formatter={(v) => `Rs. ${fmt(Number(v))}`} />
@@ -215,7 +215,7 @@ export default function Reports() {
                           <Tooltip formatter={(v) => `Rs. ${fmt(Number(v))}`} />
                           <Legend />
                           <Line type="monotone" dataKey="total" name="Invoiced" stroke="#4285F4" strokeWidth={2} dot={{ r: 3 }} />
-                          <Line type="monotone" dataKey="collected" name="Collected" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+                          <Line type="monotone" dataKey="collected" name="Collected" stroke="#34A853" strokeWidth={2} dot={{ r: 3 }} />
                         </LineChart>
                       </ResponsiveContainer>
                     )}
@@ -463,10 +463,10 @@ export default function Reports() {
   );
 }
 
-function KpiCard({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
+function KpiCard({ label, value, icon, accent = "#4285F4", tint = "#EAF1FB" }: { label: string; value: string; icon: React.ReactNode; accent?: string; tint?: string }) {
   return (
-    <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #4285F4" }}>
-      <div className="w-7 h-7 rounded-lg flex items-center justify-center mb-2" style={{ background: "#FFF1F0" }}>
+    <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: `3px solid ${accent}` }}>
+      <div className="w-7 h-7 rounded-lg flex items-center justify-center mb-2" style={{ background: tint, color: accent }}>
         {icon}
       </div>
       <p className="text-xl font-black leading-tight truncate" style={{ color: "#202124" }}>{value}</p>
