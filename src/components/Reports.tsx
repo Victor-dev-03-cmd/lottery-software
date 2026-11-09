@@ -119,12 +119,12 @@ export default function Reports() {
           <>
             {/* KPI strip */}
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
-              <KpiCard accent="#FBBC05" tint="#FEF9E0" label="Tickets Distributed" value={fmt(stats?.total_tickets_distributed ?? 0)} icon={<Tag size={14} variant="Linear" color="#4285F4"/>} />
+              <KpiCard accent="#FBBC05" tint="#FEF9E0" label="Tickets Distributed" value={fmt(stats?.total_tickets_distributed ?? 0)} icon={<Tag size={14} variant="Linear" color="#8A5800"/>} />
               <KpiCard label="Total Invoiced" value={`Rs. ${fmt(stats?.total_invoice_value ?? 0)}`} icon={<Chart21 size={14} variant="Linear" color="#4285F4"/>} />
-              <KpiCard accent="#34A853" tint="#E6F4EA" label="Cash Collected" value={`Rs. ${fmt(stats?.total_cash_collected ?? 0)}`} icon={<Moneys size={14} variant="Linear" color="#4285F4"/>} />
-              <KpiCard accent="#FBBC05" tint="#FEF9E0" label="Winnings Returned" value={`Rs. ${fmt(stats?.total_winnings_returned ?? 0)}`} icon={<Cup size={14} variant="Linear" color="#4285F4"/>} />
+              <KpiCard accent="#34A853" tint="#E6F4EA" label="Cash Collected" value={`Rs. ${fmt(stats?.total_cash_collected ?? 0)}`} icon={<Moneys size={14} variant="Linear" color="#188038"/>} />
+              <KpiCard accent="#FBBC05" tint="#FEF9E0" label="Winnings Returned" value={`Rs. ${fmt(stats?.total_winnings_returned ?? 0)}`} icon={<Cup size={14} variant="Linear" color="#8A5800"/>} />
               <KpiCard accent="#EA4335" tint="#FCE8E6" label="Outstanding" value={`Rs. ${fmt(stats?.total_outstanding ?? 0)}`} icon={<Warning2 size={14} variant="Linear" color="#EA4335"/>} />
-              <KpiCard accent="#34A853" tint="#E6F4EA" label="Total Invoices" value={String(stats?.total_invoices ?? 0)} icon={<TrendUp size={14} variant="Linear" color="#4285F4"/>} />
+              <KpiCard accent="#34A853" tint="#E6F4EA" label="Total Invoices" value={String(stats?.total_invoices ?? 0)} icon={<TrendUp size={14} variant="Linear" color="#188038"/>} />
             </div>
 
             {/* ASROZ tab bar */}
