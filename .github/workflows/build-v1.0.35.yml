@@ -1,9 +1,12 @@
-name: "v1.0.35 Build Verification — Windows and Linux"
+name: "v1.0.35"
+run-name: "v1.0.35"
 
 on:
   push:
     branches:
-      - feature/admin-delete-paid-invoices
+      - main
+    paths:
+      - ".github/workflows/build-v1.0.35.yml"
   workflow_dispatch:
 
 permissions:
