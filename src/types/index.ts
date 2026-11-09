@@ -378,8 +378,6 @@ export type View =
   | "commission"
   | "alerts"
   | "reports"
-  | "ledger"
-  | "live-results"
   | "settings"
   | "purchases"
   | "supplier-returns"
