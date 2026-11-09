@@ -19,6 +19,7 @@ import {
   type AILanguage, type ParsedAction, type AiJsonSummary,
 } from "../utils/aiPrompt";
 import { useAuth } from "../contexts/AuthContext";
+import { useLanguage } from "../i18n";
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
@@ -87,6 +88,7 @@ function SK({ h = 16, w = "100%" }: { h?: number; w?: number | string }) {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function AIAnalytics({ onNavigate }: Props) {
+  const { lang, t } = useLanguage();
   const { adminToken, withAdminToken } = useAuth();
   const [loading, setLoading]         = useState(true);
   const [periodStats, setPeriodStats] = useState<PeriodStats | null>(null);
@@ -310,7 +312,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <nav style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#9CA3AF" }}>
             <Home2 size={12} variant="Linear" color="#9AA0A6"/><ArrowRight2 size={11} variant="Linear" color="#9AA0A6"/>
-            <span style={{ fontWeight: 600, color: "#1D1D1D" }}>AI Intelligence</span>
+            <span style={{ fontWeight: 600, color: "#1D1D1D" }}><span className={lang === "si" ? "si" : ""}>{t("nav_ai")}</span></span>
           </nav>
           <button onClick={loadData} disabled={loading}
             style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px",
@@ -323,7 +325,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
 
         {/* Title */}
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1D1D1D", margin: 0 }}>AI Business Intelligence</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1D1D1D", margin: 0 }}><span className={lang === "si" ? "si" : ""}>{t("nav_ai")}</span></h1>
           <p style={{ fontSize: 12, color: "#9CA3AF", margin: "2px 0 0" }}>
             Real-time insights powered by your live data — Ajith Rohana Enterprise
           </p>
