@@ -8,7 +8,7 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import {
   getPeriodStats, getAgentRiskScores, getInventoryVelocity,
-  getMonthlyRevenueTrend, getSupplierOutstanding,
+  getMonthlyRevenueTrend, getSupplierOutstanding, getProfitSummary,
   getPayrollSummary, getWorkers, getAgents,
 } from "../services/database";
 import type { AgentRiskScore } from "../services/database";
@@ -90,6 +90,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
   const { adminToken, withAdminToken } = useAuth();
   const [loading, setLoading]         = useState(true);
   const [periodStats, setPeriodStats] = useState<PeriodStats | null>(null);
+  const [profit, setProfit] = useState<Awaited<ReturnType<typeof getProfitSummary>> | null>(null);
   const [agentRisks, setAgentRisks]   = useState<AgentRiskScore[]>([]);
   const [velocity, setVelocity]       = useState<VelocityRow[]>([]);
   const [trend, setTrend]             = useState<TrendRow[]>([]);
@@ -114,13 +115,13 @@ export default function AIAnalytics({ onNavigate }: Props) {
     setLoading(true);
     try {
       const month = new Date().toISOString().substring(0, 7);
-      const [ps, ar, iv, mt, so, pay, ws, ag] = await Promise.all([
+      const [ps, ar, iv, mt, so, pay, ws, ag, profitSummary] = await Promise.all([
         getPeriodStats(30), getAgentRiskScores(), getInventoryVelocity(),
         getMonthlyRevenueTrend(6), getSupplierOutstanding(),
-        getPayrollSummary(month), getWorkers(), getAgents(),
+        getPayrollSummary(month), getWorkers(), getAgents(), getProfitSummary(30),
       ]);
       setPeriodStats(ps); setAgentRisks(ar); setVelocity(iv);
-      setTrend(mt); setSupplierOB(so); setPayroll(pay);
+      setTrend(mt); setSupplierOB(so); setPayroll(pay); setProfit(profitSummary);
       setWorkers(ws);
       setAllAgents(ag.map(a => ({
         id: a.id ?? 0,
@@ -144,12 +145,11 @@ export default function AIAnalytics({ onNavigate }: Props) {
       ? Math.round((periodStats.total_collected / periodStats.total_invoiced) * 100) : 0;
 
     const businessData = {
-      revenue:    periodStats?.total_collected ?? 0,
-      stockCost:  supplierOB,
-      payroll:    payroll?.total_payroll ?? 0,
-      netProfit:  (periodStats?.total_collected ?? 0) - supplierOB - (payroll?.total_payroll ?? 0),
-      margin: periodStats && periodStats.total_collected > 0
-        ? ((periodStats.total_collected - supplierOB - (payroll?.total_payroll ?? 0)) / periodStats.total_collected) * 100 : 0,
+      revenue:    profit?.total_revenue ?? 0,
+      stockCost:  profit?.total_cost ?? 0,
+      payroll:    profit?.total_payroll ?? 0,
+      netProfit:  profit?.net_profit ?? 0,
+      margin:     profit?.margin_pct ?? 0,
       collectionRate: collRate,
       supplierOwed: supplierOB,
       periodDays: 30,
@@ -271,7 +271,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
 
   const collRate = periodStats && periodStats.total_invoiced > 0
     ? Math.round((periodStats.total_collected / periodStats.total_invoiced) * 100) : 0;
-  const netProfit = (periodStats?.total_collected ?? 0) - supplierOB - (payroll?.total_payroll ?? 0);
+  const netProfit = profit?.net_profit ?? 0;
 
   // Health score
   let score = 0;
@@ -387,10 +387,10 @@ export default function AIAnalytics({ onNavigate }: Props) {
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 {[
-                  { label: "Gross Revenue",    val: periodStats?.total_collected ?? 0, color: "#16A34A", icon: <TrendUp size={14} variant="Linear" color="#16A34A"/> },
-                  { label: "Stock Cost",       val: supplierOB,                         color: "#DC2626", icon: <ShoppingCart size={14} variant="Linear" color="#DC2626"/> },
-                  { label: "Monthly Payroll",  val: payroll?.total_payroll ?? 0,        color: "#7C3AED", icon: <People size={14} variant="Linear" color="#7C3AED"/> },
-                  { label: "Net Profit (est)", val: Math.abs(netProfit),               color: netProfit >= 0 ? "#2563EB" : "#DC2626",
+                  { label: "Invoiced Revenue", val: profit?.total_revenue ?? 0, color: "#16A34A", icon: <TrendUp size={14} variant="Linear" color="#16A34A"/> },
+                  { label: "Distributed COGS", val: profit?.total_cost ?? 0,                         color: "#DC2626", icon: <ShoppingCart size={14} variant="Linear" color="#DC2626"/> },
+                  { label: "Paid Payroll (30d)", val: profit?.total_payroll ?? 0,        color: "#7C3AED", icon: <People size={14} variant="Linear" color="#7C3AED"/> },
+                  { label: "Operating Net Profit", val: Math.abs(netProfit),               color: netProfit >= 0 ? "#2563EB" : "#DC2626",
                     icon: netProfit >= 0 ? <TrendUp size={14} variant="Linear" color="#2563EB"/> : <TrendDown size={14} variant="Linear" color="#DC2626"/>,
                     prefix: netProfit < 0 ? "−" : "" },
                 ].map(m => (
