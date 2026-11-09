@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
-import { Printer, Refresh2, AddCircle, Home2, ArrowRight2, Lock1 } from "iconsax-react";
+import { useContext, useEffect, useState } from "react";
+import { Printer, Refresh2, AddCircle, Home2, ArrowRight2, Trash } from "iconsax-react";
 import { EmptyInvoice, EmptySearch } from "./illustrations";
 
-import { getInvoices } from "../services/database";
+import { getInvoices, deletePaidInvoice } from "../services/database";
+import { PinGuardContext } from "../App";
 import type { Invoice, View } from "../types";
 
 import { useLanguage } from "../i18n";
@@ -13,6 +14,8 @@ interface Props {
 
 export default function InvoiceList({ onNavigate, refreshKey }: Props) {
   const { t } = useLanguage();
+  const { requireAdminPin } = useContext(PinGuardContext);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,13 +34,29 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
 
   useEffect(() => { load(); }, [refreshKey]);
 
-  function handleDeleteAttempt(invoiceNumber: string) {
-    alert(
-      `🔒 Invoice #${invoiceNumber} is PAID and permanently locked.\n\n` +
-      `Paid invoices cannot be deleted — they are protected financial records ` +
-      `needed for audits, balance history, and agent statements.\n\n` +
-      `If you need to reverse this invoice, use Cancel instead of Delete.`
+  async function handleDelete(inv: Invoice) {
+    if (!inv.id || deletingId !== null) return;
+    if (!window.confirm(
+      `Permanently delete paid invoice #${inv.invoice_number}?\n\n` +
+      "This cannot be undone. Sold tickets will NOT be returned to inventory. " +
+      "Invoices with dependent financial transactions cannot be removed."
+    )) return;
+
+    const authorized = await requireAdminPin(
+      "Admin PIN Required",
+      `Enter the administrator PIN to permanently delete paid invoice #${inv.invoice_number}.`
     );
+    if (!authorized) return;
+
+    setDeletingId(inv.id);
+    try {
+      await deletePaidInvoice(inv.id);
+      await load();
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Unable to delete this invoice.");
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   const fmt = (n: number) =>
@@ -247,14 +266,15 @@ export default function InvoiceList({ onNavigate, refreshKey }: Props) {
                           >
                             <Printer size={14} variant="Linear" color="currentColor" />
                           </button>
-                          {/* Paid invoices are fully locked — no deletion allowed */}
                           <button
-                            onClick={() => handleDeleteAttempt(inv.invoice_number)}
-                            title="Paid invoices are locked and cannot be deleted"
-                            className="p-1.5 rounded-lg transition-all"
-                            style={{ background: "#F3F4F6", color: "#9AA0A6", cursor: "not-allowed" }}
+                            onClick={() => handleDelete(inv)}
+                            disabled={deletingId !== null}
+                            title="Remove paid invoice (Admin PIN required)"
+                            aria-label={`Remove invoice #${inv.invoice_number} (Admin PIN required)`}
+                            className="p-1.5 rounded-lg transition-all hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
+                            style={{ background: "#FCE8E6", color: "#DC2626", cursor: deletingId !== null ? "not-allowed" : "pointer" }}
                           >
-                            <Lock1 size={12} variant="Linear" color="currentColor" />
+                            <Trash size={14} variant="Linear" color="currentColor" />
                           </button>
                         </div>
                       </td>
