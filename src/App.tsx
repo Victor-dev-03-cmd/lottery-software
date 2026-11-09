@@ -316,7 +316,7 @@ function AppInner({
           {effectiveView === "commission"       && can("commission")       && <Commission />}
           {effectiveView === "petty-cash"       && <PettyCash />}
           {effectiveView === "alerts"           && <Alerts />}
-          {effectiveView === "purchases"          && can("purchases")          && <Purchases onNavigate={navigate} onManageGames={navigateToGameSettings} />}
+          {effectiveView === "purchases"          && can("purchases")          && <Purchases onManageGames={navigateToGameSettings} />}
           {effectiveView === "settlement"         && can("settlement")         && <Settlement />}
           {effectiveView === "supplier-returns"   && can("supplier-returns")   && <SupplierReturns />}
           {effectiveView === "draft-invoices"     && can("draft-invoices")     && <DraftInvoices onNavigate={navigate} />}
