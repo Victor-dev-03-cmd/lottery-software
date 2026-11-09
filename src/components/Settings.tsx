@@ -144,14 +144,14 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
     setResetError("");
     // Independent two-step verification: typed phrase + fresh Admin PIN.
     // Rust checks the actual PIN hash in addition to the administrator session.
-    if (!resetPin || !/^\\d{4,8}$/.test(resetPin)) {
+    if (!resetPin || !/^\d{4,8}$/.test(resetPin)) {
       setResetError("Enter your 4–8 digit Admin PIN.");
       return;
     }
     if (!window.confirm(
-      "FINAL CONFIRMATION — ERASE ALL LOCAL DATA?\\n\\n" +
+      "FINAL CONFIRMATION — ERASE ALL LOCAL DATA?\n\n" +
       "Invoices, agents, purchases, stock, settlements, payments and reports will be erased. " +
-      "Existing external backup files and remote/cloud data will NOT be deleted.\\n\\n" +
+      "Existing external backup files and remote/cloud data will NOT be deleted.\n\n" +
       "This operation cannot be undone without a backup."
     )) return;
 
@@ -171,7 +171,7 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
         await invoke<number>("factory_reset_local_data", {
           token,
           confirmation: "RESET ALL DATA",
-          pinHash,
+          providedPinHash: pinHash,
         });
       });
       sessionStorage.removeItem("app_role");
@@ -952,7 +952,7 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
             type="password"
             inputMode="numeric"
             value={resetPin}
-            onChange={e => { setResetPin(e.target.value.replace(/\\D/g, "").slice(0, 8)); setResetError(""); }}
+            onChange={e => { setResetPin(e.target.value.replace(/\D/g, "").slice(0, 8)); setResetError(""); }}
             disabled={resetLoading}
             autoComplete="off"
             placeholder="Admin PIN"
