@@ -169,17 +169,17 @@ export default function DailyCollectionView() {
             <p className="text-2xl font-black" style={{ color: "#34A853" }}>Rs. {fmt(totalCash)}</p>
             <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>cash collections</p>
           </div>
-          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #2563eb" }}>
+          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #4285F4" }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>Total Cheque</p>
             <p className="text-2xl font-black" style={{ color: "#2563eb" }}>Rs. {fmt(totalCheque)}</p>
             <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>cheque receipts</p>
           </div>
-          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #7c3aed" }}>
+          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #FBBC05" }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>NLB Winnings</p>
             <p className="text-2xl font-black" style={{ color: "#7c3aed" }}>Rs. {fmt(totalNlb)}</p>
             <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>NLB winning tickets</p>
           </div>
-          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #EA580C" }}>
+          <div className="rounded-2xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #EA4335" }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>DLB Winnings</p>
             <p className="text-2xl font-black" style={{ color: "#EA580C" }}>Rs. {fmt(totalDlb)}</p>
             <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>DLB winning tickets</p>
