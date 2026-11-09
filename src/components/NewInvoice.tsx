@@ -473,7 +473,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
       )}
 
       {/* Two-column grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 px-6 pb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)] gap-4 px-6 pb-8">
 
         {/* ════════ LEFT — Invoice Builder ════════ */}
         <div className="flex flex-col gap-4">
@@ -764,16 +764,22 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
             </div>
           )}
 
+        </div>
+
+        {/* ════════ RIGHT — Checkout Summary ════════ */}
+        <div className="flex flex-col gap-3 lg:sticky lg:top-4" style={{ height: "fit-content", minWidth: 0 }}>
+          {/* Editable invoice lines stay beside the ticket entry form, not below it. */}
           {/* Invoice items */}
           {items.length > 0 && (
-            <div className="flex flex-col gap-3">
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div className="flex flex-col gap-2">
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 2px" }}>
                 <div style={{ width: 3, height: 16, borderRadius: 2, background: "#4285F4" }} />
                 <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#5F6368" }}>
                   Invoice Items · {items.length} line{items.length !== 1 ? "s" : ""} · {totalTickets.toLocaleString()} tickets
                 </span>
               </div>
 
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 312, overflowY: "auto", paddingRight: 3 }}>
               {items.map((it, idx) => {
                 const batch  = it.purchase_batch_id ? cartBatches[it.purchase_batch_id] : undefined;
                 const drawNo = batch ? fmtDraw(getDrawNumber(it.ticket_name, batch.batch_date) || batch.batch_number) : "";
@@ -782,15 +788,15 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                   : Infinity;
 
                 return (
-                  <div key={idx} style={{ background: "#FFFFFF", borderRadius: 14, border: "1px solid #E5E7EB", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", overflow: "hidden" }}>
+                  <div key={idx} style={{ background: "#FFFFFF", borderRadius: 10, border: "1px solid #E5E7EB", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", overflow: "hidden" }}>
                     {/* Card header */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid #F3F4F6" }}>
-                      <div style={{ width: 44, height: 44, borderRadius: 8, overflow: "hidden", background: "#F8FAFC", border: "1px solid #E5E7EB", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <img src={resolveLogoUrl(it.ticket_name)} alt="" style={{ width: 40, height: 40, objectFit: "contain" }}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderBottom: "1px solid #F3F4F6" }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 7, overflow: "hidden", background: "#F8FAFC", border: "1px solid #E5E7EB", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <img src={resolveLogoUrl(it.ticket_name)} alt="" style={{ width: 31, height: 31, objectFit: "contain" }}
                           onError={e => { (e.currentTarget as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' rx='7' fill='%23F3F4F6'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='20'%3E%F0%9F%8E%AB%3C/text%3E%3C/svg%3E"; }} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: "#111827" }}>{it.ticket_name}</div>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: "#111827" }}>{it.ticket_name}</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
                           {drawNo && <span style={{ fontSize: 11, padding: "1px 8px", borderRadius: 20, background: "#EFF6FF", color: "#2563EB", fontWeight: 700 }}>Draw #{drawNo}</span>}
                           {batch && <span style={{ fontSize: 10, color: "#9CA3AF" }}>Batch #{batch.id}</span>}
@@ -803,8 +809,8 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                     </div>
 
                     {/* Card body */}
-                    <div style={{ display: "grid", gridTemplateColumns: "140px 140px 1fr", alignItems: "start" }}>
-                      <div style={{ padding: "12px 14px 12px 16px", borderRight: "1px solid #F3F4F6" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "minmax(110px,1fr) minmax(100px,1fr) minmax(106px,1fr)", alignItems: "start" }}>
+                      <div style={{ padding: "9px 8px", borderRight: "1px solid #F3F4F6" }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: "#9AA0A6", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Quantity</div>
                         <div style={{ display: "flex", alignItems: "center", border: `1px solid ${it.qty > 0 ? "#34A853" : "#E5E7EB"}`, borderRadius: 8, overflow: "hidden", height: 34 }}>
                           <button onClick={() => updateCartItem(idx, "qty", Math.max(0, it.qty - 1))} tabIndex={-1}
@@ -817,7 +823,7 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                             style={{ width: 28, height: 34, border: "none", background: it.qty > 0 ? "#F0FFF4" : "#F9FAFB", color: it.qty > 0 ? "#34A853" : "#9AA0A6", fontSize: 16, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
                         </div>
                       </div>
-                      <div style={{ padding: "12px 12px", borderRight: "1px solid #F3F4F6" }}>
+                      <div style={{ padding: "9px 8px", borderRight: "1px solid #F3F4F6" }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: "#9AA0A6", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Discount</div>
                         <div style={{ display: "flex", gap: 4 }}>
                           <select value={(it.discount_pct ?? 0) > 0 ? "pct" : "lkr"}
@@ -844,12 +850,12 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                           <div style={{ fontSize: 9, color: "#D97706", marginTop: 3, fontWeight: 600 }}>− Rs.{fmt(it.discount_amt ?? 0)}</div>
                         )}
                       </div>
-                      <div style={{ padding: "12px 16px", textAlign: "right" }}>
+                      <div style={{ padding: "9px 8px", textAlign: "right" }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: "#9AA0A6", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Line Total</div>
                         {(it.discount_amt ?? 0) > 0 && (
                           <div style={{ fontSize: 11, color: "#9AA0A6", textDecoration: "line-through", marginBottom: 2 }}>Rs.{fmt(it.value)}</div>
                         )}
-                        <div style={{ fontSize: 18, fontWeight: 900, color: "#111827", letterSpacing: "-0.02em" }}>
+                        <div style={{ fontSize: 14, fontWeight: 900, color: "#111827", letterSpacing: "-0.02em" }}>
                           Rs.{fmt(it.net_value != null ? it.net_value : it.value)}
                         </div>
                         {it.qty > 0 && <div style={{ fontSize: 10, color: "#9AA0A6", marginTop: 2 }}>{it.qty.toLocaleString()} × Rs.{it.unit_price}</div>}
@@ -859,16 +865,16 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
                 );
               })}
 
+              </div>
+
               <button onClick={() => { setSelGameName(""); setSelBatch(null); setSelQty(0); setTimeout(() => gamePickerRef.current?.focus(), 60); }}
-                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", borderRadius: 14, border: "2px dashed #DBEAFE", background: "#F8FAFF", color: "#4285F4", fontSize: 13, fontWeight: 700, cursor: "pointer", width: "100%" }}>
-                <AddCircle size={16} variant="Linear" color="currentColor" /> Add Another Game to Invoice
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px", borderRadius: 9, border: "2px dashed #DBEAFE", background: "#F8FAFF", color: "#4285F4", fontSize: 11, fontWeight: 700, cursor: "pointer", width: "100%" }}>
+                <AddCircle size={16} variant="Linear" color="currentColor" /> + Add Another Game
               </button>
             </div>
           )}
-        </div>
 
-        {/* ════════ RIGHT — Checkout Summary ════════ */}
-        <div style={{ position: "sticky", top: 80, height: "fit-content" }}>
+
           <div style={{ background: "#FFFFFF", borderRadius: 16, overflow: "hidden", border: "1px solid #E5E7EB", boxShadow: "0 4px 24px rgba(0,0,0,0.07)" }}>
 
             {/* Agent badge */}
@@ -880,37 +886,6 @@ export default function NewInvoice({ editInvoiceId, onSaved }: Props) {
               {commissionPreview > 0 && (
                 <div style={{ fontSize: 10, color: "#2563EB", marginTop: 2, fontWeight: 600 }}>
                   Est. commission: Rs.{fmt(commissionPreview)}
-                </div>
-              )}
-            </div>
-
-            {/* Cart items summary */}
-            <div style={{ padding: "12px 20px", maxHeight: 220, overflowY: "auto" }}>
-              <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#9CA3AF", marginBottom: 8 }}>Invoice Summary</div>
-              {items.length === 0 ? (
-                <div style={{ fontSize: 12, color: "#D1D5DB", textAlign: "center", padding: "16px 0" }}>Invoice is empty</div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {items.map((it, i) => {
-                    const batch  = it.purchase_batch_id ? cartBatches[it.purchase_batch_id] : undefined;
-                    const drawNo = batch ? fmtDraw(getDrawNumber(it.ticket_name, batch.batch_date)) : "";
-                    return (
-                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 8, background: "#F8FAFC", border: "1px solid #F1F3F4" }}>
-                        <img src={resolveLogoUrl(it.ticket_name)} alt="" style={{ width: 24, height: 24, objectFit: "contain", borderRadius: 4, flexShrink: 0 }}
-                          onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{it.ticket_name}</div>
-                          <div style={{ fontSize: 10, color: "#9CA3AF" }}>
-                            {it.qty.toLocaleString()} tickets
-                            {drawNo && <span style={{ marginLeft: 5, color: "#2563EB", fontWeight: 600 }}>#{drawNo}</span>}
-                          </div>
-                        </div>
-                        <div style={{ fontSize: 12, fontWeight: 800, color: "#374151", flexShrink: 0 }}>
-                          Rs.{fmt(it.net_value ?? it.value)}
-                        </div>
-                      </div>
-                    );
-                  })}
                 </div>
               )}
             </div>
