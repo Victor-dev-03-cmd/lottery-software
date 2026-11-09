@@ -170,7 +170,7 @@ export default function Sidebar({
           <button
             onClick={onMobileClose}
             className="lg:hidden mr-1 p-1 rounded-lg transition-colors"
-            style={{ color: G.sectionTxt }}
+            style={{ color: lang === "si" ? "#374151" : G.sectionTxt }}
             onMouseEnter={e => { e.currentTarget.style.background = G.hoverBg; }}
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
             aria-label="Close navigation"
@@ -209,7 +209,7 @@ export default function Sidebar({
           <div key={group.heading} className="mb-1">
             {(!collapsed || mobileOpen) ? (
               <div
-                className={`px-4 pt-2.5 pb-0.5 text-[9px] font-black uppercase tracking-[0.12em] select-none ${lang === "si" ? "si" : ""}`}
+                className={`px-4 pt-2.5 pb-0.5 font-bold select-none ${lang === "si" ? "si text-[11px] tracking-normal" : "text-[10px] uppercase tracking-[0.1em]"}`}
                 style={{ color: G.sectionTxt }}
               >
                 {group.heading}
@@ -280,7 +280,8 @@ export default function Sidebar({
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
-                        fontSize: lang === "si" ? "0.8rem" : undefined,
+                        fontSize: lang === "si" ? "0.875rem" : undefined,
+                        fontWeight: lang === "si" ? 600 : undefined,
                       }}
                     >
                       {item.label}
