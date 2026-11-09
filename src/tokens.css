@@ -23,6 +23,18 @@
   --color-brand-border:   #C5D8FB;   /* Border on brand-light surface */
   --color-on-brand:       #FFFFFF;   /* Text / icons on brand-colored surfaces */
 
+  /* ── Google four-color palette, balanced across data visualizations ───────── */
+  /* Blue: information/navigation; Green: realized value; Yellow: attention;
+     Red: risk/negative values. Saturated hues never replace contrast text. */
+  --color-google-blue:       #4285F4;
+  --color-google-green:      #34A853;
+  --color-google-yellow:     #FBBC05;
+  --color-google-red:        #EA4335;
+  --color-google-blue-tint:  #EAF1FB;
+  --color-google-green-tint: #E6F4EA;
+  --color-google-yellow-tint:#FEF9E0;
+  --color-google-red-tint:   #FCE8E6;
+
   /* ── Status — Semantic ────────────────────────────────────────────────────── */
   --color-success:        #34A853;
   --color-success-hover:  #2D9248;
