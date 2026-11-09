@@ -47,6 +47,7 @@ export default function AgentsManager() {
   const [agents, setAgents]       = useState<Agent[]>([]);
   const [form, setForm]           = useState<Agent | null>(null);
   const [loading, setLoading]     = useState(true);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [viewAgent, setViewAgent] = useState<Agent | null>(null);
   const { requireAdminPin }       = usePinGuardContext();
   const photoRef                  = useRef<HTMLInputElement>(null);
@@ -79,11 +80,28 @@ export default function AgentsManager() {
 
   // ── Delete ────────────────────────────────────────────────────────────────
   async function handleDelete(id: number, name: string) {
-    const ok = await requireAdminPin("Delete Agent", `Admin PIN required to delete "${name}"`);
+    if (deletingId !== null) return;
+    if (!window.confirm(
+      `Remove agent "${name}" from active profiles?\n\n` +
+      "The agent will disappear from the active list, but historical invoices, payments and reports will be preserved."
+    )) return;
+    const ok = await requireAdminPin(
+      "Remove Agent — Admin PIN Required",
+      `Verify administrator PIN to remove "${name}" from active profiles.`
+    );
     if (!ok) return;
-    if (!confirm(`Delete agent "${name}"? Invoices will remain.`)) return;
-    await deleteAgent(id);
-    load();
+
+    setDeletingId(id);
+    try {
+      await deleteAgent(id);
+      if (viewAgent?.id === id) setViewAgent(null);
+      if (form?.id === id) setForm(null);
+      await load();
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Unable to remove agent. Please retry.");
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   const set = (k: keyof Agent, v: string) =>
@@ -371,7 +389,9 @@ export default function AgentsManager() {
                           </button>
                           <button
                             onClick={() => handleDelete(a.id!, a.name)}
-                            className="p-1.5 rounded-lg transition-all hover:opacity-80"
+                            disabled={deletingId !== null}
+                            title="Remove agent (Admin PIN required; history preserved)"
+                            className="p-1.5 rounded-lg transition-all hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
                             style={{ background: "#FCE8E6", color: "#EA4335" }}>
                             <Trash size={13} variant="Linear" color="currentColor" />
                           </button>
