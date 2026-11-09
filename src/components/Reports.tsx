@@ -23,7 +23,7 @@ import type {
 } from "../types";
 
 export default function Reports() {
-  void useLanguage(); // translation infrastructure wired — label i18n in Phase 6 audit
+  const { lang, t } = useLanguage();
   const [daily, setDaily] = useState<DailyRevenue[]>([]);
   const [monthly, setMonthly] = useState<MonthlyRevenue[]>([]);
   const [agents, setAgents] = useState<AgentPerformance[]>([]);
@@ -108,8 +108,8 @@ export default function Reports() {
         {/* Page header */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#202124" }}>Reports & Analytics</h1>
-            <p className="text-xs mt-0.5" style={{ color: "#9AA0A6" }}>Revenue, agent performance, aging analysis</p>
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#202124" }}><span className={lang === "si" ? "si" : ""}>{t("nav_reports")}</span></h1>
+            <p className="text-xs mt-0.5" style={{ color: "#9AA0A6" }}>{lang === "si" ? <span className="si si-caption" lang="si">ආදායම්, නියෝජිත කාර්යසාධනය සහ හිඟ ශේෂ විශ්ලේෂණය</span> : "Revenue, agent performance, aging analysis"}</p>
           </div>
         </div>
 
