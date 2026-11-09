@@ -211,11 +211,10 @@ const EMPTY_PAYMENT = (purchaseId: number): PurchasePayment => ({
 // ── Main component ────────────────────────────────────────────────────────────
 
 interface PurchasesProps {
-  onNavigate?: (view: import("../types").View) => void;
   onManageGames?: () => void;
 }
 
-export default function Purchases({ onNavigate, onManageGames }: PurchasesProps) {
+export default function Purchases({ onManageGames }: PurchasesProps) {
   const { t } = useLanguage();
   const { requireAdminPin } = usePinGuardContext();
   const { withAdminToken } = useAuth();
