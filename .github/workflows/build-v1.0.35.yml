@@ -1,0 +1,62 @@
+name: "v1.0.35 Build Verification — Windows and Linux"
+
+on:
+  push:
+    branches:
+      - feature/admin-delete-paid-invoices
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  desktop-build:
+    name: "${{ matrix.platform }} desktop installer"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-22.04
+            artifact: lottery-manager-linux-v1.0.35
+          - platform: windows-latest
+            artifact: lottery-manager-windows-v1.0.35
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+      - name: Install Linux Tauri build prerequisites
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - name: Install frontend dependencies
+        run: bun install
+      - name: Validate frontend TypeScript and bundle
+        run: bun run build
+      - name: Build desktop installers
+        run: bun tauri build
+      - name: Upload Linux installers
+        if: matrix.platform == 'ubuntu-22.04'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lottery-manager-linux-v1.0.35
+          path: |
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/release/bundle/rpm/*.rpm
+          if-no-files-found: error
+      - name: Upload Windows installers
+        if: matrix.platform == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lottery-manager-windows-v1.0.35
+          path: |
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: error
