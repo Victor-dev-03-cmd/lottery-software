@@ -45,6 +45,18 @@ const G = {
   tooltipBg:    "#202124",
 };
 
+// Google accents distinguish sections; selected navigation remains blue.
+const GROUP_ACCENT: Record<string, string> = {
+  nav_overview: "#4285F4",
+  nav_purchasing: "#FBBC05",
+  nav_sales: "#34A853",
+  nav_section_collections: "#FBBC05",
+  nav_agents: "#4285F4",
+  nav_analytics: "#34A853",
+  nav_operations: "#EA4335",
+  nav_system: "#4285F4",
+};
+
 export default function Sidebar({
   active, onNavigate, collapsed, onToggle,
   mobileOpen = false, onMobileClose,
@@ -209,8 +221,8 @@ export default function Sidebar({
           <div key={group.heading} className="mb-1">
             {(!collapsed || mobileOpen) ? (
               <div
-                className={`px-4 pt-2.5 pb-0.5 font-bold select-none ${lang === "si" ? "si text-[11px] tracking-normal" : "text-[10px] uppercase tracking-[0.1em]"}`}
-                style={{ color: G.sectionTxt }}
+                className={`mx-3 px-2 pt-2 pb-1 font-bold select-none ${lang === "si" ? "si text-[11px] tracking-normal" : "text-[10px] uppercase tracking-[0.1em]"}`}
+                style={{ color: "#374151", borderLeft: `3px solid ${GROUP_ACCENT[group.headingKey] ?? BRAND}` }}
               >
                 {group.heading}
               </div>
