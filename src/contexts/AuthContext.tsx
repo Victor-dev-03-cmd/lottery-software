@@ -5,7 +5,7 @@ export type UserRole = "admin" | "cashier";
 
 // Views cashiers can access
 export const CASHIER_ALLOWED: string[] = [
-  "dashboard", "new-invoice", "collections", "live-results", "alerts", "print-export",
+  "dashboard", "new-invoice", "collections", "alerts", "print-export",
   "draft-invoices", "confirmed-invoices", "invoices",   // cashiers can view their own invoices
 ];
 
