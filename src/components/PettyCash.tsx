@@ -266,7 +266,7 @@ export default function PettyCash() {
             { en:"Opening Balance", si:SI.openingBalance, value: closing.opening_balance, color:"#6B7280",  icon:<Wallet size={16} variant="Linear" color="currentColor"/> },
             { en:"Daily Income",    si:SI.dailyIncome,    value: income.total,            color:"#2563EB",  icon:<TrendUp size={16} variant="Linear" color="currentColor"/> },
             { en:"Total Outflows",  si:SI.cashOutflows,   value: totalOutflow,            color:"#EA4335",  icon:<TrendDown size={16} variant="Linear" color="currentColor"/> },
-            { en:"Expected in Drawer", si:SI.expectedCash, value: expectedCash,           color:"#D97706",  icon:<Wallet size={16} variant="Linear" color="currentColor"/> },
+            { en:"Expected in Drawer", si:SI.expectedCash, value: expectedCash,           color:"#8A5800",  icon:<Wallet size={16} variant="Linear" color="currentColor"/> },
             {
               en: isBalanced ? "✓ Balanced" : "Discrepancy",
               si: isBalanced ? SI.balanced : SI.variance,
@@ -296,7 +296,7 @@ export default function PettyCash() {
 
             {/* Income breakdown */}
             <div style={{ background:"#fff", borderRadius:12, border:"1px solid #E8E8E8", overflow:"hidden" }}>
-              <div style={{ padding:"12px 16px", borderBottom:"1px solid #F3F4F6", borderLeft:"3px solid #2563EB", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div style={{ padding:"12px 16px", borderBottom:"1px solid #F3F4F6", borderLeft:"3px solid #34A853", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                 <span>
                   <TrendUp size={16} variant="Linear" color="currentColor" style={{ display:"inline", marginRight:6, color:"#2563EB", verticalAlign:"middle" }}/>
                   <SectionLabel en={`Cash Income — ${date}`} si={`${SI.dailyIncome} — ${date}`} />
@@ -433,7 +433,7 @@ export default function PettyCash() {
 
             {/* Physical cash count */}
             <div style={{ background:"#fff", borderRadius:12, border:`2px solid ${isBalanced&&closing.actual_cash>0?"#BBF7D0":"#E8E8E8"}`, overflow:"hidden" }}>
-              <div style={{ padding:"12px 14px", borderBottom:"1px solid #F3F4F6", borderLeft:"3px solid #D97706" }}>
+              <div style={{ padding:"12px 14px", borderBottom:"1px solid #F3F4F6", borderLeft:"3px solid #FBBC05" }}>
                 <p style={{ fontSize:12, fontWeight:700, color:"#374151", margin:0 }}>
                   Physical Cash Count <span className="si si-caption" lang="si" style={{ fontSize:11, fontWeight:600, color:"#374151" }}>· {SI.physicalCashCount}</span>
                 </p>
