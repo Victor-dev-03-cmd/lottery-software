@@ -139,56 +139,6 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
     onSaved();
   }
 
-  async function handleFactoryReset() {
-    if (resetLoading || resetPhrase !== "RESET ALL DATA") return;
-    setResetError("");
-    // Independent two-step verification: typed phrase + fresh Admin PIN.
-    // Rust checks the actual PIN hash in addition to the administrator session.
-    if (!resetPin || !/^\d{4,8}$/.test(resetPin)) {
-      setResetError("Enter your 4–8 digit Admin PIN.");
-      return;
-    }
-    if (!window.confirm(
-      "FINAL CONFIRMATION — ERASE ALL LOCAL DATA?\n\n" +
-      "Invoices, agents, purchases, stock, settlements, payments and reports will be erased. " +
-      "Existing external backup files and remote/cloud data will NOT be deleted.\n\n" +
-      "This operation cannot be undone without a backup."
-    )) return;
-
-    setResetLoading(true);
-    try {
-      const { hashPin, verifyAdminPin } = await import("../hooks/usePinGuard");
-      if (!(await verifyAdminPin(resetPin))) {
-        throw new Error("Incorrect Admin PIN. Nothing was erased.");
-      }
-      const pinHash = await hashPin(resetPin);
-      // The Rust command independently checks both the admin token and PIN hash.
-      await withAdminToken(async (token) => {
-        const { stopSyncWorker } = await import("../services/syncQueue");
-        stopSyncWorker();
-        const { closeAndResetDb } = await import("../services/database");
-        await closeAndResetDb();
-        await invoke<number>("factory_reset_local_data", {
-          token,
-          confirmation: "RESET ALL DATA",
-          providedPinHash: pinHash,
-        });
-      });
-      sessionStorage.removeItem("app_role");
-      sessionStorage.removeItem("admin_token");
-      window.location.reload();
-    } catch (e) {
-      setResetError(friendlyAuthError(e));
-      // Restart by reloading so a closed DB connection / stopped worker is
-      // reopened safely. A failed Rust transaction rolls back its changes.
-      setTimeout(() => window.location.reload(), 2500);
-    } finally {
-      setResetLoading(false);
-      setResetPhrase("");
-      setResetPin("");
-    }
-  }
-
   const set = (k: string, v: string) => setSettings((p) => ({ ...p, [k]: v }));
 
   if (loading) return <div className="p-4" style={{ color: "#9CA3AF" }}>Loading…</div>;
@@ -594,6 +544,56 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
       setDbExists(exists);
       setBackups(bkps);
     } catch { /* running in browser preview */ }
+  }
+
+  async function handleFactoryReset() {
+    if (resetLoading || resetPhrase !== "RESET ALL DATA") return;
+    setResetError("");
+    // Independent two-step verification: typed phrase + fresh Admin PIN.
+    // Rust checks the actual PIN hash in addition to the administrator session.
+    if (!resetPin || !/^\d{4,8}$/.test(resetPin)) {
+      setResetError("Enter your 4–8 digit Admin PIN.");
+      return;
+    }
+    if (!window.confirm(
+      "FINAL CONFIRMATION — ERASE ALL LOCAL DATA?\n\n" +
+      "Invoices, agents, purchases, stock, settlements, payments and reports will be erased. " +
+      "Existing external backup files and remote/cloud data will NOT be deleted.\n\n" +
+      "This operation cannot be undone without a backup."
+    )) return;
+
+    setResetLoading(true);
+    try {
+      const { hashPin, verifyAdminPin } = await import("../hooks/usePinGuard");
+      if (!(await verifyAdminPin(resetPin))) {
+        throw new Error("Incorrect Admin PIN. Nothing was erased.");
+      }
+      const pinHash = await hashPin(resetPin);
+      // The Rust command independently checks both the admin token and PIN hash.
+      await withAdminToken(async (token) => {
+        const { stopSyncWorker } = await import("../services/syncQueue");
+        stopSyncWorker();
+        const { closeAndResetDb } = await import("../services/database");
+        await closeAndResetDb();
+        await invoke<number>("factory_reset_local_data", {
+          token,
+          confirmation: "RESET ALL DATA",
+          providedPinHash: pinHash,
+        });
+      });
+      sessionStorage.removeItem("app_role");
+      sessionStorage.removeItem("admin_token");
+      window.location.reload();
+    } catch (e) {
+      setResetError(friendlyAuthError(e));
+      // Restart by reloading so a closed DB connection / stopped worker is
+      // reopened safely. A failed Rust transaction rolls back its changes.
+      setTimeout(() => window.location.reload(), 2500);
+    } finally {
+      setResetLoading(false);
+      setResetPhrase("");
+      setResetPin("");
+    }
   }
 
   async function handleBackup() {
