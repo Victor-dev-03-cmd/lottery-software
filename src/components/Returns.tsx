@@ -12,6 +12,7 @@ import { calcEndBarcode, calcQtyFromBarcodes, isNumericBarcode, lastTicketBarcod
 import TicketLogoPicker, { resolveLogoUrl } from "./TicketLogoPicker";
 
 import { useLanguage } from "../i18n";
+import { usePinGuardContext } from "../App";
 import { EmptyInvoice } from "./illustrations";
 interface ScannedItem {
   barcode_start: string;
@@ -44,6 +45,7 @@ const EMPTY = (agentId = 0): TicketReturn => ({
 
 export default function Returns() {
   const { t } = useLanguage();
+  const { requireAdminPin } = usePinGuardContext();
   // useAuth kept for future role-based features
   void useAuth;
   const [returns, setReturns] = useState<TicketReturn[]>([]);
@@ -152,6 +154,7 @@ export default function Returns() {
 
   async function handleDelete(id: number) {
     if (!confirm("Delete this return record?")) return;
+    if (!(await requireAdminPin("Delete Return", "Enter the Admin PIN to delete this return."))) return;
     setAuthError(null);
     try {
       await deleteTicketReturn(id);

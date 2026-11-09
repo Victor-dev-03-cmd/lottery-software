@@ -1810,9 +1810,6 @@ async fn start_api_server(app: tauri::AppHandle) {
         #[derive(Clone)]
         struct ApiState { db_path: String, api_key: String, app: tauri::AppHandle }
 
-        // Fixed companion key accepted from mobile app — no user configuration needed
-        const COMPANION_KEY: &str = "LOTTERY_COMPANION";
-
         async fn auth_check(
             State(s): State<Arc<ApiState>>,
             headers: HeaderMap,
@@ -1820,15 +1817,13 @@ async fn start_api_server(app: tauri::AppHandle) {
             next: axum::middleware::Next,
         ) -> impl IntoResponse {
             let key = headers.get("x-api-key").and_then(|v| v.to_str().ok()).unwrap_or("");
-            let allowed = s.api_key.is_empty()        // no key configured → open
-                || key == s.api_key                    // main UUID key
-                || key == COMPANION_KEY;               // fixed mobile companion key
+            let allowed = !s.api_key.is_empty() && key == s.api_key;
             if allowed {
                 Ok(next.run(req).await)
             } else {
                 Err((StatusCode::UNAUTHORIZED, Json(serde_json::json!({
                     "error": "Unauthorized",
-                    "hint": "Mobile app: use x-api-key: LOTTERY_COMPANION"
+                    "hint": "A valid configured API key is required."
                 }))))
             }
         }
@@ -3241,7 +3236,6 @@ pub fn run() {
             fetch_single_result,
             start_background_sync,
             refresh_single_game,
-            start_api_server,
             get_api_key,
             push_to_supabase,
             pull_from_supabase,
@@ -3266,7 +3260,6 @@ pub fn run() {
             get_local_ip,
             get_server_qr_code,
             get_qr_for_url,
-            start_discovery_beacon,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

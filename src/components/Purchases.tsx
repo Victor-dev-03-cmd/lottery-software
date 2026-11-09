@@ -15,6 +15,7 @@ import { getDrawNumber, getDrawInfo } from "../utils/drawNumbers";
 import TicketLogoPicker, { resolveLogoUrl } from "./TicketLogoPicker";
 
 import { useLanguage } from "../i18n";
+import { usePinGuardContext } from "../App";
 import { EmptyInventory } from "./illustrations";
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -215,6 +216,7 @@ interface PurchasesProps {
 
 export default function Purchases({ onNavigate }: PurchasesProps) {
   const { t } = useLanguage();
+  const { requireAdminPin } = usePinGuardContext();
   const { withAdminToken } = useAuth();
   const [purchases, setPurchases]     = useState<PurchaseInvoice[]>([]);
   const [totalOwed, setTotalOwed]     = useState(0);
@@ -285,6 +287,7 @@ export default function Purchases({ onNavigate }: PurchasesProps) {
 
   async function handleDelete(id: number) {
     if (!confirm("Delete this purchase invoice? All linked payments will also be deleted.")) return;
+    if (!(await requireAdminPin("Delete Purchase Invoice", "Enter the Admin PIN to delete this purchase."))) return;
     setAuthError(null);
     try {
       await withAdminToken(async () => {
@@ -315,6 +318,7 @@ export default function Purchases({ onNavigate }: PurchasesProps) {
 
   async function handleDeletePayment(id: number, purchaseId: number) {
     if (!confirm("Delete this payment record?")) return;
+    if (!(await requireAdminPin("Delete Purchase Payment", "Enter the Admin PIN to delete this payment."))) return;
     setAuthError(null);
     try {
       await withAdminToken(async () => {

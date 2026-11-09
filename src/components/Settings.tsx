@@ -17,6 +17,7 @@ import SoftwareUpdateTab from "./SoftwareUpdateTab";
 import type { CompanySettings, LotteryGame } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../i18n";
+import { usePinGuardContext } from "../App";
 
 type Tab = "general" | "games" | "security" | "mobile" | "ai" | "updates" | "import";
 
@@ -24,7 +25,7 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "general",   label: "General",           icon: <Building2 size={15} /> },
   { key: "games",     label: "Games",             icon: <Gamepad2 size={15} /> },
   { key: "security",  label: "Backup & Security", icon: <Shield size={15} /> },
-  { key: "mobile",    label: "Mobile App",        icon: <Smartphone size={15} /> },
+
   { key: "ai",        label: "AI Configuration",  icon: <span style={{ fontSize: 13 }}>🧠</span> },
   { key: "updates",   label: "Software Updates",  icon: <span style={{ fontSize: 13 }}>🔄</span> },
   { key: "import",    label: "Import Data",       icon: <span style={{ fontSize: 13 }}>📥</span> },
@@ -329,6 +330,7 @@ function GameEditModal({
 }
 
 function GamesTab() {
+  const { requireAdminPin } = usePinGuardContext();
   const [games, setGames] = useState<(LotteryGame & { is_enabled?: number })[]>([]);
   const [newGame, setNewGame] = useState<LotteryGame>({ name: "", cost_price: 32.5, unit_price: 32.5, board: "NLB" });
   const [editingGame, setEditingGame] = useState<(LotteryGame & { is_enabled?: number }) | null>(null);
@@ -361,7 +363,10 @@ function GamesTab() {
   }
 
   async function handleDelete(g: LotteryGame & { is_enabled?: number }) {
-    if (confirm(`Delete "${g.name}"?`)) { await deleteLotteryGame(g.id!); load(); }
+    if (!confirm(`Delete "${g.name}"?`)) return;
+    if (!(await requireAdminPin("Delete Lottery Game", "Enter the Admin PIN to delete this game."))) return;
+    await deleteLotteryGame(g.id!);
+    load();
   }
 
   // Keyboard handler for the Add row

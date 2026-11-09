@@ -479,6 +479,11 @@ export default function LiveResults() {
     setDlbGames(dedupeBySlug(DLB_GAMES));
   }, []);
 
+  // Defer all-game network/Chrome work until the operator opens Live Results.
+  useEffect(() => {
+    invoke("start_background_sync").catch(() => {});
+  }, []);
+
   // ── Mount-only: Supabase pull, cloud subscription, sync status listeners ──────
   // These do NOT depend on the selected game and must not re-run on game changes.
   //   • pullResultsFromCloud   — downloads all games' results into SQLite once on open

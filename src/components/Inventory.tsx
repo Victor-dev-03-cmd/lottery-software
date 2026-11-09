@@ -16,6 +16,7 @@ import {
 import type { InventoryBatch, LotteryGame } from "../types";
 
 import { useLanguage } from "../i18n";
+import { usePinGuardContext } from "../App";
 // ── All 16 known NLB/DLB games ────────────────────────────────────────────────
 const ALL_GAMES: { name: string; board: "NLB" | "DLB" }[] = [
   { name: "Ada Sampatha",         board: "NLB" },
@@ -64,6 +65,7 @@ const EMPTY = (): InventoryBatch => ({
 
 export default function Inventory() {
   const { t } = useLanguage();
+  const { requireAdminPin } = usePinGuardContext();
   const [batches, setBatches] = useState<(InventoryBatch & { remaining_qty: number })[]>([]);
   const [games, setGames] = useState<LotteryGame[]>([]);
   const [form, setForm] = useState<InventoryBatch | null>(null);
@@ -141,6 +143,7 @@ export default function Inventory() {
 
   async function handleDelete(id: number, name: string) {
     if (!confirm(`Delete batch "${name}"?`)) return;
+    if (!(await requireAdminPin("Delete Inventory Batch", "Enter the Admin PIN to delete this stock batch."))) return;
     await deleteInventoryBatch(id);
     load();
   }

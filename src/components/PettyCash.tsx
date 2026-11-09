@@ -9,6 +9,7 @@ import {
 import { SI, StatLabel, SectionLabel } from "../utils/si";
 
 import { useLanguage } from "../i18n";
+import { usePinGuardContext } from "../App";
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
@@ -54,6 +55,7 @@ const EMPTY_CLOSING = (date: string): PettyCashClosing => ({
 
 export default function PettyCash() {
   const { t } = useLanguage();
+  const { requireAdminPin } = usePinGuardContext();
   
   const [date, setDate]             = useState(today());
   const [txs, setTxs]               = useState<PettyCashTx[]>([]);
@@ -119,6 +121,7 @@ export default function PettyCash() {
 
   async function handleDelete(id: number) {
     if (!confirm("Delete this expense record?")) return;
+    if (!(await requireAdminPin("Delete Expense", "Enter the Admin PIN to delete this expense."))) return;
     await deletePettyCashTransaction(id);
     load();
   }
