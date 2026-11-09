@@ -1,7 +1,7 @@
 /* ── Fonts — bundled locally (no CDN required) ───────────────────────────── */
 /* Inter Variable: Latin, covers all UI text weights 100-900 in one file     */
 @import "@fontsource-variable/inter";
-/* Noto Sans Sinhala: individual weights for Sinhala text rendering           */
+/* Bundled Sinhala typeface, consistent across Windows and Linux. */
 @import "@fontsource/noto-sans-sinhala/400.css";
 @import "@fontsource/noto-sans-sinhala/600.css";
 @import "@fontsource/noto-sans-sinhala/700.css";
@@ -18,16 +18,35 @@
   }
   body {
     margin: 0;
-    /* Inter Variable first — bundled locally; Nirmala UI = Windows built-in Sinhala */
+    /* Inter for Latin UI, Noto Sans Sinhala for Sinhala glyphs. */
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     color: var(--color-text-primary);
     background: var(--color-surface-dim);
   }
-  /* Sinhala text helper — preserves exact existing .si class behavior */
-  .si {
-    font-family: 'Nirmala UI', 'Noto Sans Sinhala', 'Iskoola Pota', 'Inter Variable', system-ui, sans-serif;
-    line-height: 1.6;
+  /* Use a single Sinhala family on all devices; Inter remains the English font. */
+  .si, :lang(si) {
+    font-family: var(--font-sinhala);
+    line-height: 1.55;
+    font-synthesis: none;
+  }
+  /* Sinhala has a taller visual x-height and needs legible supporting labels. */
+  .si-caption {
+    color: var(--color-text-secondary) !important;
+    font-size: max(11px, 0.82em);
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  /* Main interface language is inherited by every page and portal. */
+  html[data-ui-lang="si"] {
+    font-family: var(--font-sans);
+  }
+  html[data-ui-lang="si"] :where(button, input, textarea, select) {
+    font-family: inherit;
+  }
+  /* Leave interactive semantic colors (danger, success, white-on-brand) intact. */
+  html[data-ui-lang="si"] .si:not(.text-white):not(.text-white\/70) {
+    text-rendering: optimizeLegibility;
   }
 }
 
