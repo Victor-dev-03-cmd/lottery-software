@@ -142,13 +142,12 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
   async function handleFactoryReset() {
     if (resetLoading || resetPhrase !== "RESET ALL DATA") return;
     setResetError("");
-    // Step 1: explicit typed acknowledgement. Step 2: fresh Admin PIN
-    // challenge, even if the user already has an admin session.
-    const approved = await requireAdminPin(
-      "Factory Reset — Administrator Verification",
-      "All local business data will be permanently erased. Enter your Admin PIN to continue."
-    );
-    if (!approved) return;
+    // Independent two-step verification: typed phrase + fresh Admin PIN.
+    // Rust checks the actual PIN hash in addition to the administrator session.
+    if (!resetPin || !/^\\d{4,8}$/.test(resetPin)) {
+      setResetError("Enter your 4–8 digit Admin PIN.");
+      return;
+    }
     if (!window.confirm(
       "FINAL CONFIRMATION — ERASE ALL LOCAL DATA?\\n\\n" +
       "Invoices, agents, purchases, stock, settlements, payments and reports will be erased. " +
@@ -158,7 +157,12 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
 
     setResetLoading(true);
     try {
-      // The Rust command checks the active admin session and configured PIN.
+      const { hashPin, verifyAdminPin } = await import("../hooks/usePinGuard");
+      if (!(await verifyAdminPin(resetPin))) {
+        throw new Error("Incorrect Admin PIN. Nothing was erased.");
+      }
+      const pinHash = await hashPin(resetPin);
+      // The Rust command independently checks both the admin token and PIN hash.
       await withAdminToken(async (token) => {
         const { stopSyncWorker } = await import("../services/syncQueue");
         stopSyncWorker();
@@ -167,6 +171,7 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
         await invoke<number>("factory_reset_local_data", {
           token,
           confirmation: "RESET ALL DATA",
+          pinHash,
         });
       });
       sessionStorage.removeItem("app_role");
@@ -180,6 +185,7 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
     } finally {
       setResetLoading(false);
       setResetPhrase("");
+      setResetPin("");
     }
   }
 
@@ -553,8 +559,8 @@ function friendlyAuthError(e: unknown): string {
 
 function SecurityTab({ onSaved }: { onSaved: () => void }) {
   const { withAdminToken, adminToken } = useAuth();
-  const { requireAdminPin } = usePinGuardContext();
   const [resetPhrase, setResetPhrase] = useState("");
+  const [resetPin, setResetPin] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const [resetError, setResetError] = useState("");
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -938,15 +944,29 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
             className="inp w-full max-w-sm"
             style={{ borderColor: resetPhrase === "RESET ALL DATA" ? "#16A34A" : "#FCA5A5" }}
           />
+          <label htmlFor="reset-admin-pin" className="block text-xs font-semibold" style={{ color: "#374151" }}>
+            Step 2 of 2 — Enter your Admin PIN (4–8 digits)
+          </label>
+          <input
+            id="reset-admin-pin"
+            type="password"
+            inputMode="numeric"
+            value={resetPin}
+            onChange={e => { setResetPin(e.target.value.replace(/\\D/g, "").slice(0, 8)); setResetError(""); }}
+            disabled={resetLoading}
+            autoComplete="off"
+            placeholder="Admin PIN"
+            className="inp w-full max-w-sm"
+          />
           <div className="flex items-center gap-3 flex-wrap">
             <button
               type="button"
               onClick={handleFactoryReset}
-              disabled={!adminPinSet || resetPhrase !== "RESET ALL DATA" || resetLoading}
+              disabled={!adminPinSet || resetPhrase !== "RESET ALL DATA" || resetPin.length < 4 || resetLoading}
               className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold text-white disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ background: "#DC2626" }}>
               <RotateCcw size={15} />
-              {resetLoading ? "Erasing local data…" : "Step 2 — Verify Admin PIN & Reset"}
+              {resetLoading ? "Erasing local data…" : "Verify PIN & Factory Reset"}
             </button>
             {!adminPinSet && <span className="text-xs" style={{ color: "#B91C1C" }}>Set an Admin PIN first to enable Factory Reset.</span>}
           </div>
