@@ -66,7 +66,7 @@ The interface is organized around the work an operator performs every day: recei
 
 The desktop remains the primary place where business transactions are recorded.
 
-\`\`\`mermaid
+```mermaid
 flowchart LR
     O[Desktop operator] --> UI[Tauri + React interface]
     UI --> DB[(Local SQLite<br/>authoritative business data)]
@@ -77,7 +77,7 @@ flowchart LR
     R --> SB[(Optional Supabase integration)]
     UI --> EX[Printing and reports]
     UI --> LR[On-demand lottery results]
-\`\`\`
+```
 
 **Important architectural distinctions**
 
@@ -108,24 +108,24 @@ For local development, install **Bun**, **Rust stable / Cargo**, and the platfor
 
 ### Clone and run
 
-\`\`\`bash
+```bash
 git clone https://github.com/Victor-dev-03-cmd/lottery-software.git
 cd lottery-software
 bun install
 bun run tauri dev
-\`\`\`
+```
 
 To compile the frontend without creating a desktop installer:
 
-\`\`\`bash
+```bash
 bun run build
-\`\`\`
+```
 
 To produce a Windows NSIS installer on a supported Windows build environment:
 
-\`\`\`bash
+```bash
 bun run tauri build --bundles nsis
-\`\`\`
+```
 
 **First run:** Complete the in-app setup wizard, select or confirm the database location, review company information and configure the administrative PIN. Test with a non-production database before importing actual client transactions.
 
@@ -134,9 +134,9 @@ bun run tauri build --bundles nsis
 The development integration branch has a **test-only Windows installer workflow**. It is separate from the production release workflow and does not publish a version tag or modify the updater feed.
 
 1. Open [Windows Performance Test Installer — GitHub Actions](https://github.com/Victor-dev-03-cmd/lottery-software/actions/workflows/windows-performance-test-installer.yml).
-2. Choose a successful run from \`integration/security-and-perf\`.
+2. Choose a successful run from `integration/security-and-perf`.
 3. Open **Artifacts** and download the test ZIP.
-4. Extract the installer and the included \`Measure-WindowsPerformance.ps1\` script.
+4. Extract the installer and the included `Measure-WindowsPerformance.ps1` script.
 5. Back up current client data and test on a separate/non-production setup.
 
 A passing CI build establishes that compilation/packaging succeeded on the runner. It **does not prove** performance on the client's computer.
@@ -186,7 +186,7 @@ For repeatable measurements, run the included Windows test script twice: once wi
 
 ## Repository layout
 
-\`\`\`text
+```text
 lottery-software/
 ├── src/                 React / TypeScript application
 │   ├── components/      Business screens and shared interface
@@ -199,13 +199,13 @@ lottery-software/
 ├── BACKUP.md            Data backup and restore reference
 ├── RELEASE_SETUP.md     Historical release setup reference
 └── README.md            Project documentation
-\`\`\`
+```
 
-The deprecated \`mobile-app/\` Flutter folder has been removed from the current default-branch source tree; it remains recoverable in older Git commits.
+The deprecated `mobile-app/` Flutter folder has been removed from the current default-branch source tree; it remains recoverable in older Git commits.
 
 ## Development and verification
 
-\`\`\`bash
+```bash
 # Frontend checks
 bun run build
 bunx tsc --noEmit
@@ -219,14 +219,14 @@ cd ..
 cd src-tauri
 cargo check
 cargo test
-\`\`\`
+```
 
 When testing Windows behavior, also validate the full Tauri package and actual interactions for invoices, printing, barcode scanning and database backups. Use an isolated database rather than the client's live database.
 
 ## Release and safety notes
 
 > [!IMPORTANT]
-> **Development/test build ≠ approved production release.** The updater configuration currently contains \`dangerousInsecure: true\` while signed-update migration remains outstanding. Do not publish a production update until the signing setup and release-security review are complete.
+> **Development/test build ≠ approved production release.** The updater configuration currently contains `dangerousInsecure: true` while signed-update migration remains outstanding. Do not publish a production update until the signing setup and release-security review are complete.
 
 This repository intentionally separates **test installer artifacts** from official tagged releases. Do not tag a test-only build as a production release.
 
