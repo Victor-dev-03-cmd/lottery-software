@@ -25,7 +25,7 @@
     background: var(--color-surface-dim);
   }
   /* Use a single Sinhala family on all devices; Inter remains the English font. */
-  .si, :lang(si) {
+  .si, [lang="si"]:not(html) {
     font-family: var(--font-sinhala);
     line-height: 1.55;
     font-synthesis: none;
