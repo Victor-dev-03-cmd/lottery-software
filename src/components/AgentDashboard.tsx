@@ -12,7 +12,7 @@ import {
 import {
   getAgentSummaries, getInvoicesByPeriod,
   getDailyRevenue, getAgentPerformance, getPeriodStats,
-  getSupplierOutstanding, getSupplierAging,
+  getSupplierOutstanding, getSupplierAging, getProfitSummary,
 } from "../services/database";
 import { SI } from "../utils/si";
 import { useLanguage } from "../i18n";
@@ -48,6 +48,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
   const [daily,         setDaily]         = useState<DailyRevenue[]>([]);
   const [perf,          setPerf]          = useState<AgentPerformance[]>([]);
   const [periodStats,   setPeriodStats]   = useState<PeriodStats | null>(null);
+  const [operatingProfit, setOperatingProfit] = useState<Awaited<ReturnType<typeof getProfitSummary>> | null>(null);
   const [loading,       setLoading]       = useState(true);
   const [refreshing,    setRefreshing]    = useState(false);
   const [period,        setPeriod]        = useState<Period>("30D");
@@ -61,7 +62,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
     else setLoading(true);
     const days = PERIOD_DAYS[p];
     try {
-      const [s, inv, d, pf, ps, sOwed, sAging] = await Promise.all([
+      const [s, inv, d, pf, ps, sOwed, sAging, profit] = await Promise.all([
         getAgentSummaries(),
         getInvoicesByPeriod(days, 6),
         getDailyRevenue(days),
@@ -69,9 +70,10 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
         getPeriodStats(days),
         getSupplierOutstanding(),
         getSupplierAging(),
+        getProfitSummary(days),
       ]);
       setRows(s); setRecent(inv); setDaily(d);
-      setPerf(pf.slice(0, 7)); setPeriodStats(ps);
+      setPerf(pf.slice(0, 7)); setPeriodStats(ps); setOperatingProfit(profit);
       setSupplierOwed(sOwed); setSupplierAging(sAging);
     } finally {
       setLoading(false);
@@ -299,8 +301,8 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
           Admin · {PERIOD_LABEL[period]} View
         </p>
 
-        {/* ── KPI strip (period-aware) — 5 cards ── */}
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        {/* ── KPI strip (period-aware) — same profit source as Profit & Margin ── */}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
           {/* Hero — period revenue */}
           <div className="rounded-2xl p-5 relative overflow-hidden animate-fade-in-up"
             style={{ background: loading ? "#C5D8FB" : "#4285F4" }}>
@@ -361,6 +363,18 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
             trend={Math.max(0, periodStats?.total_outstanding ?? 0) > 0 ? "Requires collection / ගෙවීමට ඇත" : "All settled ✓ · නිම"}
             trendColor={Math.max(0, periodStats?.total_outstanding ?? 0) > 0 ? C.red : "#34A853"}
             onClick={() => onNavigate("settlement")}
+            loading={loading}
+          />
+
+          {/* Operating profit is computed by the exact Profit & Margin service. */}
+          <KpiWhite
+            icon={<TrendingUp size={17} />}
+            label={`Operating Profit (${period})`}
+            labelSi="මෙහෙයුම් ලාභය"
+            value={loading ? "…" : fmts(operatingProfit?.net_profit ?? 0)}
+            sub="After COGS, commission, paid payroll & petty cash"
+            trendColor={(operatingProfit?.net_profit ?? 0) >= 0 ? "#16A34A" : C.red}
+            onClick={() => onNavigate("profit-analytics")}
             loading={loading}
           />
 
