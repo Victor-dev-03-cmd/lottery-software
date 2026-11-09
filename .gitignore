@@ -61,3 +61,21 @@ mobile-app/android/app/proguard-rules.pro
 
 # Private signing keys — never commit
 *.key
+
+# Local Python environments / caches (never commit generated interpreters)
+venv/
+.venv/
+**/venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Local exploratory outputs and generated media
+brag-output/
+page_function.txt
+
+# Retired auxiliary services (desktop build does not use these)
+mcp/
+lottery_scripts/
+relay-server/
