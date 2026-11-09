@@ -4,7 +4,7 @@ import {
   Save, Plus, Trash2, RefreshCw, Database, Shield,
   Gamepad2, Building2, CheckCircle, AlertTriangle,
   ToggleLeft, ToggleRight, Eye, EyeOff, HardDrive, RotateCcw,
-  Pencil, Home, ChevronRight, Cloud, Lock, ShieldCheck, Smartphone,
+  Pencil, Home, ChevronRight, Cloud, Lock, ShieldCheck,
 } from "lucide-react";
 import {
   getCompanySettings, saveCompanySettings,
@@ -19,7 +19,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../i18n";
 import { usePinGuardContext } from "../App";
 
-type Tab = "general" | "games" | "security" | "mobile" | "ai" | "updates" | "import";
+type Tab = "general" | "games" | "security" | "ai" | "updates" | "import";
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "general",   label: "General",           icon: <Building2 size={15} /> },
@@ -36,7 +36,6 @@ const TAB_SI: Record<Tab, string> = {
   general:   "සාමාන්‍ය",
   games:     "ක්‍රීඩා",
   security:  "ආරක්‍ෂාව",
-  mobile:    "ජංගම App",
   ai:        "AI සැකසුම්",
   updates:   "Software යාවත්කාලීන",
   import:    "දත්ත ආදානය",
@@ -102,7 +101,6 @@ export default function Settings({ initialTab = "general" }: { initialTab?: "gen
           {activeTab === "general"   && <GeneralTab onSaved={showSaved} />}
           {activeTab === "games"     && <GamesTab />}
           {activeTab === "security"  && <SecurityTab onSaved={showSaved} />}
-          {activeTab === "mobile"    && <MobileAppTab />}
           {activeTab === "ai"        && <AIConfigTab />}
           {activeTab === "updates"   && <SoftwareUpdateTab />}
           {activeTab === "import"    && <ImportDataTab />}
@@ -980,46 +978,6 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
   );
 }
 
-// ── 6. MOBILE APP TAB ─────────────────────────────────────────────────────────
-
-function MobileAppTab() {
-  return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#fff", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-4" style={{ borderLeft: "4px solid #7C3AED", background: "linear-gradient(to right, #F5F3FF, #fff)" }}>
-          <div className="flex items-center gap-3">
-            <Smartphone size={22} style={{ color: "#7C3AED" }} />
-            <div>
-              <p className="font-bold text-base" style={{ color: "#1D1D1D" }}>Mobile Companion App</p>
-              <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
-                Connect the Flutter Lottery Scanner app to this desktop over WiFi or any network
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Local LAN connection (primary) */}
-      <MobileServerCard />
-
-      {/* Cloud relay connection (secondary) */}
-      <MobileRelayCard />
-
-      {/* How it works */}
-      <div className="rounded-2xl p-5 space-y-2" style={{ background: "#F8F9FA", border: "1px solid #E8E8E8" }}>
-        <p className="text-sm font-bold" style={{ color: "#374151" }}>How pairing works</p>
-        <ol className="text-xs space-y-1.5 list-decimal list-inside" style={{ color: "#6B7280" }}>
-          <li>Open the <strong>Lottery Scanner</strong> Flutter app on your Android phone</li>
-          <li>Tap the connection badge (top-right) → <strong>Scan Desktop QR</strong></li>
-          <li>Point the camera at the QR code below — connection happens automatically</li>
-          <li>Once paired, scanning a ticket on the phone instantly sends it here</li>
-        </ol>
-      </div>
-    </div>
-  );
-}
-
 // ── Shared components ──────────────────────────────────────────────────────────
 
 function Field({ label, children, col2 }: { label: string; children: React.ReactNode; col2?: boolean }) {
@@ -1040,226 +998,6 @@ function ToggleRow({ label, value, onChange }: { label: string; value: boolean; 
           ? <ToggleRight size={26} style={{ color: "#4285F4" }} />
           : <ToggleLeft size={26} style={{ color: "#9CA3AF" }} />}
       </button>
-    </div>
-  );
-}
-
-// ── SVG QR helper ─────────────────────────────────────────────────────────────
-// The qrcode Rust crate emits SVGs with fixed pixel width/height (e.g. 220x220)
-// but no viewBox, so they overflow their container at any other size.
-// This strips the fixed dimensions, adds a viewBox, and lets CSS control size.
-function scaleSvg(svg: string): string {
-  const dim = svg.match(/\bwidth="(\d+)"/)?.[1] ?? "220";
-  return svg
-    .replace(/<svg\b/, `<svg viewBox="0 0 ${dim} ${dim}" style="width:100%;height:100%;display:block;"`)
-    .replace(/\s+width="\d+"/, "")
-    .replace(/\s+height="\d+"/, "");
-}
-
-
-// ── Mobile Relay Pairing (Flutter / Cloud WebSocket) ─────────────────────────
-
-function MobileRelayCard() {
-  const [relayUrl, setRelayUrl] = useState(
-    () => typeof window !== 'undefined' ? (localStorage.getItem('relay_url') ?? 'ws://localhost:8080') : 'ws://localhost:8080'
-  );
-  const [sessionId, setSessionId] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('relay_session');
-      if (saved) return saved;
-    }
-    const id = Math.random().toString(36).substring(2, 10).toUpperCase();
-    if (typeof window !== 'undefined') localStorage.setItem('relay_session', id);
-    return id;
-  });
-  const [connected, setConnected] = useState(false);
-  const [peerCount, setPeerCount] = useState(0);
-  const [qrSvg, setQrSvg]       = useState<string | null>(null);
-  const [editingUrl, setEditing] = useState(false);
-  const [urlInput, setUrlInput]  = useState(relayUrl);
-
-  // Build pairing URL: lottery://pair?session=XXXX&relay=wss://...
-  const pairingUrl = `lottery://pair?session=${sessionId}&relay=${encodeURIComponent(relayUrl)}`;
-
-  useEffect(() => {
-    import("@tauri-apps/api/core").then(({ invoke }) => {
-      invoke<string>("get_qr_for_url", { url: pairingUrl })
-        .then(b64 => setQrSvg(scaleSvg(atob(b64))))
-        .catch(() => {});
-    }).catch(() => {});
-  }, [pairingUrl]);
-
-  function newSession() {
-    const id = Math.random().toString(36).substring(2, 10).toUpperCase();
-    localStorage.setItem('relay_session', id);
-    setSessionId(id);
-    setPeerCount(0);
-    setConnected(false);
-  }
-
-  function saveUrl() {
-    setRelayUrl(urlInput);
-    localStorage.setItem('relay_url', urlInput);
-    setEditing(false);
-  }
-
-  return (
-    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8" }}>
-      <div className="px-5 py-3.5" style={{ borderBottom:"1px solid #F3F4F6", borderLeft:"3px solid #7C3AED" }}>
-        <p className="font-semibold text-sm" style={{ color:"#1D1D1D" }}>📱 Flutter Mobile App — Cloud Pairing</p>
-        <p className="text-xs mt-0.5" style={{ color:"#9CA3AF" }}>
-          Works across any network · Scan QR with the Lottery Scanner Flutter app
-        </p>
-      </div>
-      <div className="p-5 space-y-3">
-        {/* Relay URL */}
-        <div>
-          <label className="text-xs font-semibold block mb-1" style={{ color:"#6B7280" }}>Relay Server URL</label>
-          {editingUrl ? (
-            <div style={{ display:"flex", gap:8 }}>
-              <input className="inp flex-1 font-mono text-sm" value={urlInput}
-                onChange={e => setUrlInput(e.target.value)}
-                placeholder="wss://your-relay.onrender.com"
-                onKeyDown={e => { if(e.key==='Enter') saveUrl(); if(e.key==='Escape') setEditing(false); }}
-                autoFocus />
-              <button onClick={saveUrl} className="px-3 py-1 rounded text-xs font-bold text-white" style={{ background:"#7C3AED" }}>Save</button>
-              <button onClick={() => setEditing(false)} className="px-3 py-1 rounded text-xs font-bold" style={{ background:"#F3F4F6", color:"#374151" }}>Cancel</button>
-            </div>
-          ) : (
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <code style={{ flex:1, fontSize:12, background:"#F3F4F6", padding:"5px 10px", borderRadius:6, color:"#374151" }}>{relayUrl}</code>
-              <button onClick={() => { setUrlInput(relayUrl); setEditing(true); }}
-                className="text-xs px-3 py-1 rounded" style={{ background:"#EDE9FE", color:"#7C3AED", fontWeight:700 }}>Edit</button>
-            </div>
-          )}
-          <p className="text-xs mt-1" style={{ color:"#9CA3AF" }}>
-            Deploy the Go relay: <code style={{ background:"#F3F4F6", padding:"1px 4px", borderRadius:3 }}>cd relay-server && go run main.go</code>
-            &nbsp;or free cloud: Render / Railway / Fly.io
-          </p>
-        </div>
-
-        {/* Session + QR — side-by-side on wide screens, stacked on narrow */}
-        <div style={{ display:"flex", gap:16, alignItems:"flex-start", flexWrap:"wrap" as const }}>
-          {/* QR code — always visible */}
-          <div style={{ flexShrink:0 }}>
-            {qrSvg ? (
-              <div style={{ width:180, height:180, background:"#fff", border:"2px solid #DDD6FE",
-                borderRadius:12, padding:8, boxSizing:"border-box" as const,
-                boxShadow:"0 2px 12px rgba(124,58,237,0.12)" }}
-                dangerouslySetInnerHTML={{ __html: qrSvg }} />
-            ) : (
-              <div style={{ width:180, height:180, background:"#F5F3FF", border:"2px solid #DDD6FE",
-                borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center",
-                flexDirection:"column" as const, gap:6, fontSize:11, color:"#7C3AED" }}>
-                <div style={{ fontSize:22 }}>⏳</div>
-                <span>Loading QR…</span>
-              </div>
-            )}
-            <p style={{ textAlign:"center" as const, fontSize:10, color:"#9CA3AF", marginTop:5 }}>
-              Scan with mobile app
-            </p>
-          </div>
-
-          {/* Session info */}
-          <div style={{ flex:1, minWidth:160 }}>
-            <label className="text-xs font-semibold block mb-1" style={{ color:"#6B7280" }}>Session ID</label>
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <code style={{ fontSize:22, fontWeight:900, letterSpacing:3, color:"#7C3AED" }}>{sessionId}</code>
-              <button onClick={newSession} className="text-xs px-2 py-1 rounded"
-                style={{ background:"#EDE9FE", color:"#7C3AED", fontWeight:700, border:"1px solid #DDD6FE" }}>New</button>
-            </div>
-            <div className={`mt-2 flex items-center gap-2 text-xs ${connected ? "text-green-600" : "text-gray-400"}`}>
-              <span style={{ width:7, height:7, borderRadius:"50%", background:connected?"#16A34A":"#D1D5DB", display:"inline-block", flexShrink:0 }}/>
-              {connected ? `${peerCount} device connected` : "Waiting for mobile app to scan"}
-            </div>
-            <div style={{ marginTop:10, fontSize:10, color:"#9CA3AF", wordBreak:"break-all" as const,
-              background:"#F9FAFB", borderRadius:6, padding:"6px 8px", border:"1px solid #F3F4F6" }}>
-              {pairingUrl}
-            </div>
-          </div>
-        </div>
-
-        <div className="text-xs p-3 rounded-lg" style={{ background:"#EDE9FE", color:"#5B21B6" }}>
-          <strong>How to pair:</strong> Open the Lottery Scanner app → tap the connection badge (top-right) → Scan Desktop QR → point at the QR code above
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Mobile Companion Server Info ──────────────────────────────────────────────
-
-function MobileServerCard() {
-  const [serverIP, setServerIP] = useState<string>("checking…");
-  const [qrSvg,   setQrSvg]    = useState<string | null>(null);
-
-  useEffect(() => {
-    import("@tauri-apps/api/core").then(({ invoke }) => {
-      invoke<string>("get_local_ip").then(ip => {
-        setServerIP(ip);
-        const pairingUrl = `lottery://pair?host=${ip}:7423`;
-        invoke<string>("get_qr_for_url", { url: pairingUrl })
-          .then(b64 => setQrSvg(scaleSvg(atob(b64))))
-          .catch(() => {});
-      }).catch(() => setServerIP("Not available"));
-    }).catch(() => setServerIP("Not available"));
-  }, []);
-
-  return (
-    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-      <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #2563EB" }}>
-        <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>📱 Direct Local Connection (WiFi / LAN)</p>
-        <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
-          Same network only · fastest · scan once to pair permanently
-        </p>
-      </div>
-      <div className="p-5">
-        <div style={{ display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" as const }}>
-          {/* QR code — always visible, properly sized */}
-          <div style={{ flexShrink: 0 }}>
-            {qrSvg ? (
-              <div style={{ width: 200, height: 200, background: "#fff", border: "2px solid #E5E7EB",
-                borderRadius: 12, padding: 8, boxSizing: "border-box" as const,
-                boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}
-                dangerouslySetInnerHTML={{ __html: qrSvg }} />
-            ) : (
-              <div style={{ width: 200, height: 200, background: "#F3F4F6", border: "2px solid #E5E7EB",
-                borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 12, color: "#9CA3AF", flexDirection: "column" as const, gap: 6 }}>
-                <div style={{ fontSize: 24 }}>⏳</div>
-                <span>Loading QR…</span>
-              </div>
-            )}
-            <p style={{ textAlign: "center" as const, fontSize: 10, color: "#9CA3AF", marginTop: 6 }}>
-              Scan with Lottery Scanner app
-            </p>
-          </div>
-          {/* IP + status info */}
-          <div style={{ flex: 1, minWidth: 180, display: "flex", flexDirection: "column" as const, gap: 10 }}>
-            <div style={{ background: "#1D1D1D", borderRadius: 10, padding: "12px 16px" }}>
-              <div style={{ fontSize: 10, color: "#9CA3AF", textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 4 }}>
-                Desktop LAN IP
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 900, fontFamily: "monospace", color: "#4ADE80", letterSpacing: 1 }}>
-                {serverIP}
-              </div>
-              <div style={{ fontSize: 11, color: "#6B7280", marginTop: 3 }}>
-                Port <strong style={{ color: "#94A3B8" }}>7423</strong>
-              </div>
-              <div style={{ fontSize: 10, color: "#4ADE80", marginTop: 8, fontWeight: 600 }}>
-                🔵 UDP beacon active · mDNS: _lottery._tcp.local
-              </div>
-            </div>
-            <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#16A34A" }}>
-              ✓ Server running · port 7423 ready for connections
-            </div>
-            <div style={{ fontSize: 11, color: "#6B7280", lineHeight: 1.5 }}>
-              <strong>How to connect:</strong><br/>
-              Open the mobile app → tap the connection badge → Scan Desktop QR → point at the code above.
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
