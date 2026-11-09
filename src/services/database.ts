@@ -937,42 +937,38 @@ export async function deletePaidInvoice(id: number): Promise<void> {
 
 export async function getAgentSummaries(): Promise<AgentSummary[]> {
   const d = await getDb();
+  // Aggregate invoice lines separately: joining invoices to invoice_items before
+  // summing money multiplies invoice totals by the number of ticket lines.
   const rows = await d.select<AgentSummary[]>(`
-    SELECT
-      a.id as agent_id,
-      a.name,
-      COALESCE(SUM(ii.qty), 0) as total_tickets,
-      COALESCE(SUM(i.invoice_total), 0) as total_value,
-      COALESCE(SUM(i.dlb_winning + i.nlb_winning), 0) as winnings_tickets,
-      COALESCE(SUM(i.cash_received), 0) as total_cash,
-      COALESCE(SUM(i.cash_received), 0) as paid_cash,
-      COALESCE(SUM(i.invoice_total) - SUM(i.cash_received + i.dlb_winning + i.nlb_winning), 0) as amount_over,
-      -- loan_amount: total live outstanding (outstanding_balance is kept current by syncInvoiceLiveBalance)
-      COALESCE((
-        SELECT ROUND(SUM(MAX(0, i3.outstanding_balance)), 2)
-        FROM invoices i3 WHERE i3.agent_id=a.id
-          AND COALESCE(i3.invoice_status,'paid') NOT IN ('draft','cancelled')
-      ), 0) as loan_amount,
-      ROUND(COALESCE((
-        SELECT SUM(MAX(0, ROUND(i2.outstanding_balance, 2)))
-        FROM invoices i2 WHERE i2.agent_id = a.id
-          AND COALESCE(i2.invoice_status, 'paid') NOT IN ('draft', 'cancelled')
-      ), 0), 2) as outstanding_balance
+    SELECT a.id AS agent_id, a.name,
+      COALESCE((SELECT SUM(ii.qty) FROM invoice_items ii
+        JOIN invoices i ON i.id=ii.invoice_id
+        WHERE i.agent_id=a.id AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')),0) AS total_tickets,
+      COALESCE((SELECT SUM(i.invoice_total) FROM invoices i
+        WHERE i.agent_id=a.id AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')),0) AS total_value,
+      COALESCE((SELECT SUM(i.dlb_winning+i.nlb_winning) FROM invoices i
+        WHERE i.agent_id=a.id AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')),0) AS winnings_tickets,
+      COALESCE((SELECT SUM(i.cash_received) FROM invoices i
+        WHERE i.agent_id=a.id AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')),0) AS total_cash,
+      COALESCE((SELECT SUM(i.cash_received) FROM invoices i
+        WHERE i.agent_id=a.id AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')),0) AS paid_cash,
+      COALESCE((SELECT SUM(i.invoice_total-i.cash_received-i.dlb_winning-i.nlb_winning)
+        FROM invoices i WHERE i.agent_id=a.id
+        AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')),0) AS amount_over,
+      COALESCE((SELECT ROUND(SUM(MAX(0,i.outstanding_balance)),2) FROM invoices i
+        WHERE i.agent_id=a.id AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')),0) AS loan_amount,
+      COALESCE((SELECT ROUND(SUM(MAX(0,i.outstanding_balance)),2) FROM invoices i
+        WHERE i.agent_id=a.id AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')),0) AS outstanding_balance
     FROM agents a
-    LEFT JOIN invoices i ON i.agent_id = a.id
-      AND COALESCE(i.invoice_status, 'paid') NOT IN ('draft', 'cancelled')
-    LEFT JOIN invoice_items ii ON ii.invoice_id = i.id
-    GROUP BY a.id, a.name
-    ORDER BY a.name ASC
+    GROUP BY a.id,a.name ORDER BY a.name ASC
   `);
-  // JS-level sanitize: eliminate any residual float noise from SQLite REAL arithmetic
   return rows.map(r => ({
     ...r,
-    total_value:       Number(r.total_value.toFixed(2)),
-    total_cash:        Number(r.total_cash.toFixed(2)),
-    paid_cash:         Number(r.paid_cash.toFixed(2)),
-    amount_over:       Number(r.amount_over.toFixed(2)),
-    outstanding_balance: Number(Math.max(0, r.outstanding_balance).toFixed(2)),
+    total_value: Number((r.total_value ?? 0).toFixed(2)),
+    total_cash: Number((r.total_cash ?? 0).toFixed(2)),
+    paid_cash: Number((r.paid_cash ?? 0).toFixed(2)),
+    amount_over: Number((r.amount_over ?? 0).toFixed(2)),
+    outstanding_balance: Number(Math.max(0, r.outstanding_balance ?? 0).toFixed(2)),
   }));
 }
 
@@ -2648,17 +2644,12 @@ export async function getAgentRiskScores(): Promise<AgentRiskScore[]> {
   }[]>(`
     SELECT
       a.id as agent_id, a.name,
-      COALESCE(SUM(
-        i.outstanding_balance
-        - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=i.id),0)
-        - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr
-                    WHERE tr.invoice_id=i.id AND tr.status='settled'),0)
-      ),0) as live_outstanding,
+      ROUND(COALESCE(SUM(MAX(0, i.outstanding_balance)),0),2) as live_outstanding,
       COALESCE(MAX(CAST(julianday('now') - julianday(i.invoice_date) AS INTEGER)),0) as max_days,
       COUNT(i.id) as invoice_count
     FROM agents a
     LEFT JOIN invoices i ON i.agent_id=a.id
-    WHERE i.outstanding_balance > 0
+    WHERE COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled') AND i.outstanding_balance > 0
     GROUP BY a.id, a.name
     ORDER BY live_outstanding DESC
   `);
