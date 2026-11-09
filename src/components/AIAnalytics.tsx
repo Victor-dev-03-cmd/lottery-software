@@ -573,7 +573,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
                 color: "#DC2626", bg: "#FEF2F2", icon: "🚨",
                 title: `${agentRisks.filter(a => a.risk_level === "critical").length} critical agent(s) need immediate action`,
                 sub: "High receivables risk — call and consider credit suspension",
-                view: "ledger" as View,
+                view: "settlement" as View,
               }] : []),
               ...(velocity.some(v => v.days_remaining < 7) ? [{
                 color: "#DC2626", bg: "#FEF2F2", icon: "📦",
