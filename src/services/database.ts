@@ -1430,7 +1430,8 @@ export async function getAgentPerformance(): Promise<import("../types").AgentPer
       COALESCE(SUM(CASE WHEN i.outstanding_balance > 0 THEN i.outstanding_balance ELSE 0 END), 0) as outstanding,
       CASE
         WHEN COALESCE(SUM(i.invoice_total), 0) > 0
-        THEN ROUND((COALESCE(SUM(i.cash_received + i.dlb_winning + i.nlb_winning), 0) /
+        THEN ROUND((COALESCE(SUM(i.cash_received + i.dlb_winning + i.nlb_winning +
+               COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=i.id),0)), 0) /
              COALESCE(SUM(i.invoice_total), 1)) * 100, 1)
         ELSE 0
       END as collection_rate
@@ -1959,7 +1960,8 @@ export async function getPeriodStats(days: number) {
       SELECT
         COUNT(*) as invoice_count,
         COALESCE(SUM(invoice_total), 0) as total_invoiced,
-        COALESCE(SUM(cash_received + dlb_winning + nlb_winning), 0) as total_collected,
+        COALESCE(SUM(cash_received + dlb_winning + nlb_winning +
+          COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=invoices.id),0)), 0) as total_collected,
         COALESCE(SUM(CASE WHEN outstanding_balance > 0 THEN outstanding_balance ELSE 0 END), 0) as total_outstanding
       FROM invoices
       WHERE invoice_date >= ?
