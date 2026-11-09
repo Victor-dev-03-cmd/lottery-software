@@ -2735,43 +2735,33 @@ export async function getInventoryVelocity(): Promise<{
   `);
 }
 
+/**
+ * Monthly operating trend uses the same five financial categories as
+ * getDailyProfitTrend/getProfitSummary. Supplier purchases are inventory
+ * acquisitions, NOT an expense to subtract a second time.
+ */
 export async function getMonthlyRevenueTrend(months = 6): Promise<{
   month: string; revenue: number; cost: number; salary: number; net: number;
 }[]> {
-  const d = await getDb();
-  const since = new Date();
-  since.setMonth(since.getMonth() - months);
-  const sinceStr = since.toISOString().substring(0, 7);
-
-  const [rev, costs, salaries] = await Promise.all([
-    d.select<{ month: string; revenue: number }[]>(`
-      SELECT strftime('%Y-%m', invoice_date) as month,
-             COALESCE(SUM(invoice_total),0) as revenue
-      FROM invoices WHERE strftime('%Y-%m', invoice_date) >= ?
-        AND COALESCE(invoice_status,'paid') NOT IN ('draft','cancelled')
-      GROUP BY month ORDER BY month ASC
-    `, [sinceStr]),
-    d.select<{ month: string; cost: number }[]>(`
-      SELECT strftime('%Y-%m', purchase_date) as month,
-             COALESCE(SUM(invoice_total),0) as cost
-      FROM purchase_invoices WHERE strftime('%Y-%m', purchase_date) >= ?
-      GROUP BY month ORDER BY month ASC
-    `, [sinceStr]),
-    d.select<{ month: string; salary: number }[]>(`
-      SELECT month, COALESCE(SUM(net_salary),0) as salary
-      FROM worker_salaries WHERE month >= ?
-      GROUP BY month ORDER BY month ASC
-    `, [sinceStr]),
-  ]);
-
-  const map = new Map<string, { revenue: number; cost: number; salary: number }>();
-  for (const r of rev) map.set(r.month, { revenue: r.revenue, cost: 0, salary: 0 });
-  for (const c of costs) { const e = map.get(c.month) ?? { revenue: 0, cost: 0, salary: 0 }; e.cost = c.cost; map.set(c.month, e); }
-  for (const s of salaries) { const e = map.get(s.month) ?? { revenue: 0, cost: 0, salary: 0 }; e.salary = s.salary; map.set(s.month, e); }
-
-  return Array.from(map.entries())
-    .map(([month, v]) => ({ month, revenue: v.revenue, cost: v.cost, salary: v.salary, net: v.revenue - v.cost - v.salary }))
-    .sort((a, b) => a.month.localeCompare(b.month));
+  const start = new Date();
+  start.setDate(1);
+  start.setMonth(start.getMonth() - months);
+  const startDay = start.toISOString().slice(0, 10);
+  const elapsedDays = Math.ceil((Date.now() - start.getTime()) / 86400000);
+  const daily = await getDailyProfitTrend(elapsedDays);
+  const map = new Map<string, {revenue:number;cost:number;salary:number;net:number}>();
+  for (const row of daily) {
+    if (row.day < startDay) continue;
+    const month = row.day.slice(0,7);
+    const v = map.get(month) ?? {revenue:0,cost:0,salary:0,net:0};
+    v.revenue += row.revenue;
+    v.cost += row.cost;
+    v.salary += row.salary;
+    v.net += row.net;
+    map.set(month,v);
+  }
+  return Array.from(map.entries()).map(([month,v])=>({month,...v}))
+    .sort((a,b)=>a.month.localeCompare(b.month));
 }
 
 // ── Retroactive Inventory Sync ────────────────────────────────────────────────
