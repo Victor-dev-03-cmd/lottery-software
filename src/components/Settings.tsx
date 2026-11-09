@@ -139,6 +139,50 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
     onSaved();
   }
 
+  async function handleFactoryReset() {
+    if (resetLoading || resetPhrase !== "RESET ALL DATA") return;
+    setResetError("");
+    // Step 1: explicit typed acknowledgement. Step 2: fresh Admin PIN
+    // challenge, even if the user already has an admin session.
+    const approved = await requireAdminPin(
+      "Factory Reset — Administrator Verification",
+      "All local business data will be permanently erased. Enter your Admin PIN to continue."
+    );
+    if (!approved) return;
+    if (!window.confirm(
+      "FINAL CONFIRMATION — ERASE ALL LOCAL DATA?\\n\\n" +
+      "Invoices, agents, purchases, stock, settlements, payments and reports will be erased. " +
+      "Existing external backup files and remote/cloud data will NOT be deleted.\\n\\n" +
+      "This operation cannot be undone without a backup."
+    )) return;
+
+    setResetLoading(true);
+    try {
+      // The Rust command checks the active admin session and configured PIN.
+      await withAdminToken(async (token) => {
+        const { stopSyncWorker } = await import("../services/syncQueue");
+        stopSyncWorker();
+        const { closeAndResetDb } = await import("../services/database");
+        await closeAndResetDb();
+        await invoke<number>("factory_reset_local_data", {
+          token,
+          confirmation: "RESET ALL DATA",
+        });
+      });
+      sessionStorage.removeItem("app_role");
+      sessionStorage.removeItem("admin_token");
+      window.location.reload();
+    } catch (e) {
+      setResetError(friendlyAuthError(e));
+      // Restart by reloading so a closed DB connection / stopped worker is
+      // reopened safely. A failed Rust transaction rolls back its changes.
+      setTimeout(() => window.location.reload(), 2500);
+    } finally {
+      setResetLoading(false);
+      setResetPhrase("");
+    }
+  }
+
   const set = (k: string, v: string) => setSettings((p) => ({ ...p, [k]: v }));
 
   if (loading) return <div className="p-4" style={{ color: "#9CA3AF" }}>Loading…</div>;
@@ -509,6 +553,10 @@ function friendlyAuthError(e: unknown): string {
 
 function SecurityTab({ onSaved }: { onSaved: () => void }) {
   const { withAdminToken, adminToken } = useAuth();
+  const { requireAdminPin } = usePinGuardContext();
+  const [resetPhrase, setResetPhrase] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState("");
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [showAdminPin, setShowAdminPin] = useState(false);
@@ -864,40 +912,45 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
           <p className="font-semibold text-sm flex items-center gap-2" style={{ color: "#DC2626" }}>
             <AlertTriangle size={15} /> Clear All Data / Factory Reset
           </p>
-          <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
-            Wipe all invoices, agents, stock, and records — start fresh without deleting the app.
-            Use this instead of manually deleting database files.
+          <p className="text-xs mt-1 leading-relaxed" style={{ color: "#991B1B" }}>
+            Permanently erase ALL local business records: sub-agent profiles, invoices, purchases,
+            stock, payments, settlements, returns, collections, salaries, reports and the sync queue.
+            Admin PIN and its device salt are preserved so security stays enabled.
           </p>
         </div>
-        <div className="p-5">
-          <button
-            onClick={async () => {
-              if (!confirm(
-                "⚠ CLEAR ALL DATA?\n\n" +
-                "This will permanently delete ALL:\n" +
-                "• Invoices & payments\n• Agents\n• Stock & purchases\n" +
-                "• Returns & collections\n• Workers & salaries\n\n" +
-                "The app will restart with a clean, empty database.\n\n" +
-                "Make sure you have a backup if you need the data!"
-              )) return;
-              if (!confirm("Are you absolutely sure? This cannot be undone.")) return;
-              try {
-                const { closeAndResetDb } = await import("../services/database");
-                await closeAndResetDb();
-                window.location.reload();
-              } catch (e) {
-                alert("Reset failed: " + String(e));
-              }
-            }}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold text-white hover:opacity-90 transition-all"
-            style={{ background: "#DC2626" }}>
-            <RotateCcw size={15} />
-            Clear All Data &amp; Start Fresh
-          </button>
-          <p className="text-xs mt-2" style={{ color: "#9CA3AF" }}>
-            Use this instead of manually deleting <code>ajith_rohana.db</code>.
-            The app restarts automatically with an empty database.
+        <div className="p-5 space-y-3">
+          <p className="text-xs leading-relaxed" style={{ color: "#6B7280" }}>
+            <strong>External backups and cloud/remote data are NOT erased.</strong> This reset only clears
+            this computer’s SQLite database. Previously synced records may remain on the server.
+            Export a backup before continuing if you might need your records again.
           </p>
+          <label htmlFor="reset-confirmation-phrase" className="block text-xs font-semibold" style={{ color: "#374151" }}>
+            Step 1 of 2 — Type <strong>RESET ALL DATA</strong> to unlock the reset button
+          </label>
+          <input
+            id="reset-confirmation-phrase"
+            type="text"
+            value={resetPhrase}
+            onChange={e => { setResetPhrase(e.target.value); setResetError(""); }}
+            disabled={resetLoading}
+            autoComplete="off"
+            placeholder="RESET ALL DATA"
+            className="inp w-full max-w-sm"
+            style={{ borderColor: resetPhrase === "RESET ALL DATA" ? "#16A34A" : "#FCA5A5" }}
+          />
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              type="button"
+              onClick={handleFactoryReset}
+              disabled={!adminPinSet || resetPhrase !== "RESET ALL DATA" || resetLoading}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold text-white disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: "#DC2626" }}>
+              <RotateCcw size={15} />
+              {resetLoading ? "Erasing local data…" : "Step 2 — Verify Admin PIN & Reset"}
+            </button>
+            {!adminPinSet && <span className="text-xs" style={{ color: "#B91C1C" }}>Set an Admin PIN first to enable Factory Reset.</span>}
+          </div>
+          {resetError && <p role="alert" className="text-xs font-semibold" style={{ color: "#DC2626" }}>Reset failed: {resetError}</p>}
         </div>
       </div>
 
