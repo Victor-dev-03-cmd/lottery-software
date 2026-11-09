@@ -42,9 +42,9 @@ const TAB_SI: Record<Tab, string> = {
   import:    "දත්ත ආදානය",
 };
 
-export default function Settings() {
+export default function Settings({ initialTab = "general" }: { initialTab?: "general" | "games" }) {
   const { t, lang } = useLanguage();
-  const [activeTab, setActiveTab] = useState<Tab>("general");
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [saved, setSaved] = useState(false);
 
   function showSaved() { setSaved(true); setTimeout(() => setSaved(false), 2000); }
