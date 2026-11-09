@@ -120,7 +120,7 @@ export function BiLabel({ en, si, enStyle, siStyle, siFirst, inline }: BiLabelPr
     </span>
   );
   const siEl = (
-    <span className="si" style={{ fontSize: "0.82em", color: "#6B7280", fontWeight: 400, ...siStyle }}>
+    <span className="si si-caption" lang="si" style={{ fontSize: "0.87em", color: "#374151", fontWeight: 600, ...siStyle }}>
       {si}
     </span>
   );
@@ -153,7 +153,7 @@ export function StatLabel({ en, si }: { en: string; si: string }) {
       <span style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>
         {en}
       </span>
-      <span className="si" style={{ display: "block", fontSize: 9, color: "#B0B8C1", marginTop: 1 }}>
+      <span className="si si-caption" lang="si" style={{ display: "block", fontSize: 11, color: "#374151", fontWeight: 600, marginTop: 2 }}>
         {si}
       </span>
     </span>
@@ -165,7 +165,7 @@ export function SectionLabel({ en, si }: { en: string; si: string }) {
   return (
     <span style={{ display: "flex", flexDirection: "column" as const, gap: 1 }}>
       <span style={{ fontSize: 13, fontWeight: 700, color: "#1D1D1D" }}>{en}</span>
-      <span className="si" style={{ fontSize: 10, color: "#9CA3AF" }}>{si}</span>
+      <span className="si si-caption" lang="si" style={{ fontSize: 11, color: "#374151", fontWeight: 600 }}>{si}</span>
     </span>
   );
 }
