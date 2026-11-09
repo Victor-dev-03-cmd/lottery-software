@@ -2327,10 +2327,12 @@ export async function getSupplierAging(): Promise<SupplierAgingBracket[]> {
 
 export interface ProfitSummary {
   period_days: number;
-  total_revenue: number;        // cash collected from agents (invoices)
-  total_cost: number;           // stock purchased from Nimalsiri
+  total_revenue: number;        // accrual invoice revenue (not cash receipts)
+  total_cost: number;           // cost of stock distributed (COGS)
   gross_profit: number;
-  total_commission: number;     // commission paid out to agents
+  total_commission: number;     // calculated commission expense
+  total_payroll: number;        // salary payments dated in period
+  total_expenses: number;       // petty cash expenses dated in period
   net_profit: number;
   margin_pct: number;
   invoice_count: number;
@@ -2343,7 +2345,7 @@ export async function getProfitSummary(days: number): Promise<ProfitSummary> {
     ? "1900-01-01"
     : new Date(Date.now() - days * 86400000).toISOString().split("T")[0];
 
-  const [rev, cogs, comm, purchases] = await Promise.all([
+  const [rev, cogs, comm, purchases, salaries, petty] = await Promise.all([
     // Revenue = invoice totals (accrual: tickets billed to agents, not just cash collected)
     // Excludes draft/cancelled so only real deliveries count
     d.select<{ total: number; collected: number; cnt: number }[]>(`
@@ -2400,15 +2402,27 @@ export async function getProfitSummary(days: number): Promise<ProfitSummary> {
       SELECT COUNT(*) as cnt, COALESCE(SUM(invoice_total), 0) as total
       FROM purchase_invoices WHERE purchase_date >= ?
     `, [since]),
+    // Operating expenses recorded as paid salaries, by their actual payment date.
+    d.select<{ total: number }[]>(`
+      SELECT COALESCE(SUM(net_salary), 0) AS total FROM worker_salaries
+      WHERE status='paid' AND date(paid_date) >= ?
+    `, [since]),
+    d.select<{ total: number }[]>(`
+      SELECT COALESCE(SUM(amount), 0) AS total FROM petty_cash_transactions
+      WHERE date(date) >= ?
+    `, [since]),
   ]);
 
   const revenue      = rev[0]?.total ?? 0;
   const cogs_total   = cogs[0]?.total ?? 0;
   const commission   = comm[0]?.total ?? 0;
-  // Gross profit = selling price to agents − cost of those same tickets to Ajith
-  // Since both are at face value, gross margin shows the discount Ajith absorbed
+  const payroll      = salaries[0]?.total ?? 0;
+  const expenses     = petty[0]?.total ?? 0;
+  // Accrual operating profit: invoiced revenue - matched COGS - commission
+  // - paid payroll - petty cash expenses. Supplier liabilities and cash receipts
+  // are NOT additional costs, and must not be subtracted twice.
   const gross        = revenue - cogs_total;
-  const net          = gross - commission;
+  const net          = gross - commission - payroll - expenses;
   const margin       = revenue > 0 ? (net / revenue) * 100 : 0;
 
   return {
@@ -2417,6 +2431,8 @@ export async function getProfitSummary(days: number): Promise<ProfitSummary> {
     total_cost:        cogs_total,
     gross_profit:      gross,
     total_commission:  commission,
+    total_payroll:     payroll,
+    total_expenses:    expenses,
     net_profit:        net,
     margin_pct:        Math.round(margin * 10) / 10,
     invoice_count:     rev[0]?.cnt ?? 0,
@@ -2425,49 +2441,77 @@ export async function getProfitSummary(days: number): Promise<ProfitSummary> {
 }
 
 export async function getDailyProfitTrend(days: number): Promise<{
-  day: string; revenue: number; cost: number; net: number;
+  day: string; revenue: number; cost: number; commission: number;
+  salary: number; expenses: number; net: number;
 }[]> {
   const d = await getDb();
-  const since = new Date(Date.now() - days * 86400000).toISOString().split("T")[0];
-
-  const [rev, costs] = await Promise.all([
-    // Revenue = invoice totals per day (accrual), excluding draft/cancelled
-    d.select<{ day: string; revenue: number }[]>(`
-      SELECT date(invoice_date) as day,
-             COALESCE(SUM(invoice_total), 0) as revenue
-      FROM invoices
-      WHERE invoice_date >= ?
-        AND COALESCE(invoice_status, 'paid') NOT IN ('draft', 'cancelled')
-      GROUP BY date(invoice_date) ORDER BY day ASC
+  const since = days >= 36500 ? "1900-01-01"
+    : new Date(Date.now() - days * 86400000).toISOString().split("T")[0];
+  const [rev, costs, commissions, salaries, expenses] = await Promise.all([
+    d.select<{day:string;amount:number}[]>(`
+      SELECT date(invoice_date) day, COALESCE(SUM(invoice_total),0) amount
+      FROM invoices WHERE invoice_date >= ?
+        AND COALESCE(invoice_status,'paid') NOT IN ('draft','cancelled')
+      GROUP BY date(invoice_date)
     `, [since]),
-    // COGS = qty × Nimalsiri cost price per day
-    d.select<{ day: string; cost: number }[]>(`
-      SELECT date(i.invoice_date) as day,
-             COALESCE(SUM(ii.qty * COALESCE(NULLIF(lg.cost_price, 0), lg.unit_price, ii.unit_price)), 0) as cost
-      FROM invoice_items ii
-      JOIN invoices i ON i.id = ii.invoice_id
-      LEFT JOIN lottery_games lg ON lg.name = ii.ticket_name
+    d.select<{day:string;amount:number}[]>(`
+      SELECT date(i.invoice_date) day,
+        COALESCE(SUM(ii.qty*COALESCE(NULLIF(lg.cost_price,0),lg.unit_price,ii.unit_price)),0) amount
+      FROM invoice_items ii JOIN invoices i ON i.id=ii.invoice_id
+      LEFT JOIN lottery_games lg ON lg.name=ii.ticket_name
       WHERE i.invoice_date >= ?
-        AND COALESCE(i.invoice_status, 'paid') NOT IN ('draft', 'cancelled')
-      GROUP BY date(i.invoice_date) ORDER BY day ASC
+        AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')
+      GROUP BY date(i.invoice_date)
+    `, [since]),
+    d.select<{day:string;amount:number}[]>(`
+      SELECT date(i.invoice_date) day, COALESCE(SUM(
+        CASE cs.commission_type
+          WHEN 'percentage' THEN i.invoice_total * cs.rate / 100.0
+          WHEN 'per_ticket' THEN (SELECT COALESCE(SUM(ii.qty),0)
+            FROM invoice_items ii WHERE ii.invoice_id=i.id)*cs.rate
+          ELSE cs.rate END
+      ),0) amount
+      FROM invoices i LEFT JOIN commission_schemes cs ON cs.id=(
+        SELECT id FROM commission_schemes
+        WHERE (agent_id=i.agent_id OR agent_id IS NULL) AND is_active=1
+        ORDER BY agent_id IS NULL ASC LIMIT 1
+      )
+      WHERE i.invoice_date >= ?
+        AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')
+      GROUP BY date(i.invoice_date)
+    `, [since]),
+    d.select<{day:string;amount:number}[]>(`
+      SELECT date(paid_date) day, COALESCE(SUM(net_salary),0) amount
+      FROM worker_salaries WHERE status='paid' AND date(paid_date)>=?
+      GROUP BY date(paid_date)
+    `, [since]),
+    d.select<{day:string;amount:number}[]>(`
+      SELECT date(date) day, COALESCE(SUM(amount),0) amount
+      FROM petty_cash_transactions WHERE date(date)>=?
+      GROUP BY date(date)
     `, [since]),
   ]);
-
-  const map = new Map<string, { revenue: number; cost: number }>();
-  // M-15: seed every day in the requested range so the chart has no gaps
-  for (let i = 0; i <= days; i++) {
-    const d2 = new Date(Date.now() - (days - i) * 86400000).toISOString().split("T")[0];
-    map.set(d2, { revenue: 0, cost: 0 });
+  type Row = { revenue:number;cost:number;commission:number;salary:number;expenses:number };
+  const blank = ():Row => ({revenue:0,cost:0,commission:0,salary:0,expenses:0});
+  const map = new Map<string,Row>();
+  // Include zero-activity days for chart continuity, except for All-Time.
+  if (days < 36500) for (let n=0;n<=days;n++) {
+    const day = new Date(Date.now()-(days-n)*86400000).toISOString().split("T")[0];
+    map.set(day,blank());
   }
-  for (const r of rev) map.set(r.day, { revenue: r.revenue, cost: map.get(r.day)?.cost ?? 0 });
-  for (const c of costs) {
-    const e = map.get(c.day) ?? { revenue: 0, cost: 0 };
-    e.cost = c.cost;
-    map.set(c.day, e);
+  for (const [key,rows] of [
+    ["revenue",rev],["cost",costs],["commission",commissions],
+    ["salary",salaries],["expenses",expenses]
+  ] as [keyof Row,{day:string;amount:number}[]][]) {
+    for (const row of rows) {
+      const current=map.get(row.day)??blank();
+      current[key]=row.amount;
+      map.set(row.day,current);
+    }
   }
-  return Array.from(map.entries())
-    .map(([day, v]) => ({ day, revenue: v.revenue, cost: v.cost, net: v.revenue - v.cost }))
-    .sort((a, b) => a.day.localeCompare(b.day));
+  return Array.from(map.entries()).map(([day,v])=>({
+    day,...v,net:v.revenue-v.cost-v.commission-v.salary-v.expenses
+  })).sort((x,y)=>x.day.localeCompare(y.day));
 }
 
 // ── Workers & Payroll ─────────────────────────────────────────────────────────
