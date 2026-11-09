@@ -390,6 +390,8 @@ export default function AIAnalytics({ onNavigate }: Props) {
                   { label: "Invoiced Revenue", val: profit?.total_revenue ?? 0, color: "#16A34A", icon: <TrendUp size={14} variant="Linear" color="#16A34A"/> },
                   { label: "Distributed COGS", val: profit?.total_cost ?? 0,                         color: "#DC2626", icon: <ShoppingCart size={14} variant="Linear" color="#DC2626"/> },
                   { label: "Paid Payroll (30d)", val: profit?.total_payroll ?? 0,        color: "#7C3AED", icon: <People size={14} variant="Linear" color="#7C3AED"/> },
+                  { label: "Commission Expense", val: profit?.total_commission ?? 0, color: "#7C3AED", icon: <People size={14} variant="Linear" color="#7C3AED"/> },
+                  { label: "Petty Cash Expense", val: profit?.total_expenses ?? 0, color: "#DC2626", icon: <ShoppingCart size={14} variant="Linear" color="#DC2626"/> },
                   { label: "Operating Net Profit", val: Math.abs(netProfit),               color: netProfit >= 0 ? "#2563EB" : "#DC2626",
                     icon: netProfit >= 0 ? <TrendUp size={14} variant="Linear" color="#2563EB"/> : <TrendDown size={14} variant="Linear" color="#DC2626"/>,
                     prefix: netProfit < 0 ? "−" : "" },
