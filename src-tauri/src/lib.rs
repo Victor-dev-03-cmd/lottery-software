@@ -1,4 +1,4 @@
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::time::Duration;
