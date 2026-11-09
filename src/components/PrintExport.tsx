@@ -209,7 +209,7 @@ interface Props { onNavigate?: (view: import("../types").View) => void; }
 
 export default function PrintExport({ onNavigate }: Props) {
   void onNavigate;
-  void useLanguage(); // i18n infrastructure available; label wiring deferred
+  const { lang, t } = useLanguage();
 
   const today      = new Date().toISOString().split("T")[0];
   const thisMonth  = today.substring(0, 7);
@@ -328,7 +328,7 @@ export default function PrintExport({ onNavigate }: Props) {
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9AA0A6" }}>
           <Home2 size={12} variant="Linear" color="#9AA0A6"/>
           <ArrowRight2 size={11} variant="Linear" color="#9AA0A6"/>
-          <span className="font-semibold" style={{ color: "#202124" }}>Print & Export</span>
+          <span className="font-semibold" style={{ color: "#202124" }}><span className={lang === "si" ? "si" : ""}>{t("nav_print_export")}</span></span>
         </nav>
         <div className="flex gap-2">
           {hasData && (
@@ -353,7 +353,7 @@ export default function PrintExport({ onNavigate }: Props) {
 
         {/* ── Page heading ── */}
         <div>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#202124" }}>Print & Export</h1>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#202124" }}><span className={lang === "si" ? "si" : ""}>{t("nav_print_export")}</span></h1>
           <p className="text-xs mt-0.5" style={{ color: "#9AA0A6" }}>
             Select a report type, apply filters, then preview or download as PDF.
             All dates use the invoice date (delivery date).
