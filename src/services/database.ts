@@ -1492,7 +1492,9 @@ export async function getGlobalStats(): Promise<import("../types").GlobalStats> 
     }[]>(`
       SELECT
         COALESCE(SUM(invoice_total), 0)                     as total_invoice_value,
-        COALESCE(SUM(cash_received), 0)                     as total_cash_collected,
+        COALESCE(SUM(cash_received +
+          COALESCE((SELECT SUM(p.amount) FROM payments p
+            WHERE p.invoice_id=invoices.id AND p.payment_type='cash'),0)),0) AS total_cash_collected,
         COALESCE(SUM(dlb_winning + nlb_winning), 0)         as total_winnings_returned,
         COALESCE(SUM(CASE WHEN outstanding_balance > 0 THEN outstanding_balance ELSE 0 END), 0) as total_outstanding,
         COUNT(*)                                            as total_invoices
