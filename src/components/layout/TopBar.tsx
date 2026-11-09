@@ -813,7 +813,7 @@ export default function TopBar({ onNavigate, dbReady, refreshKey, onSearchFocusR
                 <div>
                   {notifications.pendingCount > 0 && (
                     <button
-                      onClick={() => { onNavigate("ledger"); setNotifOpen(false); }}
+                      onClick={() => { onNavigate("settlement"); setNotifOpen(false); }}
                       className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors"
                       style={{ borderBottom: "1px solid #F9F9F9" }}
                       onMouseEnter={e => (e.currentTarget.style.background = "#FFF8F8")}
