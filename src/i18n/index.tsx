@@ -58,6 +58,17 @@ const LanguageContext = createContext<LanguageCtx>({
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(readLang);
 
+  // Make the selected language available to every page, portal and control.
+  // Native script-level font fallback remains active for bilingual English/Sinhala labels.
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    document.documentElement.dataset.uiLang = lang;
+    return () => {
+      document.documentElement.lang = "en";
+      delete document.documentElement.dataset.uiLang;
+    };
+  }, [lang]);
+
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
     writeLang(l);
