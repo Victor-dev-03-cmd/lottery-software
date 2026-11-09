@@ -360,7 +360,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
             sub={`${rows.filter(r=>r.outstanding_balance>0).length} agents`}
             trend={Math.max(0, periodStats?.total_outstanding ?? 0) > 0 ? "Requires collection / ගෙවීමට ඇත" : "All settled ✓ · නිම"}
             trendColor={Math.max(0, periodStats?.total_outstanding ?? 0) > 0 ? C.red : "#34A853"}
-            onClick={() => onNavigate("ledger")}
+            onClick={() => onNavigate("settlement")}
             loading={loading}
           />
 
@@ -677,7 +677,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
               )}
               {/* Agent outstanding pill */}
               {totalOut > 0 && (
-                <button onClick={() => onNavigate("ledger")}
+                <button onClick={() => onNavigate("settlement")}
                   className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-opacity hover:opacity-80"
                   style={{ background:"#FFF1F0", border:`1px solid #FECACA`, color:C.red }}>
                   <AlertTriangle size={11}/> Rs. {fmt(totalOut)} outstanding across agents
