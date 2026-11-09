@@ -118,23 +118,34 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
   });
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     Promise.all([getCompanySettings(), getAppSettings()]).then(([co, s]) => {
       setCompany(co);
       setSettings(s);
-      setLoading(false);
-    });
+    }).catch(e => setError(`Could not load settings: ${String(e)}`))
+      .finally(() => setLoading(false));
   }, []);
 
   async function handleSave() {
-    await saveCompanySettings(company);
-    await saveSettings({
-      invoice_prefix: settings.invoice_prefix ?? "",
-      invoice_auto_numbering: settings.invoice_auto_numbering ?? "true",
-      default_prepared_by: settings.default_prepared_by ?? "",
-    });
-    onSaved();
+    if (saving) return;
+    setSaving(true);
+    setError("");
+    try {
+      await saveCompanySettings(company);
+      await saveSettings({
+        invoice_prefix: settings.invoice_prefix ?? "",
+        invoice_auto_numbering: settings.invoice_auto_numbering ?? "true",
+        default_prepared_by: settings.default_prepared_by ?? "",
+      });
+      onSaved();
+    } catch (e) {
+      setError(`Could not save settings: ${String(e)}`);
+    } finally {
+      setSaving(false);
+    }
   }
 
   const set = (k: string, v: string) => setSettings((p) => ({ ...p, [k]: v }));
@@ -143,6 +154,7 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
 
   return (
     <div className="space-y-5">
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
         <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
           <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Company Profile</p>
@@ -181,14 +193,14 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
               onChange={(e) => set("invoice_prefix", e.target.value)} />
           </Field>
           <Field label="Default Prepared By">
-            <input className="inp" value={settings.default_prepared_by ?? "sameera"} placeholder="Staff name on invoice"
+            <input className="inp" value={settings.default_prepared_by ?? ""} placeholder="Staff name on invoice"
               onChange={(e) => set("default_prepared_by", e.target.value)} />
           </Field>
           <Field label="Invoice Numbering" col2>
             <div className="flex items-center gap-4 mt-1">
               {["true", "false"].map((v) => (
                 <label key={v} className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="auto_num" value={v} checked={settings.invoice_auto_numbering === v}
+                  <input type="radio" name="auto_num" value={v} checked={(settings.invoice_auto_numbering ?? "true") === v}
                     onChange={() => set("invoice_auto_numbering", v)} />
                   <span className="text-sm" style={{ color: "#1D1D1D" }}>{v === "true" ? "Auto-increment" : "Manual entry"}</span>
                 </label>
@@ -198,7 +210,7 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
         </div>
       </div>
 
-      <SaveBtn onClick={handleSave} />
+      <SaveBtn onClick={handleSave} disabled={saving} label={saving ? "Saving…" : "Save Changes"} />
     </div>
   );
 }
@@ -527,7 +539,9 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
   const [restoreLoading, setRestoreLoading] = useState(false);
 
   useEffect(() => {
-    getAppSettings().then((s) => { setSettings(s); setLoading(false); });
+    getAppSettings().then((s) => setSettings(s))
+      .catch(e => setPinStatus(`Could not load security settings: ${String(e)}`))
+      .finally(() => setLoading(false));
     loadBackupInfo();
   }, []);
 
@@ -636,6 +650,8 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
       if (!srcPath) { setRestoreLoading(false); return; }
 
       await withAdminToken(async () => {
+        const { stopSyncWorker } = await import("../services/syncQueue");
+        stopSyncWorker();
         const { closeAndResetDb } = await import("../services/database");
         await closeAndResetDb();
 
@@ -648,12 +664,21 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
       setTimeout(() => window.location.reload(), 1500);
     } catch (e) {
       setBackupStatus({ ok: false, msg: friendlyAuthError(e) });
+      // Reopen the SQLite connection and sync worker after a failed restore.
+      window.location.reload();
     } finally {
       setRestoreLoading(false);
     }
   }
 
   async function handleSavePins() {
+    if (adminPinInput && !/^\d{4,8}$/.test(adminPinInput)) {
+      setPinStatus("Admin PIN must contain 4–8 digits."); return;
+    }
+    if (cashierPinInput && !/^\d{4,8}$/.test(cashierPinInput)) {
+      setPinStatus("Cashier PIN must contain 4–8 digits."); return;
+    }
+    setPinStatus("");
     try {
       await withAdminToken(async () => {
         const { hashPin } = await import("../hooks/usePinGuard");
@@ -663,17 +688,16 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
         };
 
         if (adminPinInput) {
-          if (adminPinInput.length < 4) { alert("Admin PIN must be at least 4 digits."); return; }
           toSave.admin_pin_hash = await hashPin(adminPinInput);
           setPinStatus("Admin PIN updated");
         }
         if (cashierPinInput) {
-          if (cashierPinInput.length < 4) { alert("Cashier PIN must be at least 4 digits."); return; }
           toSave.cashier_pin_hash = await hashPin(cashierPinInput);
           setPinStatus((p) => p ? p + "  Cashier PIN updated" : "Cashier PIN updated");
         }
 
         await saveSettings(toSave);
+        setSettings(p => ({ ...p, ...toSave }));
         setAdminPinInput("");
         setCashierPinInput("");
         setTimeout(() => setPinStatus(""), 3000);
@@ -689,6 +713,8 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
     try {
       await withAdminToken(async () => {
         await saveSettings({ [`${role}_pin_hash`]: "" });
+        setSettings(p => ({ ...p, [`${role}_pin_hash`]: "" }));
+        setPinStatus(`${role === "admin" ? "Admin" : "Cashier"} PIN removed`);
         onSaved();
       });
     } catch (err) {
@@ -1144,10 +1170,10 @@ function BackendConfigCard() {
 }
 
 
-function SaveBtn({ onClick, label = "Save Changes" }: { onClick: () => void; label?: string }) {
+function SaveBtn({ onClick, label = "Save Changes", disabled = false }: { onClick: () => void; label?: string; disabled?: boolean }) {
   return (
-    <button onClick={onClick}
-      className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold text-white hover:opacity-90"
+    <button onClick={onClick} disabled={disabled}
+      className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
       style={{ background: "#4285F4" }}>
       <Save size={15} /> {label}
     </button>
