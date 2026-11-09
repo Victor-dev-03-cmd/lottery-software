@@ -128,29 +128,29 @@ export default function ProfitAnalytics() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "#9AA0A6" }}>Gross Profit</p>
-                  <p className="text-2xl font-black" style={{ color: summary.gross_profit >= 0 ? BRAND : DANGER }}>
+                  <p className="text-2xl font-black" style={{ color: summary.gross_profit >= 0 ? "#188038" : DANGER }}>
                     Rs. {fmt(summary.gross_profit)}
                   </p>
                   <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>before commissions</p>
                 </div>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "#EAF1FB" }}>
                   {summary.gross_profit >= 0
-                    ? <TrendUp   size={18} variant="Linear" color={BRAND} />
+                    ? <TrendUp   size={18} variant="Linear" color={SUCCESS} />
                     : <TrendDown size={18} variant="Linear" color={DANGER} />}
                 </div>
               </div>
             </div>
 
             {/* Commission */}
-            <div className="rounded-2xl p-5 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #7c3aed" }}>
+            <div className="rounded-2xl p-5 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid var(--color-google-yellow)" }}>
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "#9AA0A6" }}>Commission Expense</p>
-                  <p className="text-2xl font-black" style={{ color: "#7c3aed" }}>Rs. {fmt(summary.total_commission)}</p>
+                  <p className="text-2xl font-black" style={{ color: "#8A5800" }}>Rs. {fmt(summary.total_commission)}</p>
                   <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>commission calculated from active schemes</p>
                 </div>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "#F3E8FF" }}>
-                  <PercentageCircle size={18} variant="Linear" color="#7c3aed" />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--color-google-yellow-tint)" }}>
+                  <PercentageCircle size={18} variant="Linear" color="#8A5800" />
                 </div>
               </div>
             </div>
