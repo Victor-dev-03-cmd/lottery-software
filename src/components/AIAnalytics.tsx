@@ -389,13 +389,13 @@ export default function AIAnalytics({ onNavigate }: Props) {
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 {[
-                  { label: "Invoiced Revenue", val: profit?.total_revenue ?? 0, color: "#16A34A", icon: <TrendUp size={14} variant="Linear" color="#16A34A"/> },
+                  { label: "Invoiced Revenue", val: profit?.total_revenue ?? 0, color: "#4285F4", icon: <TrendUp size={14} variant="Linear" color="#4285F4"/> },
                   { label: "Distributed COGS", val: profit?.total_cost ?? 0,                         color: "#DC2626", icon: <ShoppingCart size={14} variant="Linear" color="#DC2626"/> },
-                  { label: "Paid Payroll (30d)", val: profit?.total_payroll ?? 0,        color: "#7C3AED", icon: <People size={14} variant="Linear" color="#7C3AED"/> },
-                  { label: "Commission Expense", val: profit?.total_commission ?? 0, color: "#7C3AED", icon: <People size={14} variant="Linear" color="#7C3AED"/> },
+                  { label: "Paid Payroll (30d)", val: profit?.total_payroll ?? 0, color: "#8A5800", icon: <People size={14} variant="Linear" color="#8A5800"/> },
+                  { label: "Commission Expense", val: profit?.total_commission ?? 0, color: "#8A5800", icon: <People size={14} variant="Linear" color="#8A5800"/> },
                   { label: "Petty Cash Expense", val: profit?.total_expenses ?? 0, color: "#DC2626", icon: <ShoppingCart size={14} variant="Linear" color="#DC2626"/> },
-                  { label: "Operating Net Profit", val: Math.abs(netProfit),               color: netProfit >= 0 ? "#2563EB" : "#DC2626",
-                    icon: netProfit >= 0 ? <TrendUp size={14} variant="Linear" color="#2563EB"/> : <TrendDown size={14} variant="Linear" color="#DC2626"/>,
+                  { label: "Operating Net Profit", val: Math.abs(netProfit),               color: netProfit >= 0 ? "#188038" : "#DC2626",
+                    icon: netProfit >= 0 ? <TrendUp size={14} variant="Linear" color="#34A853"/> : <TrendDown size={14} variant="Linear" color="#DC2626"/>,
                     prefix: netProfit < 0 ? "−" : "" },
                 ].map(m => (
                   <div key={m.label} style={{ padding: "10px 12px", borderRadius: 6, border: "1px solid #F3F4F6", background: "#FAFAFA" }}>
@@ -541,8 +541,8 @@ export default function AIAnalytics({ onNavigate }: Props) {
                 return (
                   <div key={t.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
                     <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: 60, gap: 1 }}>
-                      <div style={{ width: "60%", height: netH, background: pos ? "#DBEAFE" : "#FEE2E2", borderRadius: "2px 2px 0 0" }}/>
-                      <div style={{ width: "100%", height: Math.max(4, (t.cost / maxTrend) * 40), background: "#E5E7EB", borderRadius: "2px 2px 0 0" }}/>
+                      <div style={{ width: "60%", height: netH, background: pos ? "#34A853" : "#EA4335", borderRadius: "2px 2px 0 0" }}/>
+                      <div style={{ width: "100%", height: Math.max(4, (t.cost / maxTrend) * 40), background: "#FBBC05", borderRadius: "2px 2px 0 0" }}/>
                       <div style={{ width: "100%", height: h, background: "#2563EB", borderRadius: "2px 2px 0 0" }}/>
                     </div>
                     <span style={{ fontSize: 9, color: "#9CA3AF" }}>{fmtMonth(t.month)}</span>
@@ -552,9 +552,9 @@ export default function AIAnalytics({ onNavigate }: Props) {
             </div>
             <div style={{ display: "flex", gap: 14, marginTop: 8, fontSize: 10, color: "#6B7280" }}>
               {[
-                { color: "#2563EB", label: "Revenue" },
-                { color: "#E5E7EB", label: "Cost" },
-                { color: "#DBEAFE", label: "Net Profit" },
+                { color: "#4285F4", label: "Revenue" },
+                { color: "#FBBC05", label: "Cost" },
+                { color: "#34A853", label: "Profit / red = loss" },
               ].map(l => (
                 <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <div style={{ width: 10, height: 10, borderRadius: 2, background: l.color, border: "1px solid #E8E8E8" }}/>
