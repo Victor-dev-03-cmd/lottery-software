@@ -31,6 +31,9 @@ dist-ssr
 # ── Tauri / Rust ──────────────────────────────────────────────────────────────
 src-tauri/target/
 
+# Python MCP helper virtual environment (recreated via requirements.txt)
+mcp/venv/
+
 # Deprecated Flutter companion — desktop-only repository
 mobile-app/
 
