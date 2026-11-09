@@ -7,7 +7,8 @@
  *   3. Monthly Summary — year/month selector on invoice_date
  *
  * Date semantics: all reports use invoice_date (creation / delivery date).
- * Payment date (payments table) is a separate concept and is not mixed here.
+ * Invoice-linked payments are credited to their original invoice for these reports.
+ * Cash flow by actual payment date is reported separately in Petty Cash.
  *
  * PDF: html2pdf.js (already bundled) via dynamic import — same pattern as InvoicePrint.tsx.
  * Print: window.print() with @media print CSS.
@@ -34,6 +35,7 @@ interface PaidInvoiceRow {
   agent_name: string | null;
   invoice_total: number;
   cash_received: number;
+  post_payments: number;
   dlb_winning: number;
   nlb_winning: number;
   outstanding_balance: number;
@@ -44,7 +46,7 @@ interface DailySummary {
   date: string;
   invoice_count: number;
   invoice_total: number;
-  collected: number;    // cash_received + dlb_winning + nlb_winning
+  collected: number;    // delivery receipts + later invoice-linked payments
   outstanding: number;
   discount_total: number;
   invoices: DailyInvoiceRow[];
@@ -106,6 +108,7 @@ async function fetchPaidInvoices(from: string, to: string): Promise<PaidInvoiceR
       a.name AS agent_name,
       ROUND(i.invoice_total, 2)      AS invoice_total,
       ROUND(i.cash_received, 2)      AS cash_received,
+      ROUND(COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=i.id),0),2) AS post_payments,
       ROUND(i.dlb_winning, 2)        AS dlb_winning,
       ROUND(i.nlb_winning, 2)        AS nlb_winning,
       ROUND(MAX(0, i.outstanding_balance), 2) AS outstanding_balance,
@@ -132,7 +135,7 @@ async function fetchDailySummary(date: string): Promise<DailySummary | null> {
       SELECT
         COUNT(*)                                                      AS invoice_count,
         ROUND(COALESCE(SUM(invoice_total), 0), 2)                   AS invoice_total,
-        ROUND(COALESCE(SUM(cash_received + dlb_winning + nlb_winning), 0), 2) AS collected,
+        ROUND(COALESCE(SUM(cash_received + dlb_winning + nlb_winning + COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=invoices.id),0)), 0), 2) AS collected,
         ROUND(COALESCE(SUM(CASE WHEN outstanding_balance > 0 THEN outstanding_balance ELSE 0 END), 0), 2) AS outstanding,
         ROUND(COALESCE(SUM(COALESCE(discount_total, 0)), 0), 2)     AS discount_total
       FROM invoices
@@ -145,7 +148,7 @@ async function fetchDailySummary(date: string): Promise<DailySummary | null> {
         i.invoice_number,
         a.name AS agent_name,
         ROUND(i.invoice_total, 2) AS invoice_total,
-        ROUND(i.cash_received + i.dlb_winning + i.nlb_winning, 2) AS collected,
+        ROUND(i.cash_received + i.dlb_winning + i.nlb_winning + COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=i.id),0), 2) AS collected,
         ROUND(MAX(0, i.outstanding_balance), 2) AS outstanding_balance,
         COALESCE(i.invoice_status, 'paid') AS invoice_status
       FROM invoices i
@@ -173,7 +176,7 @@ async function fetchMonthlySummary(ym: string): Promise<MonthlySummary | null> {
       SELECT
         COUNT(*)                                                      AS invoice_count,
         ROUND(COALESCE(SUM(invoice_total), 0), 2)                   AS invoice_total,
-        ROUND(COALESCE(SUM(cash_received + dlb_winning + nlb_winning), 0), 2) AS collected,
+        ROUND(COALESCE(SUM(cash_received + dlb_winning + nlb_winning + COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=invoices.id),0)), 0), 2) AS collected,
         ROUND(COALESCE(SUM(CASE WHEN outstanding_balance > 0 THEN outstanding_balance ELSE 0 END), 0), 2) AS outstanding,
         ROUND(COALESCE(SUM(COALESCE(discount_total, 0)), 0), 2)     AS discount_total
       FROM invoices
@@ -186,7 +189,7 @@ async function fetchMonthlySummary(ym: string): Promise<MonthlySummary | null> {
         date(invoice_date)                                                      AS day,
         COUNT(*)                                                                AS invoice_count,
         ROUND(COALESCE(SUM(invoice_total), 0), 2)                             AS invoice_total,
-        ROUND(COALESCE(SUM(cash_received + dlb_winning + nlb_winning), 0), 2) AS collected,
+        ROUND(COALESCE(SUM(cash_received + dlb_winning + nlb_winning + COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=invoices.id),0)), 0), 2) AS collected,
         ROUND(COALESCE(SUM(CASE WHEN outstanding_balance > 0 THEN outstanding_balance ELSE 0 END), 0), 2) AS outstanding
       FROM invoices
       WHERE strftime('%Y-%m', invoice_date) = ?
@@ -295,7 +298,7 @@ export default function PrintExport({ onNavigate }: Props) {
   const piTotals = piData ? {
     count:       piData.length,
     invoiced:    piData.reduce((s, r) => s + r.invoice_total, 0),
-    collected:   piData.reduce((s, r) => s + r.cash_received + r.dlb_winning + r.nlb_winning, 0),
+    collected:   piData.reduce((s, r) => s + r.cash_received + r.dlb_winning + r.nlb_winning + r.post_payments, 0),
     outstanding: piData.reduce((s, r) => s + r.outstanding_balance, 0),
     discount:    piData.reduce((s, r) => s + r.discount_total, 0),
   } : null;
@@ -528,7 +531,7 @@ export default function PrintExport({ onNavigate }: Props) {
                   </thead>
                   <tbody>
                     {piData.map((inv, i) => {
-                      const collected = inv.cash_received + inv.dlb_winning + inv.nlb_winning;
+                      const collected = inv.cash_received + inv.dlb_winning + inv.nlb_winning + inv.post_payments;
                       return (
                         <tr key={inv.id} style={{ background: i % 2 === 0 ? "#FFFFFF" : "#F8F9FA", borderBottom: "1px solid #F1F3F4" }}>
                           <td style={{ padding: "7px 10px", fontWeight: 700, color: BRAND, fontFamily: "monospace", fontSize: 10 }}>#{inv.invoice_number}</td>
