@@ -82,7 +82,8 @@
   --color-muted:      #9AA0A6;       /* alias → text-muted */
 
   /* ── Typography ───────────────────────────────────────────────────────────── */
-  --font-sans:  "Inter Variable", "Inter", "Nirmala UI", "Noto Sans Sinhala", system-ui, -apple-system, sans-serif;
+  --font-sinhala: "Noto Sans Sinhala", "Nirmala UI", "Iskoola Pota", sans-serif;
+  --font-sans:  "Inter Variable", "Inter", "Noto Sans Sinhala", system-ui, -apple-system, sans-serif;
   --font-mono:  "JetBrains Mono", "Fira Code", ui-monospace, "Courier New", monospace;
 
   /* Type scale — rem units for accessibility scaling */
