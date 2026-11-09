@@ -124,7 +124,7 @@ export default function DailyCollectionView() {
             <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#202124" }}>{t("nav_daily_collections")}</h1>
             <p className="text-xs mt-0.5" style={{ color: "#9AA0A6" }}>Cash collected by route and field collectors</p>
             <p className="text-xs mt-1 font-medium" style={{ color: "#D97706" }}>
-              ⚠ Collection entries here are an operational log only. To update an agent's outstanding balance, record a payment in the Payment Ledger.
+              ⚠ Collection entries here are an operational log only. To update an agent's outstanding balance, record a payment in Settlement → Sub-agent Settlement.
             </p>
           </div>
         </div>
