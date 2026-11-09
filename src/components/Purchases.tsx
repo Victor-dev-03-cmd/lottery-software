@@ -212,9 +212,10 @@ const EMPTY_PAYMENT = (purchaseId: number): PurchasePayment => ({
 
 interface PurchasesProps {
   onNavigate?: (view: import("../types").View) => void;
+  onManageGames?: () => void;
 }
 
-export default function Purchases({ onNavigate }: PurchasesProps) {
+export default function Purchases({ onNavigate, onManageGames }: PurchasesProps) {
   const { t } = useLanguage();
   const { requireAdminPin } = usePinGuardContext();
   const { withAdminToken } = useAuth();
@@ -516,8 +517,8 @@ const formGross    = formItems.reduce((s, it) => s + it.value, 0);
                     <button onClick={() => setPickerRow(formItems.length)} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:8, border:"1px solid #4285F4", background:"#EFF6FF", color:"#4285F4", fontSize:12, fontWeight:700, cursor:"pointer" }}>
                       <AddCircle size={14} variant="Linear" color="currentColor"/> {t("pur_add_game")}
                     </button>
-                    {onNavigate && (
-                      <button onClick={() => onNavigate("settings")} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:8, border:"1px solid #E5E7EB", background:"#F9FAFB", color:"#374151", fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                    {onManageGames && (
+                      <button onClick={onManageGames} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:8, border:"1px solid #E5E7EB", background:"#F9FAFB", color:"#374151", fontSize:12, fontWeight:700, cursor:"pointer" }}>
                         ⚙ {t("pur_edit_games")}
                       </button>
                     )}
