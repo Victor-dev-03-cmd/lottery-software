@@ -1880,6 +1880,7 @@ async fn factory_reset_local_data(
     app: tauri::AppHandle,
     token: String,
     confirmation: String,
+    provided_pin_hash: String,
 ) -> Result<u64, String> {
     if confirmation != "RESET ALL DATA" {
         return Err("Confirmation phrase does not match.".into());
@@ -1898,8 +1899,8 @@ async fn factory_reset_local_data(
             [],
             |row| row.get(0),
         ).map_err(|_| "Admin PIN is not configured. Reset is blocked.".to_string())?;
-        if pin_hash.is_empty() {
-            return Err("Admin PIN must be configured before factory reset.".into());
+        if pin_hash.is_empty() || pin_hash != provided_pin_hash {
+            return Err("Admin PIN verification failed. Factory reset was not performed.".into());
         }
         // secure_delete overwrites deleted SQLite content, rather than only
         // marking pages free. Foreign keys must be disabled before transaction.
@@ -1930,6 +1931,8 @@ async fn factory_reset_local_data(
                     .map_err(|e| format!("Failed to clear {}: {}", name, e))? as u64;
             }
         }
+        // Reset autoincrement identifiers too; ignored if no sqlite_sequence exists.
+        let _ = tx.execute("DELETE FROM sqlite_sequence", []);
         tx.commit().map_err(|e| format!("Reset rolled back: {}", e))?;
         // Reclaim deleted pages; a failure here cannot undo committed deletion.
         let _ = conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE); VACUUM;");
