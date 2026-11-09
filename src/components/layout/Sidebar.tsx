@@ -3,7 +3,7 @@ import {
   Category2, Notification, ShoppingCart, RotateLeft, House,
   AddCircle, Clock, DocumentFilter, DocumentText, ClipboardClose,
   Brush, Book1, ClipboardText, PercentageCircle, Wallet,
-  People, Hierarchy, Chart21, TrendUp, Cpu, Cup, UserEdit,
+  People, Hierarchy, Chart21, TrendUp, Cpu, UserEdit,
   Printer, Setting2, ArrowLeft2, ArrowRight2, Tag,
 } from "iconsax-react";
 import { useAuth, CASHIER_ALLOWED } from "../../contexts/AuthContext";
@@ -78,9 +78,7 @@ export default function Sidebar({
         { view: "confirmed-invoices", labelKey: "nav_confirmed_invoices", label: t("nav_confirmed_invoices"), icon: <DocumentFilter size={20} variant="Linear" color="currentColor" /> },
         { view: "invoices",           labelKey: "nav_paid_invoices",      label: t("nav_paid_invoices"),      icon: <DocumentText   size={20} variant="Linear" color="currentColor" /> },
         { view: "cancelled-invoices", labelKey: "nav_cancelled_invoices", label: t("nav_cancelled_invoices"), icon: <ClipboardClose size={20} variant="Linear" color="currentColor" /> },
-        { view: "invoice-model",      labelKey: "nav_invoice_model",      label: t("nav_invoice_model"),      icon: <Brush          size={20} variant="Linear" color="currentColor" /> },
-        { view: "ledger",             labelKey: "nav_ledger",             label: t("nav_ledger"),             icon: <Book1          size={20} variant="Linear" color="currentColor" /> },
-      ],
+        { view: "invoice-model",      labelKey: "nav_invoice_model",      label: t("nav_invoice_model"),      icon: <Brush          size={20} variant="Linear" color="currentColor" /> },      ],
     },
     {
       headingKey: "nav_section_collections", heading: t("nav_section_collections"),
@@ -102,9 +100,7 @@ export default function Sidebar({
       items: [
         { view: "reports",          labelKey: "nav_reports",      label: t("nav_reports"),      icon: <Chart21 size={20} variant="Linear" color="currentColor" /> },
         { view: "profit-analytics", labelKey: "nav_profit",       label: t("nav_profit"),       icon: <TrendUp size={20} variant="Linear" color="currentColor" /> },
-        { view: "ai-analytics",     labelKey: "nav_ai",           label: t("nav_ai"),           icon: <Cpu     size={20} variant="Linear" color="currentColor" /> },
-        { view: "live-results",     labelKey: "nav_live_results", label: t("nav_live_results"), icon: <Cup     size={20} variant="Linear" color="currentColor" /> },
-      ],
+        { view: "ai-analytics",     labelKey: "nav_ai",           label: t("nav_ai"),           icon: <Cpu     size={20} variant="Linear" color="currentColor" /> },      ],
     },
     {
       headingKey: "nav_operations", heading: t("nav_operations"),
