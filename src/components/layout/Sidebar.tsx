@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import {
   Category2, Notification, ShoppingCart, RotateLeft, House,
   AddCircle, Clock, DocumentFilter, DocumentText, ClipboardClose,
-  Brush, Book1, ClipboardText, PercentageCircle, Wallet,
+  Brush, ClipboardText, PercentageCircle, Wallet,
   People, Hierarchy, Chart21, TrendUp, Cpu, UserEdit,
   Printer, Setting2, ArrowLeft2, ArrowRight2, Tag,
 } from "iconsax-react";
