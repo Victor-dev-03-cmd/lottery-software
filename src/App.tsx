@@ -61,6 +61,7 @@ export default function App() {
   const [defaultDataDir, setDefaultDataDir] = useState("");
 
   const [view, setView] = useState<View>("dashboard");
+  const [settingsInitialTab, setSettingsInitialTab] = useState<"general" | "games">("general");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [printInvoiceId, setPrintInvoiceId] = useState<number | null>(null);
@@ -139,6 +140,8 @@ export default function App() {
   // ── Navigation ───────────────────────────────────────────────────────────────
 
   function navigate(v: View, invoiceId?: number) {
+    // Normal Settings navigation opens General; the Purchases shortcut can override this.
+    setSettingsInitialTab("general");
     if (v === ("print" as string)) {
       setPrintInvoiceId(invoiceId ?? null);
       setView("print" as View);
@@ -150,6 +153,13 @@ export default function App() {
       setPrintInvoiceId(null);
       setView(v);
     }
+  }
+
+  function navigateToGameSettings() {
+    setSettingsInitialTab("games");
+    setEditInvoiceId(null);
+    setPrintInvoiceId(null);
+    setView("settings");
   }
 
   function handleInvoiceSaved(id: number, nextView: View) {
@@ -220,6 +230,7 @@ export default function App() {
     <AuthProvider>
     <AppInner
       view={view} sidebarView={sidebarView} navigate={navigate}
+      navigateToGameSettings={navigateToGameSettings} settingsInitialTab={settingsInitialTab}
       sidebarCollapsed={sidebarCollapsed} setSidebarCollapsed={setSidebarCollapsed}
       mobileSidebarOpen={mobileSidebarOpen}
       onMobileSidebarClose={() => setMobileSidebarOpen(false)}
@@ -239,7 +250,7 @@ export default function App() {
 // ── Inner app — has access to AuthContext ─────────────────────────────────────
 
 function AppInner({
-  view, sidebarView, navigate, sidebarCollapsed, setSidebarCollapsed,
+  view, sidebarView, navigate, navigateToGameSettings, settingsInitialTab, sidebarCollapsed, setSidebarCollapsed,
   mobileSidebarOpen, onMobileSidebarClose, onMobileSidebarToggle,
   dbReady, refreshKey, searchRef, editInvoiceId, handleInvoiceSaved,
   requireAdminPin, pinRequest, pinSuccess, pinCancel,
@@ -247,6 +258,8 @@ function AppInner({
 }: {
   view: View; sidebarView: View;
   navigate: (v: View, id?: number) => void;
+  navigateToGameSettings: () => void;
+  settingsInitialTab: "general" | "games";
   sidebarCollapsed: boolean; setSidebarCollapsed: (f: (c: boolean) => boolean) => void;
   mobileSidebarOpen: boolean;
   onMobileSidebarClose: () => void;
@@ -303,7 +316,7 @@ function AppInner({
           {effectiveView === "commission"       && can("commission")       && <Commission />}
           {effectiveView === "petty-cash"       && <PettyCash />}
           {effectiveView === "alerts"           && <Alerts />}
-          {effectiveView === "purchases"          && can("purchases")          && <Purchases onNavigate={navigate} />}
+          {effectiveView === "purchases"          && can("purchases")          && <Purchases onNavigate={navigate} onManageGames={navigateToGameSettings} />}
           {effectiveView === "settlement"         && can("settlement")         && <Settlement />}
           {effectiveView === "supplier-returns"   && can("supplier-returns")   && <SupplierReturns />}
           {effectiveView === "draft-invoices"     && can("draft-invoices")     && <DraftInvoices onNavigate={navigate} />}
@@ -315,7 +328,7 @@ function AppInner({
           {effectiveView === "payroll"          && can("payroll")          && <Payroll />}
           {effectiveView === "ai-analytics"     && can("ai-analytics")     && <AIAnalytics onNavigate={navigate} />}
           {effectiveView === "print-export"     && <PrintExport onNavigate={navigate} />}
-          {effectiveView === "settings"         && can("settings")         && <Settings />}
+          {effectiveView === "settings"         && can("settings")         && <Settings initialTab={settingsInitialTab} />}
         </main>
       </div>
 
