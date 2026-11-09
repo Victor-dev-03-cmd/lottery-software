@@ -313,7 +313,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
             <p className="text-[10px] font-bold uppercase tracking-widest text-white/70 mb-1">
               {kpiPeriodLabel}
             </p>
-            {lang === "si" && <p className="si text-[9px] text-white/50 mb-2">{t("dash_total_revenue")}</p>}
+            {lang === "si" && <p className="si mb-2" style={{ fontSize:11, fontWeight:600, color:"#FFFFFF" }}>{t("dash_total_revenue")}</p>}
             {loading ? (
               <div className="h-9 w-28 rounded-lg animate-pulse" style={{ background: "rgba(255,255,255,0.2)" }} />
             ) : (
@@ -335,6 +335,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
           <KpiWhite
             icon={<Ticket size={17} />}
             label={`Tickets (${period})`}
+            accent="var(--color-google-yellow)" tint="var(--color-google-yellow-tint)"
             labelSi="ටිකට් ගණන"
             value={loading ? "…" : (periodStats?.total_tickets ?? 0).toLocaleString("en-LK")}
             sub={`${periodStats?.invoice_count ?? 0} invoices`}
@@ -345,6 +346,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
           <KpiWhite
             icon={<Banknote size={17} />}
             label={`Invoice Receipts (${period})`}
+            accent="var(--color-google-green)" tint="var(--color-google-green-tint)"
             labelSi="එකතු කළ මුදල"
             value={loading ? "…" : fmts(periodStats?.total_collected ?? 0)}
             sub={`${collRate}% of invoiced`}
@@ -357,6 +359,7 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
           <KpiWhite
             icon={<AlertTriangle size={17} />}
             label={`Outstanding (${period})`}
+            accent="var(--color-google-red)" tint="var(--color-google-red-tint)"
             labelSi={SI.outstanding}
             value={loading ? "…" : fmts(Math.max(0, periodStats?.total_outstanding ?? 0))}
             sub={`${rows.filter(r=>r.outstanding_balance>0).length} agents`}
@@ -370,6 +373,8 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
           <KpiWhite
             icon={<TrendingUp size={17} />}
             label={`Operating Profit (${period})`}
+            accent={(operatingProfit?.net_profit ?? 0) >= 0 ? "var(--color-google-green)" : "var(--color-google-red)"}
+            tint={(operatingProfit?.net_profit ?? 0) >= 0 ? "var(--color-google-green-tint)" : "var(--color-google-red-tint)"}
             labelSi="මෙහෙයුම් ලාභය"
             value={loading ? "…" : fmts(operatingProfit?.net_profit ?? 0)}
             sub="After COGS, commission, paid payroll & petty cash"
@@ -868,24 +873,24 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-function KpiWhite({ icon, label, labelSi, value, sub, trend, trendColor="#34A853", onClick, loading }: {
+function KpiWhite({ icon, label, labelSi, value, sub, trend, trendColor="#34A853", accent="#4285F4", tint="#EAF1FB", onClick, loading }: {
   icon: React.ReactNode; label: string; labelSi?: string; value: string;
-  sub?: string; trend?: string; trendColor?: string;
+  sub?: string; trend?: string; trendColor?: string; accent?: string; tint?: string;
   onClick?: () => void; loading?: boolean;
 }) {
   return (
     <div onClick={onClick}
       className="rounded-2xl p-5 transition-all shadow-sm"
       style={{ background:"#FFFFFF", border:`1px solid #E0E3E7`,
-        borderTop:"3px solid #4285F4", cursor: onClick?"pointer":undefined }}>
+        borderTop:`3px solid ${accent}`, cursor: onClick?"pointer":undefined }}>
       <div className="flex items-center justify-between mb-3">
         <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-          style={{ background:"#EAF1FB", color:"#4285F4" }}>
+          style={{ background:tint, color:accent }}>
           {icon}
         </div>
       </div>
       <p className="text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{ color:"#9AA0A6" }}>{label}</p>
-      {labelSi && <p className="si text-[8px] mb-1.5" style={{ color:"#C4CAD0" }}>{labelSi}</p>}
+      {labelSi && <p className="si mb-1.5" lang="si" style={{ fontSize:11, fontWeight:600, color:"#374151" }}>{labelSi}</p>}
       {loading
         ? <div className="h-8 w-24 rounded-lg animate-pulse" style={{ background:"#F3F4F6" }} />
         : <p className="text-2xl font-black leading-tight" style={{ color:"#202124" }}>{value}</p>
