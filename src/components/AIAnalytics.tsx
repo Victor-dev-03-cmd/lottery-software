@@ -8,7 +8,7 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import {
   getPeriodStats, getAgentRiskScores, getInventoryVelocity,
-  getMonthlyRevenueTrend, getSupplierOutstanding,
+  getMonthlyRevenueTrend, getSupplierOutstanding, getProfitSummary,
   getPayrollSummary, getWorkers, getAgents,
 } from "../services/database";
 import type { AgentRiskScore } from "../services/database";
@@ -19,6 +19,7 @@ import {
   type AILanguage, type ParsedAction, type AiJsonSummary,
 } from "../utils/aiPrompt";
 import { useAuth } from "../contexts/AuthContext";
+import { useLanguage } from "../i18n";
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
@@ -87,9 +88,11 @@ function SK({ h = 16, w = "100%" }: { h?: number; w?: number | string }) {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function AIAnalytics({ onNavigate }: Props) {
+  const { lang, t } = useLanguage();
   const { adminToken, withAdminToken } = useAuth();
   const [loading, setLoading]         = useState(true);
   const [periodStats, setPeriodStats] = useState<PeriodStats | null>(null);
+  const [profit, setProfit] = useState<Awaited<ReturnType<typeof getProfitSummary>> | null>(null);
   const [agentRisks, setAgentRisks]   = useState<AgentRiskScore[]>([]);
   const [velocity, setVelocity]       = useState<VelocityRow[]>([]);
   const [trend, setTrend]             = useState<TrendRow[]>([]);
@@ -114,13 +117,13 @@ export default function AIAnalytics({ onNavigate }: Props) {
     setLoading(true);
     try {
       const month = new Date().toISOString().substring(0, 7);
-      const [ps, ar, iv, mt, so, pay, ws, ag] = await Promise.all([
+      const [ps, ar, iv, mt, so, pay, ws, ag, profitSummary] = await Promise.all([
         getPeriodStats(30), getAgentRiskScores(), getInventoryVelocity(),
         getMonthlyRevenueTrend(6), getSupplierOutstanding(),
-        getPayrollSummary(month), getWorkers(), getAgents(),
+        getPayrollSummary(month), getWorkers(), getAgents(), getProfitSummary(30),
       ]);
       setPeriodStats(ps); setAgentRisks(ar); setVelocity(iv);
-      setTrend(mt); setSupplierOB(so); setPayroll(pay);
+      setTrend(mt); setSupplierOB(so); setPayroll(pay); setProfit(profitSummary);
       setWorkers(ws);
       setAllAgents(ag.map(a => ({
         id: a.id ?? 0,
@@ -144,12 +147,11 @@ export default function AIAnalytics({ onNavigate }: Props) {
       ? Math.round((periodStats.total_collected / periodStats.total_invoiced) * 100) : 0;
 
     const businessData = {
-      revenue:    periodStats?.total_collected ?? 0,
-      stockCost:  supplierOB,
-      payroll:    payroll?.total_payroll ?? 0,
-      netProfit:  (periodStats?.total_collected ?? 0) - supplierOB - (payroll?.total_payroll ?? 0),
-      margin: periodStats && periodStats.total_collected > 0
-        ? ((periodStats.total_collected - supplierOB - (payroll?.total_payroll ?? 0)) / periodStats.total_collected) * 100 : 0,
+      revenue:    profit?.total_revenue ?? 0,
+      stockCost:  profit?.total_cost ?? 0,
+      payroll:    profit?.total_payroll ?? 0,
+      netProfit:  profit?.net_profit ?? 0,
+      margin:     profit?.margin_pct ?? 0,
       collectionRate: collRate,
       supplierOwed: supplierOB,
       periodDays: 30,
@@ -271,7 +273,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
 
   const collRate = periodStats && periodStats.total_invoiced > 0
     ? Math.round((periodStats.total_collected / periodStats.total_invoiced) * 100) : 0;
-  const netProfit = (periodStats?.total_collected ?? 0) - supplierOB - (payroll?.total_payroll ?? 0);
+  const netProfit = profit?.net_profit ?? 0;
 
   // Health score
   let score = 0;
@@ -310,7 +312,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <nav style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#9CA3AF" }}>
             <Home2 size={12} variant="Linear" color="#9AA0A6"/><ArrowRight2 size={11} variant="Linear" color="#9AA0A6"/>
-            <span style={{ fontWeight: 600, color: "#1D1D1D" }}>AI Intelligence</span>
+            <span style={{ fontWeight: 600, color: "#1D1D1D" }}><span className={lang === "si" ? "si" : ""}>{t("nav_ai")}</span></span>
           </nav>
           <button onClick={loadData} disabled={loading}
             style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px",
@@ -323,7 +325,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
 
         {/* Title */}
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1D1D1D", margin: 0 }}>AI Business Intelligence</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1D1D1D", margin: 0 }}><span className={lang === "si" ? "si" : ""}>{t("nav_ai")}</span></h1>
           <p style={{ fontSize: 12, color: "#9CA3AF", margin: "2px 0 0" }}>
             Real-time insights powered by your live data — Ajith Rohana Enterprise
           </p>
@@ -387,11 +389,13 @@ export default function AIAnalytics({ onNavigate }: Props) {
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 {[
-                  { label: "Gross Revenue",    val: periodStats?.total_collected ?? 0, color: "#16A34A", icon: <TrendUp size={14} variant="Linear" color="#16A34A"/> },
-                  { label: "Stock Cost",       val: supplierOB,                         color: "#DC2626", icon: <ShoppingCart size={14} variant="Linear" color="#DC2626"/> },
-                  { label: "Monthly Payroll",  val: payroll?.total_payroll ?? 0,        color: "#7C3AED", icon: <People size={14} variant="Linear" color="#7C3AED"/> },
-                  { label: "Net Profit (est)", val: Math.abs(netProfit),               color: netProfit >= 0 ? "#2563EB" : "#DC2626",
-                    icon: netProfit >= 0 ? <TrendUp size={14} variant="Linear" color="#2563EB"/> : <TrendDown size={14} variant="Linear" color="#DC2626"/>,
+                  { label: "Invoiced Revenue", val: profit?.total_revenue ?? 0, color: "#4285F4", icon: <TrendUp size={14} variant="Linear" color="#4285F4"/> },
+                  { label: "Distributed COGS", val: profit?.total_cost ?? 0,                         color: "#DC2626", icon: <ShoppingCart size={14} variant="Linear" color="#DC2626"/> },
+                  { label: "Paid Payroll (30d)", val: profit?.total_payroll ?? 0, color: "#8A5800", icon: <People size={14} variant="Linear" color="#8A5800"/> },
+                  { label: "Commission Expense", val: profit?.total_commission ?? 0, color: "#8A5800", icon: <People size={14} variant="Linear" color="#8A5800"/> },
+                  { label: "Petty Cash Expense", val: profit?.total_expenses ?? 0, color: "#DC2626", icon: <ShoppingCart size={14} variant="Linear" color="#DC2626"/> },
+                  { label: "Operating Net Profit", val: Math.abs(netProfit),               color: netProfit >= 0 ? "#188038" : "#DC2626",
+                    icon: netProfit >= 0 ? <TrendUp size={14} variant="Linear" color="#34A853"/> : <TrendDown size={14} variant="Linear" color="#DC2626"/>,
                     prefix: netProfit < 0 ? "−" : "" },
                 ].map(m => (
                   <div key={m.label} style={{ padding: "10px 12px", borderRadius: 6, border: "1px solid #F3F4F6", background: "#FAFAFA" }}>
@@ -537,8 +541,8 @@ export default function AIAnalytics({ onNavigate }: Props) {
                 return (
                   <div key={t.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
                     <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: 60, gap: 1 }}>
-                      <div style={{ width: "60%", height: netH, background: pos ? "#DBEAFE" : "#FEE2E2", borderRadius: "2px 2px 0 0" }}/>
-                      <div style={{ width: "100%", height: Math.max(4, (t.cost / maxTrend) * 40), background: "#E5E7EB", borderRadius: "2px 2px 0 0" }}/>
+                      <div style={{ width: "60%", height: netH, background: pos ? "#34A853" : "#EA4335", borderRadius: "2px 2px 0 0" }}/>
+                      <div style={{ width: "100%", height: Math.max(4, (t.cost / maxTrend) * 40), background: "#FBBC05", borderRadius: "2px 2px 0 0" }}/>
                       <div style={{ width: "100%", height: h, background: "#2563EB", borderRadius: "2px 2px 0 0" }}/>
                     </div>
                     <span style={{ fontSize: 9, color: "#9CA3AF" }}>{fmtMonth(t.month)}</span>
@@ -548,9 +552,9 @@ export default function AIAnalytics({ onNavigate }: Props) {
             </div>
             <div style={{ display: "flex", gap: 14, marginTop: 8, fontSize: 10, color: "#6B7280" }}>
               {[
-                { color: "#2563EB", label: "Revenue" },
-                { color: "#E5E7EB", label: "Cost" },
-                { color: "#DBEAFE", label: "Net Profit" },
+                { color: "#4285F4", label: "Revenue" },
+                { color: "#FBBC05", label: "Cost" },
+                { color: "#34A853", label: "Profit / red = loss" },
               ].map(l => (
                 <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <div style={{ width: 10, height: 10, borderRadius: 2, background: l.color, border: "1px solid #E8E8E8" }}/>
@@ -573,7 +577,7 @@ export default function AIAnalytics({ onNavigate }: Props) {
                 color: "#DC2626", bg: "#FEF2F2", icon: "🚨",
                 title: `${agentRisks.filter(a => a.risk_level === "critical").length} critical agent(s) need immediate action`,
                 sub: "High receivables risk — call and consider credit suspension",
-                view: "ledger" as View,
+                view: "settlement" as View,
               }] : []),
               ...(velocity.some(v => v.days_remaining < 7) ? [{
                 color: "#DC2626", bg: "#FEF2F2", icon: "📦",

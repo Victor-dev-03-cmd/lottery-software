@@ -12,6 +12,7 @@ import type { InvoiceTemplate } from "../services/database";
 import type { Invoice, InvoiceStatus, CompanySettings } from "../types";
 import InvoiceA4Preview, { STATUS_COLORS } from "./shared/InvoiceA4Preview";
 import { PinGuardContext } from "../App";
+import { useAuth } from "../contexts/AuthContext";
 
 function fmtDate(d: string) {
   try { const [y, m, dd] = d.split("-"); return `${dd}/${m}/${y}`; } catch { return d; }
@@ -25,6 +26,7 @@ function fmtRs(n: number) {
 export default function CancelledInvoices() {
   const { t: _t } = useLanguage(); // i18n: translation hook — labels will be added in Phase 4/6 audit
   const { requireAdminPin } = useContext(PinGuardContext);
+  const { withAdminToken } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filtered, setFiltered] = useState<Invoice[]>([]);
   const [search, setSearch] = useState("");
@@ -82,7 +84,7 @@ export default function CancelledInvoices() {
       "Permanently deleting an invoice requires administrator verification."
     );
     if (!ok) return;
-    await deleteInvoice(id);
+    await withAdminToken((token) => deleteInvoice(id, token));
     if (previewInvoice?.id === id) setPreviewInvoice(null);
     setConfirmDelete(null);
     load();

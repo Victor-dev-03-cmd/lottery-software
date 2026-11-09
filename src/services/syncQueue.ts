@@ -16,6 +16,7 @@ export interface SyncStats {
 }
 
 let workerTimer: ReturnType<typeof setInterval> | null = null;
+let workerStartupTimer: ReturnType<typeof setTimeout> | null = null;
 let isRunning = false;
 
 /** Add a record to the local sync queue (pure SQLite write — instant). */
@@ -58,7 +59,10 @@ export async function flushQueue(token?: string): Promise<SyncStats> {
 export function startSyncWorker(): void {
   if (workerTimer) return; // already running
   // First flush after 10s to catch anything queued at startup
-  setTimeout(() => flush(), 10_000);
+  workerStartupTimer = setTimeout(() => {
+    workerStartupTimer = null;
+    if (workerTimer) void flush();
+  }, 10_000);
   workerTimer = setInterval(flush, 60_000);
 }
 
@@ -74,6 +78,10 @@ async function flush() {
 
 /** Stop the worker (e.g. on app unmount). */
 export function stopSyncWorker(): void {
+  if (workerStartupTimer) {
+    clearTimeout(workerStartupTimer);
+    workerStartupTimer = null;
+  }
   if (workerTimer) {
     clearInterval(workerTimer);
     workerTimer = null;

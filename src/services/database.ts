@@ -377,6 +377,10 @@ async function initSchema() {
     await d.execute("ALTER TABLE agents ADD COLUMN credit_limit REAL DEFAULT 0");
   } catch { /* column already exists */ }
 
+  // Keep agents referenced by historical invoices/payments, but hide archived profiles.
+  // Do not replace the agents table: its foreign keys protect accounting records.
+  try { await d.execute("ALTER TABLE agents ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0"); } catch { /* existing database */ }
+
   // Migrate: add new agent profile fields
   try { await d.execute("ALTER TABLE agents ADD COLUMN nic_number TEXT DEFAULT ''"); } catch {}
   try { await d.execute("ALTER TABLE agents ADD COLUMN bank_name TEXT DEFAULT ''"); } catch {}
@@ -633,7 +637,7 @@ export async function saveCompanySettings(s: CompanySettings): Promise<void> {
 
 export async function getAgents(): Promise<Agent[]> {
   const d = await getDb();
-  return d.select<Agent[]>("SELECT * FROM agents ORDER BY name ASC");
+  return d.select<Agent[]>("SELECT * FROM agents WHERE COALESCE(is_archived,0)=0 ORDER BY name ASC");
 }
 
 export async function saveAgent(agent: Agent): Promise<number> {
@@ -681,7 +685,7 @@ export async function getAgentsWithCreditLimit(): Promise<(Agent & { credit_limi
              FROM invoices i WHERE i.agent_id=a.id
                AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')
            ), 0) as outstanding_balance
-    FROM agents a ORDER BY a.name ASC
+    FROM agents a WHERE COALESCE(a.is_archived,0)=0 ORDER BY a.name ASC
   `);
 }
 
@@ -691,9 +695,20 @@ export async function updateAgentCreditLimit(agentId: number, limit: number): Pr
   enqueueSync("agents", "upsert", { id: agentId, credit_limit: limit }, "id").catch(() => {});
 }
 
+/**
+ * Remove an agent from active profiles without corrupting their historical
+ * invoices, collections, payments, returns and financial reports.
+ * Caller must obtain a fresh administrator PIN verification first.
+ */
 export async function deleteAgent(id: number): Promise<void> {
   const d = await getDb();
-  await d.execute("DELETE FROM agents WHERE id=?", [id]);
+  const result = await d.execute(
+    "UPDATE agents SET is_archived=1 WHERE id=? AND COALESCE(is_archived,0)=0",
+    [id]
+  );
+  if ((result.rowsAffected ?? 0) !== 1) {
+    throw new Error("Agent was not removed. The profile may already be archived.");
+  }
 }
 
 // ── Lottery Games ─────────────────────────────────────────────────────────────
@@ -875,9 +890,46 @@ export async function saveInvoice(invoice: Invoice): Promise<number> {
   return invoiceId;
 }
 
-export async function deleteInvoice(id: number): Promise<void> {
+export async function deleteInvoice(id: number, adminToken: string = ""): Promise<void> {
+  // Atomicity is guaranteed by the Rust command: rusqlite::Connection::transaction()
+  // runs all DELETEs on a single connection. The old JS BEGIN/COMMIT approach was
+  // unreliable because tauri-plugin-sql uses a connection pool (separate calls may
+  // use different connections). Sync enqueuing is also handled inside the Rust command.
+  await invoke("delete_cancelled_invoice", { invoiceId: id, token: adminToken });
+}
+
+/**
+ * Delete a paid invoice only when no financial records depend on it.
+ * An administrator PIN must be verified by the caller before this function is invoked.
+ * We deliberately do not return sold tickets to inventory: deleting the paperwork
+ * must not make already-delivered physical lottery tickets available for resale.
+ */
+export async function deletePaidInvoice(id: number): Promise<void> {
   const d = await getDb();
-  await d.execute("DELETE FROM invoices WHERE id=?", [id]);
+  const [invoice] = await d.select<{ id: number; agent_id: number; invoice_status: string }[]>(
+    "SELECT id, agent_id, invoice_status FROM invoices WHERE id=?", [id]
+  );
+  if (!invoice || invoice.invoice_status !== "paid") {
+    throw new Error("This invoice is no longer a paid invoice. Refresh the list.");
+  }
+  const [linked] = await d.select<{ payments: number; returns: number; later: number }[]>(`
+    SELECT
+      (SELECT COUNT(*) FROM payments WHERE invoice_id=?) AS payments,
+      (SELECT COUNT(*) FROM ticket_returns WHERE invoice_id=?) AS returns,
+      (SELECT COUNT(*) FROM invoices WHERE agent_id=? AND id>?) AS later
+  `, [id, id, invoice.agent_id, id]);
+  if (linked.payments || linked.returns) {
+    throw new Error("Cannot delete: this invoice has linked payments or ticket returns. Reverse those records through the appropriate workflow first.");
+  }
+  if (linked.later) {
+    throw new Error("Cannot delete: this agent has newer invoices whose previous balances may depend on this invoice.");
+  }
+  // The invoice items use ON DELETE CASCADE. Keep inventory distribution unchanged
+  // because deleting a financial document does not reverse physical ticket delivery.
+  const result = await d.execute("DELETE FROM invoices WHERE id=? AND invoice_status='paid'", [id]);
+  if ((result.rowsAffected ?? 0) !== 1) {
+    throw new Error("Paid invoice was not deleted. Refresh and try again.");
+  }
   enqueueSync("invoices", "delete", { id }, "id").catch(() => {});
 }
 
@@ -885,42 +937,38 @@ export async function deleteInvoice(id: number): Promise<void> {
 
 export async function getAgentSummaries(): Promise<AgentSummary[]> {
   const d = await getDb();
+  // Aggregate invoice lines separately: joining invoices to invoice_items before
+  // summing money multiplies invoice totals by the number of ticket lines.
   const rows = await d.select<AgentSummary[]>(`
-    SELECT
-      a.id as agent_id,
-      a.name,
-      COALESCE(SUM(ii.qty), 0) as total_tickets,
-      COALESCE(SUM(i.invoice_total), 0) as total_value,
-      COALESCE(SUM(i.dlb_winning + i.nlb_winning), 0) as winnings_tickets,
-      COALESCE(SUM(i.cash_received), 0) as total_cash,
-      COALESCE(SUM(i.cash_received), 0) as paid_cash,
-      COALESCE(SUM(i.invoice_total) - SUM(i.cash_received + i.dlb_winning + i.nlb_winning), 0) as amount_over,
-      -- loan_amount: total live outstanding (outstanding_balance is kept current by syncInvoiceLiveBalance)
-      COALESCE((
-        SELECT ROUND(SUM(MAX(0, i3.outstanding_balance)), 2)
-        FROM invoices i3 WHERE i3.agent_id=a.id
-          AND COALESCE(i3.invoice_status,'paid') NOT IN ('draft','cancelled')
-      ), 0) as loan_amount,
-      ROUND(COALESCE((
-        SELECT SUM(MAX(0, ROUND(i2.outstanding_balance, 2)))
-        FROM invoices i2 WHERE i2.agent_id = a.id
-          AND COALESCE(i2.invoice_status, 'paid') NOT IN ('draft', 'cancelled')
-      ), 0), 2) as outstanding_balance
+    SELECT a.id AS agent_id, a.name,
+      COALESCE((SELECT SUM(ii.qty) FROM invoice_items ii
+        JOIN invoices i ON i.id=ii.invoice_id
+        WHERE i.agent_id=a.id AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')),0) AS total_tickets,
+      COALESCE((SELECT SUM(i.invoice_total) FROM invoices i
+        WHERE i.agent_id=a.id AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')),0) AS total_value,
+      COALESCE((SELECT SUM(i.dlb_winning+i.nlb_winning) FROM invoices i
+        WHERE i.agent_id=a.id AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')),0) AS winnings_tickets,
+      COALESCE((SELECT SUM(i.cash_received) FROM invoices i
+        WHERE i.agent_id=a.id AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')),0) AS total_cash,
+      COALESCE((SELECT SUM(i.cash_received) FROM invoices i
+        WHERE i.agent_id=a.id AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')),0) AS paid_cash,
+      COALESCE((SELECT SUM(i.invoice_total-i.cash_received-i.dlb_winning-i.nlb_winning)
+        FROM invoices i WHERE i.agent_id=a.id
+        AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')),0) AS amount_over,
+      COALESCE((SELECT ROUND(SUM(MAX(0,i.outstanding_balance)),2) FROM invoices i
+        WHERE i.agent_id=a.id AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')),0) AS loan_amount,
+      COALESCE((SELECT ROUND(SUM(MAX(0,i.outstanding_balance)),2) FROM invoices i
+        WHERE i.agent_id=a.id AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')),0) AS outstanding_balance
     FROM agents a
-    LEFT JOIN invoices i ON i.agent_id = a.id
-      AND COALESCE(i.invoice_status, 'paid') NOT IN ('draft', 'cancelled')
-    LEFT JOIN invoice_items ii ON ii.invoice_id = i.id
-    GROUP BY a.id, a.name
-    ORDER BY a.name ASC
+    GROUP BY a.id,a.name ORDER BY a.name ASC
   `);
-  // JS-level sanitize: eliminate any residual float noise from SQLite REAL arithmetic
   return rows.map(r => ({
     ...r,
-    total_value:       Number(r.total_value.toFixed(2)),
-    total_cash:        Number(r.total_cash.toFixed(2)),
-    paid_cash:         Number(r.paid_cash.toFixed(2)),
-    amount_over:       Number(r.amount_over.toFixed(2)),
-    outstanding_balance: Number(Math.max(0, r.outstanding_balance).toFixed(2)),
+    total_value: Number((r.total_value ?? 0).toFixed(2)),
+    total_cash: Number((r.total_cash ?? 0).toFixed(2)),
+    paid_cash: Number((r.paid_cash ?? 0).toFixed(2)),
+    amount_over: Number((r.amount_over ?? 0).toFixed(2)),
+    outstanding_balance: Number(Math.max(0, r.outstanding_balance ?? 0).toFixed(2)),
   }));
 }
 
@@ -1382,7 +1430,8 @@ export async function getAgentPerformance(): Promise<import("../types").AgentPer
       COALESCE(SUM(CASE WHEN i.outstanding_balance > 0 THEN i.outstanding_balance ELSE 0 END), 0) as outstanding,
       CASE
         WHEN COALESCE(SUM(i.invoice_total), 0) > 0
-        THEN ROUND((COALESCE(SUM(i.cash_received + i.dlb_winning + i.nlb_winning), 0) /
+        THEN ROUND((COALESCE(SUM(i.cash_received + i.dlb_winning + i.nlb_winning +
+               COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=i.id),0)), 0) /
              COALESCE(SUM(i.invoice_total), 1)) * 100, 1)
         ELSE 0
       END as collection_rate
@@ -1443,7 +1492,9 @@ export async function getGlobalStats(): Promise<import("../types").GlobalStats> 
     }[]>(`
       SELECT
         COALESCE(SUM(invoice_total), 0)                     as total_invoice_value,
-        COALESCE(SUM(cash_received), 0)                     as total_cash_collected,
+        COALESCE(SUM(cash_received +
+          COALESCE((SELECT SUM(p.amount) FROM payments p
+            WHERE p.invoice_id=invoices.id AND p.payment_type='cash'),0)),0) AS total_cash_collected,
         COALESCE(SUM(dlb_winning + nlb_winning), 0)         as total_winnings_returned,
         COALESCE(SUM(CASE WHEN outstanding_balance > 0 THEN outstanding_balance ELSE 0 END), 0) as total_outstanding,
         COUNT(*)                                            as total_invoices
@@ -1911,7 +1962,8 @@ export async function getPeriodStats(days: number) {
       SELECT
         COUNT(*) as invoice_count,
         COALESCE(SUM(invoice_total), 0) as total_invoiced,
-        COALESCE(SUM(cash_received + dlb_winning + nlb_winning), 0) as total_collected,
+        COALESCE(SUM(cash_received + dlb_winning + nlb_winning +
+          COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=invoices.id),0)), 0) as total_collected,
         COALESCE(SUM(CASE WHEN outstanding_balance > 0 THEN outstanding_balance ELSE 0 END), 0) as total_outstanding
       FROM invoices
       WHERE invoice_date >= ?
@@ -2279,10 +2331,12 @@ export async function getSupplierAging(): Promise<SupplierAgingBracket[]> {
 
 export interface ProfitSummary {
   period_days: number;
-  total_revenue: number;        // cash collected from agents (invoices)
-  total_cost: number;           // stock purchased from Nimalsiri
+  total_revenue: number;        // accrual invoice revenue (not cash receipts)
+  total_cost: number;           // cost of stock distributed (COGS)
   gross_profit: number;
-  total_commission: number;     // commission paid out to agents
+  total_commission: number;     // calculated commission expense
+  total_payroll: number;        // salary payments dated in period
+  total_expenses: number;       // petty cash expenses dated in period
   net_profit: number;
   margin_pct: number;
   invoice_count: number;
@@ -2295,7 +2349,7 @@ export async function getProfitSummary(days: number): Promise<ProfitSummary> {
     ? "1900-01-01"
     : new Date(Date.now() - days * 86400000).toISOString().split("T")[0];
 
-  const [rev, cogs, comm, purchases] = await Promise.all([
+  const [rev, cogs, comm, purchases, salaries, petty] = await Promise.all([
     // Revenue = invoice totals (accrual: tickets billed to agents, not just cash collected)
     // Excludes draft/cancelled so only real deliveries count
     d.select<{ total: number; collected: number; cnt: number }[]>(`
@@ -2352,15 +2406,27 @@ export async function getProfitSummary(days: number): Promise<ProfitSummary> {
       SELECT COUNT(*) as cnt, COALESCE(SUM(invoice_total), 0) as total
       FROM purchase_invoices WHERE purchase_date >= ?
     `, [since]),
+    // Operating expenses recorded as paid salaries, by their actual payment date.
+    d.select<{ total: number }[]>(`
+      SELECT COALESCE(SUM(net_salary), 0) AS total FROM worker_salaries
+      WHERE status='paid' AND date(paid_date) >= ?
+    `, [since]),
+    d.select<{ total: number }[]>(`
+      SELECT COALESCE(SUM(amount), 0) AS total FROM petty_cash_transactions
+      WHERE date(date) >= ?
+    `, [since]),
   ]);
 
   const revenue      = rev[0]?.total ?? 0;
   const cogs_total   = cogs[0]?.total ?? 0;
   const commission   = comm[0]?.total ?? 0;
-  // Gross profit = selling price to agents − cost of those same tickets to Ajith
-  // Since both are at face value, gross margin shows the discount Ajith absorbed
+  const payroll      = salaries[0]?.total ?? 0;
+  const expenses     = petty[0]?.total ?? 0;
+  // Accrual operating profit: invoiced revenue - matched COGS - commission
+  // - paid payroll - petty cash expenses. Supplier liabilities and cash receipts
+  // are NOT additional costs, and must not be subtracted twice.
   const gross        = revenue - cogs_total;
-  const net          = gross - commission;
+  const net          = gross - commission - payroll - expenses;
   const margin       = revenue > 0 ? (net / revenue) * 100 : 0;
 
   return {
@@ -2369,6 +2435,8 @@ export async function getProfitSummary(days: number): Promise<ProfitSummary> {
     total_cost:        cogs_total,
     gross_profit:      gross,
     total_commission:  commission,
+    total_payroll:     payroll,
+    total_expenses:    expenses,
     net_profit:        net,
     margin_pct:        Math.round(margin * 10) / 10,
     invoice_count:     rev[0]?.cnt ?? 0,
@@ -2377,49 +2445,77 @@ export async function getProfitSummary(days: number): Promise<ProfitSummary> {
 }
 
 export async function getDailyProfitTrend(days: number): Promise<{
-  day: string; revenue: number; cost: number; net: number;
+  day: string; revenue: number; cost: number; commission: number;
+  salary: number; expenses: number; net: number;
 }[]> {
   const d = await getDb();
-  const since = new Date(Date.now() - days * 86400000).toISOString().split("T")[0];
-
-  const [rev, costs] = await Promise.all([
-    // Revenue = invoice totals per day (accrual), excluding draft/cancelled
-    d.select<{ day: string; revenue: number }[]>(`
-      SELECT date(invoice_date) as day,
-             COALESCE(SUM(invoice_total), 0) as revenue
-      FROM invoices
-      WHERE invoice_date >= ?
-        AND COALESCE(invoice_status, 'paid') NOT IN ('draft', 'cancelled')
-      GROUP BY date(invoice_date) ORDER BY day ASC
+  const since = days >= 36500 ? "1900-01-01"
+    : new Date(Date.now() - days * 86400000).toISOString().split("T")[0];
+  const [rev, costs, commissions, salaries, expenses] = await Promise.all([
+    d.select<{day:string;amount:number}[]>(`
+      SELECT date(invoice_date) day, COALESCE(SUM(invoice_total),0) amount
+      FROM invoices WHERE invoice_date >= ?
+        AND COALESCE(invoice_status,'paid') NOT IN ('draft','cancelled')
+      GROUP BY date(invoice_date)
     `, [since]),
-    // COGS = qty × Nimalsiri cost price per day
-    d.select<{ day: string; cost: number }[]>(`
-      SELECT date(i.invoice_date) as day,
-             COALESCE(SUM(ii.qty * COALESCE(NULLIF(lg.cost_price, 0), lg.unit_price, ii.unit_price)), 0) as cost
-      FROM invoice_items ii
-      JOIN invoices i ON i.id = ii.invoice_id
-      LEFT JOIN lottery_games lg ON lg.name = ii.ticket_name
+    d.select<{day:string;amount:number}[]>(`
+      SELECT date(i.invoice_date) day,
+        COALESCE(SUM(ii.qty*COALESCE(NULLIF(lg.cost_price,0),lg.unit_price,ii.unit_price)),0) amount
+      FROM invoice_items ii JOIN invoices i ON i.id=ii.invoice_id
+      LEFT JOIN lottery_games lg ON lg.name=ii.ticket_name
       WHERE i.invoice_date >= ?
-        AND COALESCE(i.invoice_status, 'paid') NOT IN ('draft', 'cancelled')
-      GROUP BY date(i.invoice_date) ORDER BY day ASC
+        AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')
+      GROUP BY date(i.invoice_date)
+    `, [since]),
+    d.select<{day:string;amount:number}[]>(`
+      SELECT date(i.invoice_date) day, COALESCE(SUM(
+        CASE cs.commission_type
+          WHEN 'percentage' THEN i.invoice_total * cs.rate / 100.0
+          WHEN 'per_ticket' THEN (SELECT COALESCE(SUM(ii.qty),0)
+            FROM invoice_items ii WHERE ii.invoice_id=i.id)*cs.rate
+          ELSE cs.rate END
+      ),0) amount
+      FROM invoices i LEFT JOIN commission_schemes cs ON cs.id=(
+        SELECT id FROM commission_schemes
+        WHERE (agent_id=i.agent_id OR agent_id IS NULL) AND is_active=1
+        ORDER BY agent_id IS NULL ASC LIMIT 1
+      )
+      WHERE i.invoice_date >= ?
+        AND COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled')
+      GROUP BY date(i.invoice_date)
+    `, [since]),
+    d.select<{day:string;amount:number}[]>(`
+      SELECT date(paid_date) day, COALESCE(SUM(net_salary),0) amount
+      FROM worker_salaries WHERE status='paid' AND date(paid_date)>=?
+      GROUP BY date(paid_date)
+    `, [since]),
+    d.select<{day:string;amount:number}[]>(`
+      SELECT date(date) day, COALESCE(SUM(amount),0) amount
+      FROM petty_cash_transactions WHERE date(date)>=?
+      GROUP BY date(date)
     `, [since]),
   ]);
-
-  const map = new Map<string, { revenue: number; cost: number }>();
-  // M-15: seed every day in the requested range so the chart has no gaps
-  for (let i = 0; i <= days; i++) {
-    const d2 = new Date(Date.now() - (days - i) * 86400000).toISOString().split("T")[0];
-    map.set(d2, { revenue: 0, cost: 0 });
+  type Row = { revenue:number;cost:number;commission:number;salary:number;expenses:number };
+  const blank = ():Row => ({revenue:0,cost:0,commission:0,salary:0,expenses:0});
+  const map = new Map<string,Row>();
+  // Include zero-activity days for chart continuity, except for All-Time.
+  if (days < 36500) for (let n=0;n<=days;n++) {
+    const day = new Date(Date.now()-(days-n)*86400000).toISOString().split("T")[0];
+    map.set(day,blank());
   }
-  for (const r of rev) map.set(r.day, { revenue: r.revenue, cost: map.get(r.day)?.cost ?? 0 });
-  for (const c of costs) {
-    const e = map.get(c.day) ?? { revenue: 0, cost: 0 };
-    e.cost = c.cost;
-    map.set(c.day, e);
+  for (const [key,rows] of [
+    ["revenue",rev],["cost",costs],["commission",commissions],
+    ["salary",salaries],["expenses",expenses]
+  ] as [keyof Row,{day:string;amount:number}[]][]) {
+    for (const row of rows) {
+      const current=map.get(row.day)??blank();
+      current[key]=row.amount;
+      map.set(row.day,current);
+    }
   }
-  return Array.from(map.entries())
-    .map(([day, v]) => ({ day, revenue: v.revenue, cost: v.cost, net: v.revenue - v.cost }))
-    .sort((a, b) => a.day.localeCompare(b.day));
+  return Array.from(map.entries()).map(([day,v])=>({
+    day,...v,net:v.revenue-v.cost-v.commission-v.salary-v.expenses
+  })).sort((x,y)=>x.day.localeCompare(y.day));
 }
 
 // ── Workers & Payroll ─────────────────────────────────────────────────────────
@@ -2596,17 +2692,12 @@ export async function getAgentRiskScores(): Promise<AgentRiskScore[]> {
   }[]>(`
     SELECT
       a.id as agent_id, a.name,
-      COALESCE(SUM(
-        i.outstanding_balance
-        - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=i.id),0)
-        - COALESCE((SELECT SUM(tr.total_value) FROM ticket_returns tr
-                    WHERE tr.invoice_id=i.id AND tr.status='settled'),0)
-      ),0) as live_outstanding,
+      ROUND(COALESCE(SUM(MAX(0, i.outstanding_balance)),0),2) as live_outstanding,
       COALESCE(MAX(CAST(julianday('now') - julianday(i.invoice_date) AS INTEGER)),0) as max_days,
       COUNT(i.id) as invoice_count
     FROM agents a
     LEFT JOIN invoices i ON i.agent_id=a.id
-    WHERE i.outstanding_balance > 0
+    WHERE COALESCE(i.invoice_status,'paid') NOT IN ('draft','cancelled') AND i.outstanding_balance > 0
     GROUP BY a.id, a.name
     ORDER BY live_outstanding DESC
   `);
@@ -2648,43 +2739,33 @@ export async function getInventoryVelocity(): Promise<{
   `);
 }
 
+/**
+ * Monthly operating trend uses the same five financial categories as
+ * getDailyProfitTrend/getProfitSummary. Supplier purchases are inventory
+ * acquisitions, NOT an expense to subtract a second time.
+ */
 export async function getMonthlyRevenueTrend(months = 6): Promise<{
   month: string; revenue: number; cost: number; salary: number; net: number;
 }[]> {
-  const d = await getDb();
-  const since = new Date();
-  since.setMonth(since.getMonth() - months);
-  const sinceStr = since.toISOString().substring(0, 7);
-
-  const [rev, costs, salaries] = await Promise.all([
-    d.select<{ month: string; revenue: number }[]>(`
-      SELECT strftime('%Y-%m', invoice_date) as month,
-             COALESCE(SUM(invoice_total),0) as revenue
-      FROM invoices WHERE strftime('%Y-%m', invoice_date) >= ?
-        AND COALESCE(invoice_status,'paid') NOT IN ('draft','cancelled')
-      GROUP BY month ORDER BY month ASC
-    `, [sinceStr]),
-    d.select<{ month: string; cost: number }[]>(`
-      SELECT strftime('%Y-%m', purchase_date) as month,
-             COALESCE(SUM(invoice_total),0) as cost
-      FROM purchase_invoices WHERE strftime('%Y-%m', purchase_date) >= ?
-      GROUP BY month ORDER BY month ASC
-    `, [sinceStr]),
-    d.select<{ month: string; salary: number }[]>(`
-      SELECT month, COALESCE(SUM(net_salary),0) as salary
-      FROM worker_salaries WHERE month >= ?
-      GROUP BY month ORDER BY month ASC
-    `, [sinceStr]),
-  ]);
-
-  const map = new Map<string, { revenue: number; cost: number; salary: number }>();
-  for (const r of rev) map.set(r.month, { revenue: r.revenue, cost: 0, salary: 0 });
-  for (const c of costs) { const e = map.get(c.month) ?? { revenue: 0, cost: 0, salary: 0 }; e.cost = c.cost; map.set(c.month, e); }
-  for (const s of salaries) { const e = map.get(s.month) ?? { revenue: 0, cost: 0, salary: 0 }; e.salary = s.salary; map.set(s.month, e); }
-
-  return Array.from(map.entries())
-    .map(([month, v]) => ({ month, revenue: v.revenue, cost: v.cost, salary: v.salary, net: v.revenue - v.cost - v.salary }))
-    .sort((a, b) => a.month.localeCompare(b.month));
+  const start = new Date();
+  start.setDate(1);
+  start.setMonth(start.getMonth() - months);
+  const startDay = start.toISOString().slice(0, 10);
+  const elapsedDays = Math.ceil((Date.now() - start.getTime()) / 86400000);
+  const daily = await getDailyProfitTrend(elapsedDays);
+  const map = new Map<string, {revenue:number;cost:number;salary:number;net:number}>();
+  for (const row of daily) {
+    if (row.day < startDay) continue;
+    const month = row.day.slice(0,7);
+    const v = map.get(month) ?? {revenue:0,cost:0,salary:0,net:0};
+    v.revenue += row.revenue;
+    v.cost += row.cost;
+    v.salary += row.salary;
+    v.net += row.net;
+    map.set(month,v);
+  }
+  return Array.from(map.entries()).map(([month,v])=>({month,...v}))
+    .sort((a,b)=>a.month.localeCompare(b.month));
 }
 
 // ── Retroactive Inventory Sync ────────────────────────────────────────────────

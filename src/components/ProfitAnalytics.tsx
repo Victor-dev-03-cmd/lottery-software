@@ -86,7 +86,7 @@ export default function ProfitAnalytics() {
             {t("nav_profit")}
           </h1>
           <p className="text-xs mt-0.5" style={{ color: "#9AA0A6" }}>
-            Net profit = Invoice Revenue − Cost of Tickets Distributed (COGS) − Commissions paid
+            Operating profit = Invoiced revenue − distributed ticket cost (COGS) − accrued commission − paid payroll − petty cash expenses
           </p>
         </div>
 
@@ -128,29 +128,29 @@ export default function ProfitAnalytics() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "#9AA0A6" }}>Gross Profit</p>
-                  <p className="text-2xl font-black" style={{ color: summary.gross_profit >= 0 ? BRAND : DANGER }}>
+                  <p className="text-2xl font-black" style={{ color: summary.gross_profit >= 0 ? "#188038" : DANGER }}>
                     Rs. {fmt(summary.gross_profit)}
                   </p>
                   <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>before commissions</p>
                 </div>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "#EAF1FB" }}>
                   {summary.gross_profit >= 0
-                    ? <TrendUp   size={18} variant="Linear" color={BRAND} />
+                    ? <TrendUp   size={18} variant="Linear" color={SUCCESS} />
                     : <TrendDown size={18} variant="Linear" color={DANGER} />}
                 </div>
               </div>
             </div>
 
             {/* Commission */}
-            <div className="rounded-2xl p-5 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #7c3aed" }}>
+            <div className="rounded-2xl p-5 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid var(--color-google-yellow)" }}>
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "#9AA0A6" }}>Commission Paid</p>
-                  <p className="text-2xl font-black" style={{ color: "#7c3aed" }}>Rs. {fmt(summary.total_commission)}</p>
-                  <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>agent commissions</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "#9AA0A6" }}>Commission Expense</p>
+                  <p className="text-2xl font-black" style={{ color: "#8A5800" }}>Rs. {fmt(summary.total_commission)}</p>
+                  <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>commission calculated from active schemes</p>
                 </div>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "#F3E8FF" }}>
-                  <PercentageCircle size={18} variant="Linear" color="#7c3aed" />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--color-google-yellow-tint)" }}>
+                  <PercentageCircle size={18} variant="Linear" color="#8A5800" />
                 </div>
               </div>
             </div>
@@ -179,6 +179,12 @@ export default function ProfitAnalytics() {
                     </div>
                     <div className="flex justify-between gap-8">
                       <span>Commission</span><span className="font-bold" style={{ color: DANGER }}>−{fmt(summary.total_commission)}</span>
+                    </div>
+                    <div className="flex justify-between gap-8">
+                      <span>Paid Payroll</span><span className="font-bold" style={{ color: DANGER }}>−{fmt(summary.total_payroll)}</span>
+                    </div>
+                    <div className="flex justify-between gap-8">
+                      <span>Petty Cash Expenses</span><span className="font-bold" style={{ color: DANGER }}>−{fmt(summary.total_expenses)}</span>
                     </div>
                     <div className="flex justify-between gap-8 pt-1" style={{ borderTop: "1px solid #E0E3E7" }}>
                       <span className="font-black" style={{ color: "#202124" }}>Net</span>
@@ -246,7 +252,7 @@ export default function ProfitAnalytics() {
               <table className="w-full">
                 <thead>
                   <tr style={{ background: "#374151" }}>
-                    {["Date","Revenue","Stock Cost","Net Profit"].map(h => (
+                    {["Date","Revenue","Stock Cost","Commission","Payroll","Petty Cash","Net Profit"].map(h => (
                       <th key={h} className={`px-4 py-2.5 ${h==="Date"?"text-left":"text-right"}`}
                         style={{ fontSize:10, color:"rgba(255,255,255,0.7)", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em" }}>{h}</th>
                     ))}
@@ -258,6 +264,9 @@ export default function ProfitAnalytics() {
                       <td className="px-4 py-2.5 text-xs font-mono" style={{ color: "#5F6368" }}>{fmtDate(day.day)}</td>
                       <td className="px-4 py-2.5 text-xs text-right font-semibold" style={{ color: SUCCESS }}>Rs. {fmt(day.revenue)}</td>
                       <td className="px-4 py-2.5 text-xs text-right" style={{ color: DANGER }}>Rs. {fmt(day.cost)}</td>
+                      <td className="px-4 py-2.5 text-xs text-right" style={{ color: DANGER }}>Rs. {fmt(day.commission)}</td>
+                      <td className="px-4 py-2.5 text-xs text-right" style={{ color: DANGER }}>Rs. {fmt(day.salary)}</td>
+                      <td className="px-4 py-2.5 text-xs text-right" style={{ color: DANGER }}>Rs. {fmt(day.expenses)}</td>
                       <td className="px-4 py-2.5 text-xs text-right font-bold" style={{ color: day.net >= 0 ? SUCCESS : DANGER }}>
                         {day.net >= 0 ? "+" : ""}Rs. {fmt(day.net)}
                       </td>

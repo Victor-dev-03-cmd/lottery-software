@@ -117,6 +117,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check signing key presence
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if [ -z "${TAURI_SIGNING_PRIVATE_KEY}" ]; then
+            echo "::warning::TAURI_SIGNING_PRIVATE_KEY is not set as a GitHub Secret."
+            echo "::warning::Updates will be published UNSIGNED. dangerousInsecure:true in tauri.conf.json allows clients to install them."
+            echo "::warning::See RELEASE_SECURITY.md for the migration steps to enable signed updates."
+          else
+            echo "Signing key present — updates will be signed."
+          fi
+
       - name: Setup Bun (for tauri signer sign command)
         uses: oven-sh/setup-bun@v1
         with:

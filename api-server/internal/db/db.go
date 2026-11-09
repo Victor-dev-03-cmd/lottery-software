@@ -396,6 +396,19 @@ CREATE TABLE IF NOT EXISTS sync_log (
 	row_count    BIGINT      NOT NULL DEFAULT 0
 );
 
+-- ── Delete tombstones ─────────────────────────────────────────────────────────
+-- Tracks hard-deleted rows to prevent stale upsert retries (with an older
+-- queue_id) from resurrecting a deleted row ("resurrection guard").
+-- A tombstone is written before the DELETE so that any concurrent or retried
+-- upsert with queue_id <= tombstone.queue_id is silently skipped.
+CREATE TABLE IF NOT EXISTS sync_tombstones (
+	table_name  TEXT        NOT NULL,
+	record_id   BIGINT      NOT NULL,
+	queue_id    BIGINT      NOT NULL DEFAULT 0,
+	deleted_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	PRIMARY KEY (table_name, record_id)
+);
+
 -- ── AP-04: Stale-event guard migrations ───────────────────────────────────────
 -- last_queue_id tracks the highest sync_queue.id that has successfully upserted
 -- each row. The SyncBatch handler rejects DO UPDATE when the incoming

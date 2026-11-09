@@ -3,7 +3,10 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"net"
 	"net/http"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,13 +16,15 @@ import (
 // ── Rate limiter (in-memory, single-instance) ──────────────────────────────────
 
 type rateLimiter struct {
-	mu       sync.Mutex
-	attempts map[string]*attempt
+	mu          sync.Mutex
+	attempts    map[string]*attempt
+	lastCleanup time.Time
 }
 
 type attempt struct {
 	count    int
 	lockedAt time.Time
+	lastSeen time.Time
 }
 
 var authLimiter = &rateLimiter{attempts: make(map[string]*attempt)}
@@ -27,27 +32,57 @@ var authLimiter = &rateLimiter{attempts: make(map[string]*attempt)}
 const (
 	maxAttempts  = 5
 	lockDuration = 15 * time.Minute
+	staleTTL     = 30 * time.Minute // evict non-locked entries idle longer than this
+	// maxEntries caps the in-memory map to bound worst-case memory.
+	// At ~250 bytes/entry, 10 000 entries ≈ 2.5 MB. Requests from novel IPs
+	// when the cap is reached are rejected until the next cleanup pass frees space.
+	maxEntries = 10_000
 )
 
 func (rl *rateLimiter) check(ip string) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
+
+	// Lazy cleanup: evict both expired locks and stale low-count entries.
+	// Runs at most once per 5 minutes to bound cleanup overhead.
+	if time.Since(rl.lastCleanup) > 5*time.Minute {
+		rl.lastCleanup = time.Now()
+		for k, a := range rl.attempts {
+			if !a.lockedAt.IsZero() && time.Since(a.lockedAt) > lockDuration {
+				// Expired lock — remove.
+				delete(rl.attempts, k)
+			} else if a.lockedAt.IsZero() && time.Since(a.lastSeen) > staleTTL {
+				// Non-locked entry with no recent activity — remove.
+				// Without this, IPs with 1–4 attempts that never reach maxAttempts
+				// accumulate indefinitely under a low-volume probing attack.
+				delete(rl.attempts, k)
+			}
+		}
+	}
+
+	now := time.Now()
 	a := rl.attempts[ip]
 	if a == nil {
-		rl.attempts[ip] = &attempt{count: 1}
+		// Hard cap: deny novel IPs when map is full rather than growing unboundedly.
+		// The next cleanup pass will free space for legitimate callers.
+		if len(rl.attempts) >= maxEntries {
+			return false
+		}
+		rl.attempts[ip] = &attempt{count: 1, lastSeen: now}
 		return true
 	}
 	if !a.lockedAt.IsZero() {
 		if time.Since(a.lockedAt) > lockDuration {
 			delete(rl.attempts, ip)
-			rl.attempts[ip] = &attempt{count: 1}
+			rl.attempts[ip] = &attempt{count: 1, lastSeen: now}
 			return true
 		}
 		return false
 	}
 	a.count++
+	a.lastSeen = now
 	if a.count > maxAttempts {
-		a.lockedAt = time.Now()
+		a.lockedAt = now
 		return false
 	}
 	return true
@@ -59,11 +94,57 @@ func (rl *rateLimiter) reset(ip string) {
 	rl.mu.Unlock()
 }
 
-func clientIP(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		return xff
+// cleanup removes expired locks and stale non-locked entries.
+// It is safe to call concurrently with check() and reset().
+// Tests call this directly; in production the lazy path inside check() is used.
+func (rl *rateLimiter) cleanup() {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+	for ip, a := range rl.attempts {
+		if !a.lockedAt.IsZero() && time.Since(a.lockedAt) > lockDuration {
+			delete(rl.attempts, ip)
+		} else if a.lockedAt.IsZero() && time.Since(a.lastSeen) > staleTTL {
+			delete(rl.attempts, ip)
+		}
 	}
-	return r.RemoteAddr
+}
+
+// clientIP returns the real client IP for rate-limiting purposes.
+//
+// When the TRUSTED_PROXY environment variable is set to a specific IP address,
+// the server trusts that proxy to provide the real client IP via X-Forwarded-For —
+// but only when the connection originates from that exact proxy IP. The leftmost
+// (first) XFF value is used, as a trusted proxy prepends the real client IP.
+//
+// When TRUSTED_PROXY is unset (the default) or the connection does not originate
+// from the configured proxy, X-Forwarded-For is ignored entirely and r.RemoteAddr
+// is used. This prevents rate-limit bypass via a spoofed XFF header.
+func clientIP(r *http.Request) string {
+	trustedProxy := os.Getenv("TRUSTED_PROXY")
+	if trustedProxy != "" {
+		// Strip port from RemoteAddr to compare with configured proxy IP.
+		remoteHost, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			remoteHost = r.RemoteAddr
+		}
+		if remoteHost == trustedProxy {
+			if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+				// Take leftmost IP — the real client as recorded by the trusted proxy.
+				// The rightmost entries can be attacker-injected and must not be trusted.
+				parts := strings.Split(xff, ",")
+				ip := strings.TrimSpace(parts[0])
+				if ip != "" {
+					return ip
+				}
+			}
+		}
+	}
+	// Fallback: use RemoteAddr, stripping port.
+	addr := r.RemoteAddr
+	if host, _, err := net.SplitHostPort(addr); err == nil {
+		return host
+	}
+	return addr
 }
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────────
@@ -192,7 +273,6 @@ type registerDeviceReq struct {
 
 func RegisterDevice(svc *auth.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Admin JWT required for additional device registration
 		var req registerDeviceReq
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeError(w, "invalid request body", http.StatusBadRequest)
@@ -235,12 +315,16 @@ func RotateKey(svc *auth.Service) http.HandlerFunc {
 			writeError(w, "server error", http.StatusInternalServerError)
 			return
 		}
-		_, err = svc.Pool().Exec(r.Context(),
+		tag, err := svc.Pool().Exec(r.Context(),
 			`UPDATE devices SET key_hash = $1 WHERE key_hash = $2 AND is_revoked = FALSE`,
 			newHash, hash,
 		)
 		if err != nil {
 			writeError(w, "server error", http.StatusInternalServerError)
+			return
+		}
+		if tag.RowsAffected() == 0 {
+			writeError(w, "device not found or revoked", http.StatusNotFound)
 			return
 		}
 		writeJSON(w, map[string]string{"new_device_key": rawKey}, http.StatusOK)

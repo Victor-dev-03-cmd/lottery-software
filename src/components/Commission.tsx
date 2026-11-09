@@ -101,9 +101,9 @@ export default function Commission() {
 
         {/* Summary cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #7c3aed" }}>
+          <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #FBBC05" }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#9AA0A6" }}>Active Schemes</p>
-            <p className="text-2xl font-black" style={{ color: "#7c3aed" }}>{schemes.filter((s) => s.is_active).length}</p>
+            <p className="text-2xl font-black" style={{ color: "#8A5800" }}>{schemes.filter((s) => s.is_active).length}</p>
             <p className="text-xs mt-1" style={{ color: "#9AA0A6" }}>of {schemes.length} total</p>
           </div>
           <div className="rounded-xl p-4 shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E0E3E7", borderTop: "3px solid #34A853" }}>

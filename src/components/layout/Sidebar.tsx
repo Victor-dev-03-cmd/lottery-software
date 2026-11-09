@@ -2,8 +2,8 @@ import { useEffect } from "react";
 import {
   Category2, Notification, ShoppingCart, RotateLeft, House,
   AddCircle, Clock, DocumentFilter, DocumentText, ClipboardClose,
-  Brush, Book1, ClipboardText, PercentageCircle, Wallet,
-  People, Hierarchy, Chart21, TrendUp, Cpu, Cup, UserEdit,
+  Brush, ClipboardText, PercentageCircle, Wallet,
+  People, Hierarchy, Chart21, TrendUp, Cpu, UserEdit,
   Printer, Setting2, ArrowLeft2, ArrowRight2, Tag,
 } from "iconsax-react";
 import { useAuth, CASHIER_ALLOWED } from "../../contexts/AuthContext";
@@ -45,6 +45,18 @@ const G = {
   tooltipBg:    "#202124",
 };
 
+// Google accents distinguish sections; selected navigation remains blue.
+const GROUP_ACCENT: Record<string, string> = {
+  nav_overview: "#4285F4",
+  nav_purchasing: "#FBBC05",
+  nav_sales: "#34A853",
+  nav_section_collections: "#FBBC05",
+  nav_agents: "#4285F4",
+  nav_analytics: "#34A853",
+  nav_operations: "#EA4335",
+  nav_system: "#4285F4",
+};
+
 export default function Sidebar({
   active, onNavigate, collapsed, onToggle,
   mobileOpen = false, onMobileClose,
@@ -78,9 +90,7 @@ export default function Sidebar({
         { view: "confirmed-invoices", labelKey: "nav_confirmed_invoices", label: t("nav_confirmed_invoices"), icon: <DocumentFilter size={20} variant="Linear" color="currentColor" /> },
         { view: "invoices",           labelKey: "nav_paid_invoices",      label: t("nav_paid_invoices"),      icon: <DocumentText   size={20} variant="Linear" color="currentColor" /> },
         { view: "cancelled-invoices", labelKey: "nav_cancelled_invoices", label: t("nav_cancelled_invoices"), icon: <ClipboardClose size={20} variant="Linear" color="currentColor" /> },
-        { view: "invoice-model",      labelKey: "nav_invoice_model",      label: t("nav_invoice_model"),      icon: <Brush          size={20} variant="Linear" color="currentColor" /> },
-        { view: "ledger",             labelKey: "nav_ledger",             label: t("nav_ledger"),             icon: <Book1          size={20} variant="Linear" color="currentColor" /> },
-      ],
+        { view: "invoice-model",      labelKey: "nav_invoice_model",      label: t("nav_invoice_model"),      icon: <Brush          size={20} variant="Linear" color="currentColor" /> },      ],
     },
     {
       headingKey: "nav_section_collections", heading: t("nav_section_collections"),
@@ -102,9 +112,7 @@ export default function Sidebar({
       items: [
         { view: "reports",          labelKey: "nav_reports",      label: t("nav_reports"),      icon: <Chart21 size={20} variant="Linear" color="currentColor" /> },
         { view: "profit-analytics", labelKey: "nav_profit",       label: t("nav_profit"),       icon: <TrendUp size={20} variant="Linear" color="currentColor" /> },
-        { view: "ai-analytics",     labelKey: "nav_ai",           label: t("nav_ai"),           icon: <Cpu     size={20} variant="Linear" color="currentColor" /> },
-        { view: "live-results",     labelKey: "nav_live_results", label: t("nav_live_results"), icon: <Cup     size={20} variant="Linear" color="currentColor" /> },
-      ],
+        { view: "ai-analytics",     labelKey: "nav_ai",           label: t("nav_ai"),           icon: <Cpu     size={20} variant="Linear" color="currentColor" /> },      ],
     },
     {
       headingKey: "nav_operations", heading: t("nav_operations"),
@@ -174,7 +182,7 @@ export default function Sidebar({
           <button
             onClick={onMobileClose}
             className="lg:hidden mr-1 p-1 rounded-lg transition-colors"
-            style={{ color: G.sectionTxt }}
+            style={{ color: lang === "si" ? "#374151" : G.sectionTxt }}
             onMouseEnter={e => { e.currentTarget.style.background = G.hoverBg; }}
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
             aria-label="Close navigation"
@@ -213,8 +221,8 @@ export default function Sidebar({
           <div key={group.heading} className="mb-1">
             {(!collapsed || mobileOpen) ? (
               <div
-                className={`px-4 pt-2.5 pb-0.5 text-[9px] font-black uppercase tracking-[0.12em] select-none ${lang === "si" ? "si" : ""}`}
-                style={{ color: G.sectionTxt }}
+                className={`mx-3 px-2 pt-2 pb-1 font-bold select-none ${lang === "si" ? "si text-[11px] tracking-normal" : "text-[10px] uppercase tracking-[0.1em]"}`}
+                style={{ color: "#374151", borderLeft: `3px solid ${GROUP_ACCENT[group.headingKey] ?? BRAND}` }}
               >
                 {group.heading}
               </div>
@@ -284,7 +292,8 @@ export default function Sidebar({
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
-                        fontSize: lang === "si" ? "0.8rem" : undefined,
+                        fontSize: lang === "si" ? "0.875rem" : undefined,
+                        fontWeight: lang === "si" ? 600 : undefined,
                       }}
                     >
                       {item.label}

@@ -9,6 +9,7 @@ import {
   getCompanySettings, getSupplierAging, getSupplierOutstanding,
 } from "../services/database";
 import type { AgingEntry, CompanySettings, Agent, SupplierAgingBracket } from "../types";
+import { useLanguage } from "../i18n";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -122,6 +123,7 @@ function buildMessage(alert: AgentAlert, co: CompanySettings, lang: ReminderLang
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function Alerts() {
+  const { lang: uiLang, t } = useLanguage();
   const [agentAlerts, setAgentAlerts]   = useState<AgentAlert[]>([]);
   const [lowStock, setLowStock]         = useState<{ game_name: string; remaining_qty: number; low_stock_threshold: number }[]>([]);
   const [company, setCompany]           = useState<CompanySettings | null>(null);
@@ -221,7 +223,7 @@ export default function Alerts() {
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
         <nav className="flex items-center gap-1 text-xs" style={{ color: "#9CA3AF" }}>
           <Home size={12}/><ChevronRight size={11}/>
-          <span className="font-semibold" style={{ color: "#1D1D1D" }}>Alerts & Reminders</span>
+          <span className="font-semibold" style={{ color: "#1D1D1D" }}><span className={uiLang === "si" ? "si" : ""}>{t("nav_alerts")}</span></span>
         </nav>
         <div className="flex gap-2">
           {agentAlerts.filter(a => a.maxDays > 7).length > 0 && (
@@ -244,7 +246,7 @@ export default function Alerts() {
 
         {/* Page title */}
         <div>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#1D1D1D" }}>Alerts & Reminders</h1>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#1D1D1D" }}><span className={uiLang === "si" ? "si" : ""}>{t("nav_alerts")}</span></h1>
           <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Overdue balances, supplier dues, low stock, multi-lingual WhatsApp reminders</p>
         </div>
 

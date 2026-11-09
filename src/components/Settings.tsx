@@ -4,7 +4,7 @@ import {
   Save, Plus, Trash2, RefreshCw, Database, Shield,
   Gamepad2, Building2, CheckCircle, AlertTriangle,
   ToggleLeft, ToggleRight, Eye, EyeOff, HardDrive, RotateCcw,
-  Pencil, Home, ChevronRight, Cloud, Lock, ShieldCheck, Smartphone,
+  Pencil, Home, ChevronRight, Cloud, Lock, ShieldCheck,
 } from "lucide-react";
 import {
   getCompanySettings, saveCompanySettings,
@@ -19,7 +19,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../i18n";
 import { usePinGuardContext } from "../App";
 
-type Tab = "general" | "games" | "security" | "mobile" | "ai" | "updates" | "import";
+type Tab = "general" | "games" | "security" | "ai" | "updates" | "import";
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "general",   label: "General",           icon: <Building2 size={15} /> },
@@ -36,15 +36,14 @@ const TAB_SI: Record<Tab, string> = {
   general:   "සාමාන්‍ය",
   games:     "ක්‍රීඩා",
   security:  "ආරක්‍ෂාව",
-  mobile:    "ජංගම App",
   ai:        "AI සැකසුම්",
   updates:   "Software යාවත්කාලීන",
   import:    "දත්ත ආදානය",
 };
 
-export default function Settings() {
+export default function Settings({ initialTab = "general" }: { initialTab?: "general" | "games" }) {
   const { t, lang } = useLanguage();
-  const [activeTab, setActiveTab] = useState<Tab>("general");
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [saved, setSaved] = useState(false);
 
   function showSaved() { setSaved(true); setTimeout(() => setSaved(false), 2000); }
@@ -102,7 +101,6 @@ export default function Settings() {
           {activeTab === "general"   && <GeneralTab onSaved={showSaved} />}
           {activeTab === "games"     && <GamesTab />}
           {activeTab === "security"  && <SecurityTab onSaved={showSaved} />}
-          {activeTab === "mobile"    && <MobileAppTab />}
           {activeTab === "ai"        && <AIConfigTab />}
           {activeTab === "updates"   && <SoftwareUpdateTab />}
           {activeTab === "import"    && <ImportDataTab />}
@@ -120,23 +118,34 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
   });
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     Promise.all([getCompanySettings(), getAppSettings()]).then(([co, s]) => {
       setCompany(co);
       setSettings(s);
-      setLoading(false);
-    });
+    }).catch(e => setError(`Could not load settings: ${String(e)}`))
+      .finally(() => setLoading(false));
   }, []);
 
   async function handleSave() {
-    await saveCompanySettings(company);
-    await saveSettings({
-      invoice_prefix: settings.invoice_prefix ?? "",
-      invoice_auto_numbering: settings.invoice_auto_numbering ?? "true",
-      default_prepared_by: settings.default_prepared_by ?? "",
-    });
-    onSaved();
+    if (saving) return;
+    setSaving(true);
+    setError("");
+    try {
+      await saveCompanySettings(company);
+      await saveSettings({
+        invoice_prefix: settings.invoice_prefix ?? "",
+        invoice_auto_numbering: settings.invoice_auto_numbering ?? "true",
+        default_prepared_by: settings.default_prepared_by ?? "",
+      });
+      onSaved();
+    } catch (e) {
+      setError(`Could not save settings: ${String(e)}`);
+    } finally {
+      setSaving(false);
+    }
   }
 
   const set = (k: string, v: string) => setSettings((p) => ({ ...p, [k]: v }));
@@ -145,6 +154,7 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
 
   return (
     <div className="space-y-5">
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
         <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #4285F4" }}>
           <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>Company Profile</p>
@@ -183,14 +193,14 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
               onChange={(e) => set("invoice_prefix", e.target.value)} />
           </Field>
           <Field label="Default Prepared By">
-            <input className="inp" value={settings.default_prepared_by ?? "sameera"} placeholder="Staff name on invoice"
+            <input className="inp" value={settings.default_prepared_by ?? ""} placeholder="Staff name on invoice"
               onChange={(e) => set("default_prepared_by", e.target.value)} />
           </Field>
           <Field label="Invoice Numbering" col2>
             <div className="flex items-center gap-4 mt-1">
               {["true", "false"].map((v) => (
                 <label key={v} className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="auto_num" value={v} checked={settings.invoice_auto_numbering === v}
+                  <input type="radio" name="auto_num" value={v} checked={(settings.invoice_auto_numbering ?? "true") === v}
                     onChange={() => set("invoice_auto_numbering", v)} />
                   <span className="text-sm" style={{ color: "#1D1D1D" }}>{v === "true" ? "Auto-increment" : "Manual entry"}</span>
                 </label>
@@ -200,7 +210,7 @@ function GeneralTab({ onSaved }: { onSaved: () => void }) {
         </div>
       </div>
 
-      <SaveBtn onClick={handleSave} />
+      <SaveBtn onClick={handleSave} disabled={saving} label={saving ? "Saving…" : "Save Changes"} />
     </div>
   );
 }
@@ -509,6 +519,10 @@ function friendlyAuthError(e: unknown): string {
 
 function SecurityTab({ onSaved }: { onSaved: () => void }) {
   const { withAdminToken, adminToken } = useAuth();
+  const [resetPhrase, setResetPhrase] = useState("");
+  const [resetPin, setResetPin] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState("");
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [showAdminPin, setShowAdminPin] = useState(false);
@@ -525,7 +539,9 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
   const [restoreLoading, setRestoreLoading] = useState(false);
 
   useEffect(() => {
-    getAppSettings().then((s) => { setSettings(s); setLoading(false); });
+    getAppSettings().then((s) => setSettings(s))
+      .catch(e => setPinStatus(`Could not load security settings: ${String(e)}`))
+      .finally(() => setLoading(false));
     loadBackupInfo();
   }, []);
 
@@ -540,6 +556,56 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
       setDbExists(exists);
       setBackups(bkps);
     } catch { /* running in browser preview */ }
+  }
+
+  async function handleFactoryReset() {
+    if (resetLoading || resetPhrase !== "RESET ALL DATA") return;
+    setResetError("");
+    // Independent two-step verification: typed phrase + fresh Admin PIN.
+    // Rust checks the actual PIN hash in addition to the administrator session.
+    if (!resetPin || !/^\d{4,8}$/.test(resetPin)) {
+      setResetError("Enter your 4–8 digit Admin PIN.");
+      return;
+    }
+    if (!window.confirm(
+      "FINAL CONFIRMATION — ERASE ALL LOCAL DATA?\n\n" +
+      "Invoices, agents, purchases, stock, settlements, payments and reports will be erased. " +
+      "Existing external backup files and remote/cloud data will NOT be deleted.\n\n" +
+      "This operation cannot be undone without a backup."
+    )) return;
+
+    setResetLoading(true);
+    try {
+      const { hashPin, verifyAdminPin } = await import("../hooks/usePinGuard");
+      if (!(await verifyAdminPin(resetPin))) {
+        throw new Error("Incorrect Admin PIN. Nothing was erased.");
+      }
+      const pinHash = await hashPin(resetPin);
+      // The Rust command independently checks both the admin token and PIN hash.
+      await withAdminToken(async (token) => {
+        const { stopSyncWorker } = await import("../services/syncQueue");
+        stopSyncWorker();
+        const { closeAndResetDb } = await import("../services/database");
+        await closeAndResetDb();
+        await invoke<number>("factory_reset_local_data", {
+          token,
+          confirmation: "RESET ALL DATA",
+          providedPinHash: pinHash,
+        });
+      });
+      sessionStorage.removeItem("app_role");
+      sessionStorage.removeItem("admin_token");
+      window.location.reload();
+    } catch (e) {
+      setResetError(friendlyAuthError(e));
+      // Restart by reloading so a closed DB connection / stopped worker is
+      // reopened safely. A failed Rust transaction rolls back its changes.
+      setTimeout(() => window.location.reload(), 2500);
+    } finally {
+      setResetLoading(false);
+      setResetPhrase("");
+      setResetPin("");
+    }
   }
 
   async function handleBackup() {
@@ -584,6 +650,8 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
       if (!srcPath) { setRestoreLoading(false); return; }
 
       await withAdminToken(async () => {
+        const { stopSyncWorker } = await import("../services/syncQueue");
+        stopSyncWorker();
         const { closeAndResetDb } = await import("../services/database");
         await closeAndResetDb();
 
@@ -596,12 +664,21 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
       setTimeout(() => window.location.reload(), 1500);
     } catch (e) {
       setBackupStatus({ ok: false, msg: friendlyAuthError(e) });
+      // Reopen the SQLite connection and sync worker after a failed restore.
+      window.location.reload();
     } finally {
       setRestoreLoading(false);
     }
   }
 
   async function handleSavePins() {
+    if (adminPinInput && !/^\d{4,8}$/.test(adminPinInput)) {
+      setPinStatus("Admin PIN must contain 4–8 digits."); return;
+    }
+    if (cashierPinInput && !/^\d{4,8}$/.test(cashierPinInput)) {
+      setPinStatus("Cashier PIN must contain 4–8 digits."); return;
+    }
+    setPinStatus("");
     try {
       await withAdminToken(async () => {
         const { hashPin } = await import("../hooks/usePinGuard");
@@ -611,17 +688,16 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
         };
 
         if (adminPinInput) {
-          if (adminPinInput.length < 4) { alert("Admin PIN must be at least 4 digits."); return; }
           toSave.admin_pin_hash = await hashPin(adminPinInput);
           setPinStatus("Admin PIN updated");
         }
         if (cashierPinInput) {
-          if (cashierPinInput.length < 4) { alert("Cashier PIN must be at least 4 digits."); return; }
           toSave.cashier_pin_hash = await hashPin(cashierPinInput);
           setPinStatus((p) => p ? p + "  Cashier PIN updated" : "Cashier PIN updated");
         }
 
         await saveSettings(toSave);
+        setSettings(p => ({ ...p, ...toSave }));
         setAdminPinInput("");
         setCashierPinInput("");
         setTimeout(() => setPinStatus(""), 3000);
@@ -637,6 +713,8 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
     try {
       await withAdminToken(async () => {
         await saveSettings({ [`${role}_pin_hash`]: "" });
+        setSettings(p => ({ ...p, [`${role}_pin_hash`]: "" }));
+        setPinStatus(`${role === "admin" ? "Admin" : "Cashier"} PIN removed`);
         onSaved();
       });
     } catch (err) {
@@ -864,85 +942,64 @@ function SecurityTab({ onSaved }: { onSaved: () => void }) {
           <p className="font-semibold text-sm flex items-center gap-2" style={{ color: "#DC2626" }}>
             <AlertTriangle size={15} /> Clear All Data / Factory Reset
           </p>
-          <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
-            Wipe all invoices, agents, stock, and records — start fresh without deleting the app.
-            Use this instead of manually deleting database files.
+          <p className="text-xs mt-1 leading-relaxed" style={{ color: "#991B1B" }}>
+            Permanently erase ALL local business records: sub-agent profiles, invoices, purchases,
+            stock, payments, settlements, returns, collections, salaries, reports and the sync queue.
+            Admin PIN and its device salt are preserved so security stays enabled.
           </p>
         </div>
-        <div className="p-5">
-          <button
-            onClick={async () => {
-              if (!confirm(
-                "⚠ CLEAR ALL DATA?\n\n" +
-                "This will permanently delete ALL:\n" +
-                "• Invoices & payments\n• Agents\n• Stock & purchases\n" +
-                "• Returns & collections\n• Workers & salaries\n\n" +
-                "The app will restart with a clean, empty database.\n\n" +
-                "Make sure you have a backup if you need the data!"
-              )) return;
-              if (!confirm("Are you absolutely sure? This cannot be undone.")) return;
-              try {
-                const { closeAndResetDb } = await import("../services/database");
-                await closeAndResetDb();
-                window.location.reload();
-              } catch (e) {
-                alert("Reset failed: " + String(e));
-              }
-            }}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold text-white hover:opacity-90 transition-all"
-            style={{ background: "#DC2626" }}>
-            <RotateCcw size={15} />
-            Clear All Data &amp; Start Fresh
-          </button>
-          <p className="text-xs mt-2" style={{ color: "#9CA3AF" }}>
-            Use this instead of manually deleting <code>ajith_rohana.db</code>.
-            The app restarts automatically with an empty database.
+        <div className="p-5 space-y-3">
+          <p className="text-xs leading-relaxed" style={{ color: "#6B7280" }}>
+            <strong>External backups and cloud/remote data are NOT erased.</strong> This reset only clears
+            this computer’s SQLite database. Previously synced records may remain on the server.
+            Export a backup before continuing if you might need your records again.
           </p>
+          <label htmlFor="reset-confirmation-phrase" className="block text-xs font-semibold" style={{ color: "#374151" }}>
+            Step 1 of 2 — Type <strong>RESET ALL DATA</strong> to unlock the reset button
+          </label>
+          <input
+            id="reset-confirmation-phrase"
+            type="text"
+            value={resetPhrase}
+            onChange={e => { setResetPhrase(e.target.value); setResetError(""); }}
+            disabled={resetLoading}
+            autoComplete="off"
+            placeholder="RESET ALL DATA"
+            className="inp w-full max-w-sm"
+            style={{ borderColor: resetPhrase === "RESET ALL DATA" ? "#16A34A" : "#FCA5A5" }}
+          />
+          <label htmlFor="reset-admin-pin" className="block text-xs font-semibold" style={{ color: "#374151" }}>
+            Step 2 of 2 — Enter your Admin PIN (4–8 digits)
+          </label>
+          <input
+            id="reset-admin-pin"
+            type="password"
+            inputMode="numeric"
+            value={resetPin}
+            onChange={e => { setResetPin(e.target.value.replace(/\D/g, "").slice(0, 8)); setResetError(""); }}
+            disabled={resetLoading}
+            autoComplete="off"
+            placeholder="Admin PIN"
+            className="inp w-full max-w-sm"
+          />
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              type="button"
+              onClick={handleFactoryReset}
+              disabled={!adminPinSet || resetPhrase !== "RESET ALL DATA" || resetPin.length < 4 || resetLoading}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold text-white disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: "#DC2626" }}>
+              <RotateCcw size={15} />
+              {resetLoading ? "Erasing local data…" : "Verify PIN & Factory Reset"}
+            </button>
+            {!adminPinSet && <span className="text-xs" style={{ color: "#B91C1C" }}>Set an Admin PIN first to enable Factory Reset.</span>}
+          </div>
+          {resetError && <p role="alert" className="text-xs font-semibold" style={{ color: "#DC2626" }}>Reset failed: {resetError}</p>}
         </div>
       </div>
 
       {/* ── Go API Backend ── */}
       <BackendConfigCard />
-    </div>
-  );
-}
-
-// ── 6. MOBILE APP TAB ─────────────────────────────────────────────────────────
-
-function MobileAppTab() {
-  return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#fff", border: "1px solid #E8E8E8" }}>
-        <div className="px-5 py-4" style={{ borderLeft: "4px solid #7C3AED", background: "linear-gradient(to right, #F5F3FF, #fff)" }}>
-          <div className="flex items-center gap-3">
-            <Smartphone size={22} style={{ color: "#7C3AED" }} />
-            <div>
-              <p className="font-bold text-base" style={{ color: "#1D1D1D" }}>Mobile Companion App</p>
-              <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
-                Connect the Flutter Lottery Scanner app to this desktop over WiFi or any network
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Local LAN connection (primary) */}
-      <MobileServerCard />
-
-      {/* Cloud relay connection (secondary) */}
-      <MobileRelayCard />
-
-      {/* How it works */}
-      <div className="rounded-2xl p-5 space-y-2" style={{ background: "#F8F9FA", border: "1px solid #E8E8E8" }}>
-        <p className="text-sm font-bold" style={{ color: "#374151" }}>How pairing works</p>
-        <ol className="text-xs space-y-1.5 list-decimal list-inside" style={{ color: "#6B7280" }}>
-          <li>Open the <strong>Lottery Scanner</strong> Flutter app on your Android phone</li>
-          <li>Tap the connection badge (top-right) → <strong>Scan Desktop QR</strong></li>
-          <li>Point the camera at the QR code below — connection happens automatically</li>
-          <li>Once paired, scanning a ticket on the phone instantly sends it here</li>
-        </ol>
-      </div>
     </div>
   );
 }
@@ -967,226 +1024,6 @@ function ToggleRow({ label, value, onChange }: { label: string; value: boolean; 
           ? <ToggleRight size={26} style={{ color: "#4285F4" }} />
           : <ToggleLeft size={26} style={{ color: "#9CA3AF" }} />}
       </button>
-    </div>
-  );
-}
-
-// ── SVG QR helper ─────────────────────────────────────────────────────────────
-// The qrcode Rust crate emits SVGs with fixed pixel width/height (e.g. 220x220)
-// but no viewBox, so they overflow their container at any other size.
-// This strips the fixed dimensions, adds a viewBox, and lets CSS control size.
-function scaleSvg(svg: string): string {
-  const dim = svg.match(/\bwidth="(\d+)"/)?.[1] ?? "220";
-  return svg
-    .replace(/<svg\b/, `<svg viewBox="0 0 ${dim} ${dim}" style="width:100%;height:100%;display:block;"`)
-    .replace(/\s+width="\d+"/, "")
-    .replace(/\s+height="\d+"/, "");
-}
-
-
-// ── Mobile Relay Pairing (Flutter / Cloud WebSocket) ─────────────────────────
-
-function MobileRelayCard() {
-  const [relayUrl, setRelayUrl] = useState(
-    () => typeof window !== 'undefined' ? (localStorage.getItem('relay_url') ?? 'ws://localhost:8080') : 'ws://localhost:8080'
-  );
-  const [sessionId, setSessionId] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('relay_session');
-      if (saved) return saved;
-    }
-    const id = Math.random().toString(36).substring(2, 10).toUpperCase();
-    if (typeof window !== 'undefined') localStorage.setItem('relay_session', id);
-    return id;
-  });
-  const [connected, setConnected] = useState(false);
-  const [peerCount, setPeerCount] = useState(0);
-  const [qrSvg, setQrSvg]       = useState<string | null>(null);
-  const [editingUrl, setEditing] = useState(false);
-  const [urlInput, setUrlInput]  = useState(relayUrl);
-
-  // Build pairing URL: lottery://pair?session=XXXX&relay=wss://...
-  const pairingUrl = `lottery://pair?session=${sessionId}&relay=${encodeURIComponent(relayUrl)}`;
-
-  useEffect(() => {
-    import("@tauri-apps/api/core").then(({ invoke }) => {
-      invoke<string>("get_qr_for_url", { url: pairingUrl })
-        .then(b64 => setQrSvg(scaleSvg(atob(b64))))
-        .catch(() => {});
-    }).catch(() => {});
-  }, [pairingUrl]);
-
-  function newSession() {
-    const id = Math.random().toString(36).substring(2, 10).toUpperCase();
-    localStorage.setItem('relay_session', id);
-    setSessionId(id);
-    setPeerCount(0);
-    setConnected(false);
-  }
-
-  function saveUrl() {
-    setRelayUrl(urlInput);
-    localStorage.setItem('relay_url', urlInput);
-    setEditing(false);
-  }
-
-  return (
-    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background:"#FFFFFF", border:"1px solid #E8E8E8" }}>
-      <div className="px-5 py-3.5" style={{ borderBottom:"1px solid #F3F4F6", borderLeft:"3px solid #7C3AED" }}>
-        <p className="font-semibold text-sm" style={{ color:"#1D1D1D" }}>📱 Flutter Mobile App — Cloud Pairing</p>
-        <p className="text-xs mt-0.5" style={{ color:"#9CA3AF" }}>
-          Works across any network · Scan QR with the Lottery Scanner Flutter app
-        </p>
-      </div>
-      <div className="p-5 space-y-3">
-        {/* Relay URL */}
-        <div>
-          <label className="text-xs font-semibold block mb-1" style={{ color:"#6B7280" }}>Relay Server URL</label>
-          {editingUrl ? (
-            <div style={{ display:"flex", gap:8 }}>
-              <input className="inp flex-1 font-mono text-sm" value={urlInput}
-                onChange={e => setUrlInput(e.target.value)}
-                placeholder="wss://your-relay.onrender.com"
-                onKeyDown={e => { if(e.key==='Enter') saveUrl(); if(e.key==='Escape') setEditing(false); }}
-                autoFocus />
-              <button onClick={saveUrl} className="px-3 py-1 rounded text-xs font-bold text-white" style={{ background:"#7C3AED" }}>Save</button>
-              <button onClick={() => setEditing(false)} className="px-3 py-1 rounded text-xs font-bold" style={{ background:"#F3F4F6", color:"#374151" }}>Cancel</button>
-            </div>
-          ) : (
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <code style={{ flex:1, fontSize:12, background:"#F3F4F6", padding:"5px 10px", borderRadius:6, color:"#374151" }}>{relayUrl}</code>
-              <button onClick={() => { setUrlInput(relayUrl); setEditing(true); }}
-                className="text-xs px-3 py-1 rounded" style={{ background:"#EDE9FE", color:"#7C3AED", fontWeight:700 }}>Edit</button>
-            </div>
-          )}
-          <p className="text-xs mt-1" style={{ color:"#9CA3AF" }}>
-            Deploy the Go relay: <code style={{ background:"#F3F4F6", padding:"1px 4px", borderRadius:3 }}>cd relay-server && go run main.go</code>
-            &nbsp;or free cloud: Render / Railway / Fly.io
-          </p>
-        </div>
-
-        {/* Session + QR — side-by-side on wide screens, stacked on narrow */}
-        <div style={{ display:"flex", gap:16, alignItems:"flex-start", flexWrap:"wrap" as const }}>
-          {/* QR code — always visible */}
-          <div style={{ flexShrink:0 }}>
-            {qrSvg ? (
-              <div style={{ width:180, height:180, background:"#fff", border:"2px solid #DDD6FE",
-                borderRadius:12, padding:8, boxSizing:"border-box" as const,
-                boxShadow:"0 2px 12px rgba(124,58,237,0.12)" }}
-                dangerouslySetInnerHTML={{ __html: qrSvg }} />
-            ) : (
-              <div style={{ width:180, height:180, background:"#F5F3FF", border:"2px solid #DDD6FE",
-                borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center",
-                flexDirection:"column" as const, gap:6, fontSize:11, color:"#7C3AED" }}>
-                <div style={{ fontSize:22 }}>⏳</div>
-                <span>Loading QR…</span>
-              </div>
-            )}
-            <p style={{ textAlign:"center" as const, fontSize:10, color:"#9CA3AF", marginTop:5 }}>
-              Scan with mobile app
-            </p>
-          </div>
-
-          {/* Session info */}
-          <div style={{ flex:1, minWidth:160 }}>
-            <label className="text-xs font-semibold block mb-1" style={{ color:"#6B7280" }}>Session ID</label>
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <code style={{ fontSize:22, fontWeight:900, letterSpacing:3, color:"#7C3AED" }}>{sessionId}</code>
-              <button onClick={newSession} className="text-xs px-2 py-1 rounded"
-                style={{ background:"#EDE9FE", color:"#7C3AED", fontWeight:700, border:"1px solid #DDD6FE" }}>New</button>
-            </div>
-            <div className={`mt-2 flex items-center gap-2 text-xs ${connected ? "text-green-600" : "text-gray-400"}`}>
-              <span style={{ width:7, height:7, borderRadius:"50%", background:connected?"#16A34A":"#D1D5DB", display:"inline-block", flexShrink:0 }}/>
-              {connected ? `${peerCount} device connected` : "Waiting for mobile app to scan"}
-            </div>
-            <div style={{ marginTop:10, fontSize:10, color:"#9CA3AF", wordBreak:"break-all" as const,
-              background:"#F9FAFB", borderRadius:6, padding:"6px 8px", border:"1px solid #F3F4F6" }}>
-              {pairingUrl}
-            </div>
-          </div>
-        </div>
-
-        <div className="text-xs p-3 rounded-lg" style={{ background:"#EDE9FE", color:"#5B21B6" }}>
-          <strong>How to pair:</strong> Open the Lottery Scanner app → tap the connection badge (top-right) → Scan Desktop QR → point at the QR code above
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Mobile Companion Server Info ──────────────────────────────────────────────
-
-function MobileServerCard() {
-  const [serverIP, setServerIP] = useState<string>("checking…");
-  const [qrSvg,   setQrSvg]    = useState<string | null>(null);
-
-  useEffect(() => {
-    import("@tauri-apps/api/core").then(({ invoke }) => {
-      invoke<string>("get_local_ip").then(ip => {
-        setServerIP(ip);
-        const pairingUrl = `lottery://pair?host=${ip}:7423`;
-        invoke<string>("get_qr_for_url", { url: pairingUrl })
-          .then(b64 => setQrSvg(scaleSvg(atob(b64))))
-          .catch(() => {});
-      }).catch(() => setServerIP("Not available"));
-    }).catch(() => setServerIP("Not available"));
-  }, []);
-
-  return (
-    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}>
-      <div className="px-5 py-3.5" style={{ borderBottom: "1px solid #F3F4F6", borderLeft: "3px solid #2563EB" }}>
-        <p className="font-semibold text-sm" style={{ color: "#1D1D1D" }}>📱 Direct Local Connection (WiFi / LAN)</p>
-        <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
-          Same network only · fastest · scan once to pair permanently
-        </p>
-      </div>
-      <div className="p-5">
-        <div style={{ display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" as const }}>
-          {/* QR code — always visible, properly sized */}
-          <div style={{ flexShrink: 0 }}>
-            {qrSvg ? (
-              <div style={{ width: 200, height: 200, background: "#fff", border: "2px solid #E5E7EB",
-                borderRadius: 12, padding: 8, boxSizing: "border-box" as const,
-                boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}
-                dangerouslySetInnerHTML={{ __html: qrSvg }} />
-            ) : (
-              <div style={{ width: 200, height: 200, background: "#F3F4F6", border: "2px solid #E5E7EB",
-                borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 12, color: "#9CA3AF", flexDirection: "column" as const, gap: 6 }}>
-                <div style={{ fontSize: 24 }}>⏳</div>
-                <span>Loading QR…</span>
-              </div>
-            )}
-            <p style={{ textAlign: "center" as const, fontSize: 10, color: "#9CA3AF", marginTop: 6 }}>
-              Scan with Lottery Scanner app
-            </p>
-          </div>
-          {/* IP + status info */}
-          <div style={{ flex: 1, minWidth: 180, display: "flex", flexDirection: "column" as const, gap: 10 }}>
-            <div style={{ background: "#1D1D1D", borderRadius: 10, padding: "12px 16px" }}>
-              <div style={{ fontSize: 10, color: "#9CA3AF", textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 4 }}>
-                Desktop LAN IP
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 900, fontFamily: "monospace", color: "#4ADE80", letterSpacing: 1 }}>
-                {serverIP}
-              </div>
-              <div style={{ fontSize: 11, color: "#6B7280", marginTop: 3 }}>
-                Port <strong style={{ color: "#94A3B8" }}>7423</strong>
-              </div>
-              <div style={{ fontSize: 10, color: "#4ADE80", marginTop: 8, fontWeight: 600 }}>
-                🔵 UDP beacon active · mDNS: _lottery._tcp.local
-              </div>
-            </div>
-            <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#16A34A" }}>
-              ✓ Server running · port 7423 ready for connections
-            </div>
-            <div style={{ fontSize: 11, color: "#6B7280", lineHeight: 1.5 }}>
-              <strong>How to connect:</strong><br/>
-              Open the mobile app → tap the connection badge → Scan Desktop QR → point at the code above.
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -1333,10 +1170,10 @@ function BackendConfigCard() {
 }
 
 
-function SaveBtn({ onClick, label = "Save Changes" }: { onClick: () => void; label?: string }) {
+function SaveBtn({ onClick, label = "Save Changes", disabled = false }: { onClick: () => void; label?: string; disabled?: boolean }) {
   return (
-    <button onClick={onClick}
-      className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold text-white hover:opacity-90"
+    <button onClick={onClick} disabled={disabled}
+      className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
       style={{ background: "#4285F4" }}>
       <Save size={15} /> {label}
     </button>
