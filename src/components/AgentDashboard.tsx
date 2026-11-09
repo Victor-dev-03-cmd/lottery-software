@@ -341,10 +341,10 @@ export default function AgentDashboard({ onNavigate, refreshKey }: Props) {
             loading={loading}
           />
 
-          {/* Cash Collected */}
+          {/* Receipts credited to invoices: cash, winnings, and later payments. */}
           <KpiWhite
             icon={<Banknote size={17} />}
-            label={`Collected (${period})`}
+            label={`Invoice Receipts (${period})`}
             labelSi="එකතු කළ මුදල"
             value={loading ? "…" : fmts(periodStats?.total_collected ?? 0)}
             sub={`${collRate}% of invoiced`}
